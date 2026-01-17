@@ -12,7 +12,10 @@
 #include <assert.h>
 
 #include "utils.h"
+#include "calculation.h"
 
-uint32_t shoup_algorithm(uint32_t a, uint32_t b, uint64_t p);
+uint64_t shoup_algorithm(uint32_t a, uint32_t b, uint64_t b_bis, uint64_t p);
+
+Vector shoup_scalar_algorithm(Parameters param);
 
 #endif
