@@ -1,11 +1,9 @@
 #include "../include/utils.h"
 
-int is_prime(uint64_t p)
+double time_algorithm(Vector (*algorithm)(Parameters), Parameters param)
 {
-    if (p <= 1)
-        return 0;
-    for (uint32_t i = 2; i * i <= p; i++)
-        if (p % i == 0)
-            return 0;
-    return 1;
+    clock_t start = clock();
+    algorithm(param);
+    clock_t end = clock();
+    return (double)(end - start) / CLOCKS_PER_SEC;
 }

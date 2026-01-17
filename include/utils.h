@@ -8,7 +8,10 @@
 #define UTILS_H
 
 #include <stdint.h>
+#include <time.h>
 
-int is_prime(uint64_t p);
+#include "calculation.h"
+
+double time_algorithm(Vector (*algorithm)(Parameters), Parameters param);
 
 #endif

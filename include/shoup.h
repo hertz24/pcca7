@@ -11,7 +11,6 @@
 #include <math.h>
 #include <assert.h>
 
-#include "utils.h"
 #include "calculation.h"
 
 uint64_t shoup_algorithm(uint32_t a, uint32_t b, uint64_t b_bis, uint64_t p);

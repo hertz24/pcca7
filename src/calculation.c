@@ -1,5 +1,15 @@
 #include "../include/calculation.h"
 
+int is_prime(uint64_t p)
+{
+    if (p <= 1)
+        return 0;
+    for (uint32_t i = 2; i * i <= p; i++)
+        if (p % i == 0)
+            return 0;
+    return 1;
+}
+
 static uint64_t pre_computation(uint32_t b, uint64_t p)
 {
     assert(is_prime(p));
