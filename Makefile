@@ -1,6 +1,6 @@
 CC := /usr/bin/gcc
 CFLAGS := -Wall -Wextra
-LDFLAGS := -lm -fopenmp -mavx -mfma
+LDFLAGS := -lm -fopenmp -mavx -mfma -lflint -lgmp
 
 SRC_DIR := src
 OBJ_DIR := obj
