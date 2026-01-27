@@ -13,13 +13,13 @@ int main(void)
     print_vector(v);
 
     printf("--------FLINT-------------\n");
-    mp_limb_t p = 17; 
+    ulong p = 17; 
     nmod_t mod;
     nmod_init(&mod, p);
 
-    mp_limb_t a = 10;
-    mp_limb_t b = 12;
-    mp_limb_t res;
+    ulong a = 10;
+    ulong b = 12;
+    ulong res;
 
     printf("Calculs modulo p = %lu\n", (unsigned long) p);
     printf("a = %lu, b = %lu\n\n", (unsigned long) a, (unsigned long) b);
