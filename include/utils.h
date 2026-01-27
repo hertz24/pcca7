@@ -12,6 +12,6 @@
 
 #include "calculation.h"
 
-double time_algorithm(Vector (*algorithm)(Parameters), Parameters param);
+double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param, Vector vector);
 
 #endif

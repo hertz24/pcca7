@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include "flint/ulong_extras.h"
 
 /**
  * @struct Parameters
@@ -18,15 +19,6 @@
  */
 typedef struct
 {
-    /**
-     * @brief Array of values a_i of size #isze
-     *
-     * Each value a_i must be in [0, p[.
-     * This array represents the vector A = (a_1, a_2, ..., a_n).
-     */
-    uint32_t *tab_a;
-    int size; /**< @brief The size of #tab_a */
-
     /**
      * @brief Constant multiplier #b
      *
@@ -44,13 +36,11 @@ typedef struct
     int size;
 } Vector;
 
-int is_prime(uint64_t p);
-
-Parameters init_parameters(int size, uint32_t b, uint64_t p);
-
-void free_parameters(Parameters param);
+Parameters init_parameters(uint32_t b, uint64_t p);
 
 Vector init_vector(int size);
+
+Vector rand_vector(int size);
 
 void free_vector(Vector vector);
 
