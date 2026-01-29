@@ -1,6 +1,7 @@
 #include "../include/shoup.h"
 #include "../include/calculation.h"
 #include "../include/utils.h"
+#include <immintrin.h>
 #include "flint/nmod.h"
 #include "flint/ulong_extras.h"
 
@@ -49,5 +50,43 @@ int main(void)
     {
         printf("a = 10 n'est pas inversible modulo p\n");
     }
+
+    printf("\n-------------Vectorization of multiplication scalar vector-----------\n");
+    int size = rand_v.size;
+    Vector res_vec = init_vector(size);
+
+    int i = 0;
+    for (; i < size ; i+= 4){
+
+        //Load
+        __m256i va = _mm256_loadu_si256((__m256i const*)&rand_v.elements[i]);
+        __m256i vb = _mm256_set1_epi64x(param1.b);
+        __m256i vb_bis = _mm256_set1_epi64x(param1.b_bis);
+        __m256i vp = _mm256_set1_epi64x(param1.p);
+
+
+        //Compute
+        //1. a * b_bis / 2^32 >> 32
+        __m256i q = _mm256_mul_epu32(va, vb_bis); 
+        q = _mm256_srli_epi64(q, 32);
+
+        //2. (a * b - q * p) % 2^32
+        //2.1 a * b
+        __m256i ab = _mm256_mul_epu32(va, vb);
+        //2.2 q * p
+        __m256i qp = _mm256_mul_epu32(q, vp);
+        //2.3 ab - qp
+        __m256i c = _mm256_sub_epi64(ab, qp);
+        //2.4 
+        __m256i mask_32 = _mm256_set1_epi64x(0xFFFFFFFF);
+        __m256i c_32 = _mm256_and_si256(c, mask_32);
+/*         __m256i mask_cmp = _mm256_cmpgt_epi64(c_32, vp);
+        __m256i to_subtract = _mm256_and_si256(mask_cmp, vp);
+        c = _mm256_sub_epi64(c, to_subtract);  */
+        
+       _mm256_storeu_si256((__m256i*)&res_vec.elements[i], c_32);
+    }
+    print_vector(res_vec);
+
     return 0;
 }
