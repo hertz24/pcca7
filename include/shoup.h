@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <assert.h>
+#include <arm_neon.h>
 
 #include "calculation.h"
 

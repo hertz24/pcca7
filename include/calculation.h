@@ -32,7 +32,7 @@ typedef struct
 
 typedef struct
 {
-    uint64_t *elements;
+    uint32_t *elements;
     int size;
 } Vector;
 

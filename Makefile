@@ -1,6 +1,6 @@
 CC := /usr/bin/gcc
-CFLAGS := -Wall -Wextra
-LDFLAGS := -lm -fopenmp -mavx -mfma -lflint -lgmp
+CFLAGS := -Wall -Wextra -O3 -march=armv8-a+simd
+LDFLAGS :=  -lm -fopenmp -lflint -lgmp
 
 SRC_DIR := src
 OBJ_DIR := obj
@@ -24,3 +24,6 @@ clean:
 	rm -f $(TARGET)
 
 .PHONY: all clean
+
+# -I$(HOME)/local/include
+# -L$(HOME)/local/lib

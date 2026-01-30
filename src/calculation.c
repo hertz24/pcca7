@@ -34,6 +34,6 @@ void print_vector(Vector vector)
 {
     printf("[");
     for (int i = 0; i < vector.size - 1; i++)
-        printf("%ld, ", *(vector.elements + i));
-    printf("%ld]\n", *(vector.elements + vector.size - 1));
+        printf("%d, ", *(vector.elements + i));
+    printf("%d]\n", *(vector.elements + vector.size - 1));
 }
