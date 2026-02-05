@@ -7,12 +7,17 @@
 int main(void)
 {
     srand(time(NULL));
-    Parameters param1 = init_parameters(812112989, 97);
-    Vector rand_v = rand_vector(100);
+    Parameters param1 = init_parameters(96, rand_prime(1000000));
+    print_param(param1);
+    Vector rand_v = rand_vector(100, param1.p);
     print_vector(rand_v);
-    Vector v = shoup_scalar_algorithm(param1, rand_v);
-    printf("%f s\n", time_algorithm(shoup_scalar_algorithm, param1, v));
+    Vector v = shoup_scalar_neon(param1, rand_v);
+    printf("%f s\n", time_algorithm(shoup_scalar_neon, param1, v));
     print_vector(v);
+    printf("\n");
+    Vector v1 = naive_scalar_product(rand_v, param1.b, param1.p);
+    print_vector(v1);
+    printf("%d\n", compare_vectors(v, v1));
 
     printf("--------FLINT-------------\n");
     ulong p = 17;

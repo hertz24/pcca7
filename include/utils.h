@@ -14,4 +14,6 @@
 
 double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param, Vector vector);
 
+int compare_vectors(Vector v1, Vector v2);
+
 #endif
