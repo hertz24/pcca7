@@ -1,7 +1,13 @@
-CC := /usr/bin/gcc
-CFLAGS := -Wall -Wextra -O3 -march=armv8-a+simd
-LDFLAGS :=  -lm -fopenmp -lflint -lgmp
+ARCH := $(shell uname -m)
 
+ifeq ($(ARCH),x86_64)
+    CFLAGS := -Wall -Wextra -O3 -mavx2
+    LDFLAGS := -lm -fopenmp -mfma -lflint -lgmp
+else
+	CFLAGS := -Wall -Wextra -O3 -march=armv8-a+simd
+	LDFLAGS :=  -lm -fopenmp -lflint -lgmp
+endif
+CC := /usr/bin/gcc
 SRC_DIR := src
 OBJ_DIR := obj
 TARGET = main
