@@ -9,7 +9,6 @@ uint64_t shoup_algorithm(uint32_t a, uint32_t b, uint64_t b_bis, uint64_t p)
 
     // (a * b - q * p) % 2^32
     uint64_t c = (a * b - q * p) % (1UL << 32);
-
     if (c >= p)
         c -= p;
     return c;

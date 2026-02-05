@@ -21,7 +21,7 @@ Vector rand_vector(int size)
 {
     Vector vector = init_vector(size);
     for (int i = 0; i < size; i++)
-        *(vector.elements + i) = rand();
+        *(vector.elements + i) = rand() ;
     return vector;
 }
 
