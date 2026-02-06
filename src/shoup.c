@@ -61,17 +61,26 @@ static Vector shoup_scalar_neon(Parameters param, Vector v)
 static Vector shoup_scalar_avx(Parameters param, Vector v)
 {
     int size = v.size;
-    int n = size - (size % 4);
     Vector res = init_vector(size);
     __m256i vb = _mm256_set1_epi64x(param.b);
     __m256i vb_bis = _mm256_set1_epi64x(param.b_bis);
     __m256i vp = _mm256_set1_epi64x(param.p);
     __m256i mask_32 = _mm256_set1_epi64x(0xFFFFFFFF);
 
-    for (int i = 0; i < n; i += 4)
+    /* example unrolling + loadu_si256:
+     * https://github.com/vneiger/pml/blob/main/flint-extras/src/nmod32_vec/dot_split.c#L62
+     * */
+
+    ulong i = 0;
+    for ( ; i+3 < n; i += 4)
     {
         // Load 4 elements in 32 bits
         __m128i va128 = _mm_loadu_si128((__m128i const *)(v.elements + i));
+        /* dans une autre version: on pourrait charger 256,
+         * [v0 v1 v2 v3 v4 v5 v6 v7]
+         * 1/ extraire v0 v2 v4 v6, faire le calcul avec
+         * 2/ extraire v1 v3 v5 v7, faire le calcul avec
+         */
 
         // Convert to 64 bits
         __m256i va = _mm256_cvtepu32_epi64(va128);
@@ -103,7 +112,7 @@ static Vector shoup_scalar_avx(Parameters param, Vector v)
         // Store results
         _mm_storeu_si128((__m128i *)(res.elements + i), tmp);
     }
-    for (int i = n; i < size; i++)
+    for ( ; i < size; i++)
         *(res.elements + i) = shoup_algorithm(*(v.elements + i), param.b, param.b_bis, param.p);
     return res;
 }
