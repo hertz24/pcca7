@@ -104,6 +104,7 @@ static Vector shoup_scalar_avx(Parameters param, Vector v)
         c = _mm256_sub_epi64(c, sub_mask);
 
         // Convert to 32 bits
+        // FIXME lignes a ameliorer pour "store" la bonne partie de c
         __m128i c_tmp1 = _mm256_castsi256_si128(c);
         __m128i c_tmp2 = _mm256_extracti128_si256(c, 1);
 
