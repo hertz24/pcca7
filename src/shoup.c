@@ -90,7 +90,7 @@ static Vector shoup_scalar_avx(Parameters param, Vector v)
         // CRITICAL: Apply the modulo/mask here to match your scalar code
         c = _mm256_and_si256(c, mask_32);
 
-        __m256i p_gt_c = _mm256_cmpgt_epi64(vp, c);
+        __m256i p_gt_c = _mm256_cmpgt_epi32(vp, c);
         __m256i sub_mask = _mm256_andnot_si256(p_gt_c, vp);
         c = _mm256_sub_epi64(c, sub_mask);
 

@@ -28,39 +28,40 @@ void print_param(Parameters param)
 
 Vector init_vector(int size)
 {
-    Vector vector = {malloc(size * sizeof(uint64_t)), size};
-    if (vector.elements == NULL)
+    Vector v = {malloc(size * sizeof(uint64_t)), size};
+    if (v.elements == NULL)
     {
         perror("init_vector vector.elements malloc");
         return (Vector){0};
     }
-    return vector;
+    return v;
 }
 
 Vector rand_vector(int size, uint32_t p)
 {
-    Vector vector = init_vector(size);
+    Vector v = init_vector(size);
     for (int i = 0; i < size; i++)
-        *(vector.elements + i) = rand() % p;
-    return vector;
+        *(v.elements + i) = rand() % p;
+    return v;
 }
 
-void free_vector(Vector vector)
+void free_vector(Vector v)
 {
-    free(vector.elements);
+    free(v.elements);
 }
 
-void print_vector(Vector vector)
+void print_vector(Vector v)
 {
     printf("[");
-    for (int i = 0; i < vector.size - 1; i++)
-        printf("%d, ", *(vector.elements + i));
-    printf("%d]\n", *(vector.elements + vector.size - 1));
+    for (int i = 0; i < v.size - 1; i++)
+        printf("%d, ", *(v.elements + i));
+    printf("%d]\n", *(v.elements + v.size - 1));
 }
 
-Vector naive_scalar_product(Vector vector, uint32_t b, uint32_t p)
+Vector naive_scalar_product(Parameters param, Vector v)
 {
-    for (int i = 0; i < vector.size; i++)
-        *(vector.elements + i) = *(vector.elements + i) * b % p;
-    return vector;
+    Vector res = init_vector(v.size);
+    for (int i = 0; i < v.size; i++)
+        *(res.elements + i) = *(v.elements + i) * param.b % param.p;
+    return res;
 }

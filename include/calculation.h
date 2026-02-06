@@ -46,10 +46,10 @@ Vector init_vector(int size);
 
 Vector rand_vector(int size, uint32_t p);
 
-void free_vector(Vector vector);
+void free_vector(Vector v);
 
-void print_vector(Vector vector);
+void print_vector(Vector v);
 
-Vector naive_scalar_product(Vector vector, uint32_t b, uint32_t p);
+Vector naive_scalar_product(Parameters param, Vector v);
 
 #endif
