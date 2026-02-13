@@ -15,10 +15,10 @@ int compare_vectors(Vector v1, Vector v2)
         fprintf(stderr, "The size of vectors aren't the same.\n");
         return 0;
     }
-    for (int i = 0; i < v1.size; i++)
+    for (ulong i = 0; i < v1.size; i++)
         if (*(v1.elements + i) != *(v2.elements + i))
         {
-            printf("v1: %d and v2: %d at index %d\n", *(v1.elements + i), *(v2.elements + i), i);
+            printf("v1: %d and v2: %d at index %ld\n", *(v1.elements + i), *(v2.elements + i), i);
             return 0;
         }
     return 1;

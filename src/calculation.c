@@ -26,7 +26,7 @@ void print_param(Parameters param)
     printf("b = %u\nb_bis = %u\np = %u\n", param.b, param.b_bis, param.p);
 }
 
-Vector init_vector(int size)
+Vector init_vector(ulong size)
 {
     Vector v = {malloc(size * sizeof(uint64_t)), size};
     if (v.elements == NULL)
@@ -37,10 +37,10 @@ Vector init_vector(int size)
     return v;
 }
 
-Vector rand_vector(int size, uint32_t p)
+Vector rand_vector(ulong size, uint32_t p)
 {
     Vector v = init_vector(size);
-    for (int i = 0; i < size; i++)
+    for (ulong i = 0; i < size; i++)
         *(v.elements + i) = rand() % p;
     return v;
 }
@@ -53,7 +53,7 @@ void free_vector(Vector v)
 void print_vector(Vector v)
 {
     printf("[");
-    for (int i = 0; i < v.size - 1; i++)
+    for (ulong i = 0; i < v.size - 1; i++)
         printf("%d, ", *(v.elements + i));
     printf("%d]\n", *(v.elements + v.size - 1));
 }
@@ -61,7 +61,7 @@ void print_vector(Vector v)
 Vector naive_scalar_product(Parameters param, Vector v)
 {
     Vector res = init_vector(v.size);
-    for (int i = 0; i < v.size; i++)
+    for (ulong i = 0; i < v.size; i++)
         *(res.elements + i) = *(v.elements + i) * param.b % param.p;
     return res;
 }

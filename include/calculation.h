@@ -33,7 +33,7 @@ typedef struct
 typedef struct
 {
     uint32_t *elements;
-    int size;
+    ulong size;
 } Vector;
 
 uint32_t rand_prime(int n);
@@ -42,9 +42,9 @@ Parameters init_parameters(uint32_t b, uint32_t p);
 
 void print_param(Parameters param);
 
-Vector init_vector(int size);
+Vector init_vector(ulong size);
 
-Vector rand_vector(int size, uint32_t p);
+Vector rand_vector(ulong size, uint32_t p);
 
 void free_vector(Vector v);
 

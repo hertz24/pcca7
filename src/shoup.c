@@ -18,13 +18,14 @@ uint32_t shoup_algorithm(uint32_t a, uint32_t b, uint32_t b_bis, uint32_t p)
 #if NEON
 static Vector shoup_scalar_neon(Parameters param, Vector v)
 {
-    int size = v.size;
+    ulong size = v.size;
     Vector res = init_vector(size);
-    int n = size - (size % 2);
+    ulong n = size - (size % 2);
     uint32x2_t vb = vdup_n_u32(param.b);
     uint32x2_t vp = vdup_n_u32(param.p);
     uint32x2_t vb_bis = vdup_n_u32(param.b_bis);
-    for (int i = 0; i < n; i += 2)
+    ulong i = 0;
+    for (; i < n; i += 2)
     {
         uint32x2_t va = vld1_u32(v.elements + i);
 
@@ -51,7 +52,7 @@ static Vector shoup_scalar_neon(Parameters param, Vector v)
         // Stocks the value
         vst1_u32(res.elements + i, c32);
     }
-    for (int i = n; i < size; i++)
+    for (; i < size; i++)
         *(res.elements + i) = shoup_algorithm(*(v.elements + i), param.b, param.b_bis, param.p);
     return res;
 }
@@ -72,10 +73,11 @@ static Vector shoup_scalar_avx(Parameters param, Vector v)
      * */
 
     ulong i = 0;
-    for ( ; i+3 < n; i += 4)
+    for (; i + 7 < n; i += 8)
     {
         // Load 4 elements in 32 bits
-        __m128i va128 = _mm_loadu_si128((__m128i const *)(v.elements + i));
+        __m128i va128_0 = _mm_loadu_si128((__m128i const *)(v.elements + i));
+        __m128i va128_1 = _mm_loadu_si128((__m128i const *)(v.elements + i + 4));
         /* dans une autre version: on pourrait charger 256,
          * [v0 v1 v2 v3 v4 v5 v6 v7]
          * 1/ extraire v0 v2 v4 v6, faire le calcul avec
@@ -83,25 +85,34 @@ static Vector shoup_scalar_avx(Parameters param, Vector v)
          */
 
         // Convert to 64 bits
-        __m256i va = _mm256_cvtepu32_epi64(va128);
+        __m256i va_0 = _mm256_cvtepu32_epi64(va128_0);
+        __m256i va_1 = _mm256_cvtepu32_epi64(va128_1);
 
         // Calculates a * b_bis
-        __m256i ab_bis = _mm256_mul_epu32(va, vb_bis);
+        __m256i ab_bis_0 = _mm256_mul_epu32(va_0, vb_bis);
+        __m256i ab_bis_1 = _mm256_mul_epu32(va_1, vb_bis);
 
         // Compute q
-        __m256i q = _mm256_srli_epi64(ab_bis, 32);
+        __m256i q_0 = _mm256_srli_epi64(ab_bis_0, 32);
+        __m256i q_1 = _mm256_srli_epi64(ab_bis_1, 32);
 
         // Compute c
-        __m256i ab = _mm256_mul_epu32(va, vb);
-        __m256i qp = _mm256_mul_epu32(q, vp);
-        __m256i c = _mm256_sub_epi64(ab, qp);
+        __m256i ab_0 = _mm256_mul_epu32(va_0, vb);
+        __m256i ab_1 = _mm256_mul_epu32(va_1, vb);
+        __m256i qp_0 = _mm256_mul_epu32(q_0, vp);
+        __m256i qp_1 = _mm256_mul_epu32(q_1, vp);
+        __m256i c_0 = _mm256_sub_epi64(ab_0, qp_0);
+        __m256i c_1 = _mm256_sub_epi64(ab_1, qp_1);
 
-        // CRITICAL: Apply the modulo/mask here to match your scalar code
-        c = _mm256_and_si256(c, mask_32);
+        c_0 = _mm256_and_si256(c_0, mask_32);
+        c_1 = _mm256_and_si256(c_1, mask_32);
 
-        __m256i p_gt_c = _mm256_cmpgt_epi32(vp, c);
-        __m256i sub_mask = _mm256_andnot_si256(p_gt_c, vp);
-        c = _mm256_sub_epi64(c, sub_mask);
+        __m256i p_gt_c_0 = _mm256_cmpgt_epi32(vp, c_0);
+        __m256i p_gt_c_1 = _mm256_cmpgt_epi32(vp, c_1);
+        __m256i sub_mask_0 = _mm256_andnot_si256(p_gt_c_0, vp);
+        __m256i sub_mask_1 = _mm256_andnot_si256(p_gt_c_1, vp);
+        c_0 = _mm256_sub_epi64(c_0, sub_mask_0);
+        c_1 = _mm256_sub_epi64(c_1, sub_mask_1);
 
         // Convert to 32 bits
         // FIXME lignes a ameliorer pour "store" la bonne partie de c
@@ -113,7 +124,7 @@ static Vector shoup_scalar_avx(Parameters param, Vector v)
         // Store results
         _mm_storeu_si128((__m128i *)(res.elements + i), tmp);
     }
-    for ( ; i < size; i++)
+    for (; i < size; i++)
         *(res.elements + i) = shoup_algorithm(*(v.elements + i), param.b, param.b_bis, param.p);
     return res;
 }
