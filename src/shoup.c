@@ -5,7 +5,7 @@ uint32_t shoup_algorithm(uint32_t a, uint32_t b, uint32_t b_bis, uint32_t p)
     assert(n_is_prime(p) && a < p && b < p);
 
     // a * b_bis / 2^32
-    uint32_t q = (uint64_t)(a * b_bis) >> 32;
+    uint32_t q = ((uint64_t)a * b_bis) >> 32;
 
     // (a * b - q * p) % 2^32
     uint32_t c = (a * b - q * p) % (1UL << 32);
@@ -20,37 +20,49 @@ static Vector shoup_scalar_neon(Parameters param, Vector v)
 {
     ulong size = v.size;
     Vector res = init_vector(size);
-    ulong n = size - (size % 2);
+    ulong n = size - (size % 4);
     uint32x2_t vb = vdup_n_u32(param.b);
     uint32x2_t vp = vdup_n_u32(param.p);
     uint32x2_t vb_bis = vdup_n_u32(param.b_bis);
     ulong i = 0;
-    for (; i < n; i += 2)
+    for (; i + 3 < n; i += 4)
     {
-        uint32x2_t va = vld1_u32(v.elements + i);
+        uint32x2_t va_0 = vld1_u32(v.elements + i);
+        uint32x2_t va_1 = vld1_u32(v.elements + i + 2);
 
         // Calculates a * b_bis
-        uint64x2_t ab_bis = vmull_u32(va, vb_bis);
+        uint64x2_t ab_bis_0 = vmull_u32(va_0, vb_bis);
+        uint64x2_t ab_bis_1 = vmull_u32(va_1, vb_bis);
 
         // q = (a * b_bis) >> 32
-        uint64x2_t q = vshrq_n_u64(ab_bis, 32);
+        uint64x2_t q_0 = vshrq_n_u64(ab_bis_0, 32);
+        uint64x2_t q_1 = vshrq_n_u64(ab_bis_1, 32);
 
         // Convert uint64x2_t to uint32x2_t
-        uint32x2_t q32 = vmovn_u64(q);
+        uint32x2_t q32_0 = vmovn_u64(q_0);
+        uint32x2_t q32_1 = vmovn_u64(q_1);
 
         // c = (a * b - q * p) % 2^32 = (a * b - q * p) & (2^32 - 1)
-        uint64x2_t vab = vmull_u32(va, vb);
-        uint64x2_t vqp = vmull_u32(q32, vp);
-        uint64x2_t c = vandq_u64(vsubq_u64(vab, vqp), vdupq_n_u64((1UL << 32) - 1));
-        uint32x2_t c32 = vmovn_u64(c);
+        uint64x2_t vab_0 = vmull_u32(va_0, vb);
+        uint64x2_t vab_1 = vmull_u32(va_1, vb);
+        uint64x2_t vqp_0 = vmull_u32(q32_0, vp);
+        uint64x2_t vqp_1 = vmull_u32(q32_1, vp);
+        uint64x2_t c_0 = vandq_u64(vsubq_u64(vab_0, vqp_0), vdupq_n_u64((1UL << 32) - 1));
+        uint64x2_t c_1 = vandq_u64(vsubq_u64(vab_1, vqp_1), vdupq_n_u64((1UL << 32) - 1));
+        uint32x2_t c32_0 = vmovn_u64(c_0);
+        uint32x2_t c32_1 = vmovn_u64(c_1);
 
         // Compare c >= p
-        uint32x2_t cmp = vcge_u32(c32, vp);
-        uint32x2_t p_to_sub = vand_u32(cmp, vp);
-        c32 = vsub_u32(c32, p_to_sub);
+        uint32x2_t cmp_0 = vcge_u32(c32_0, vp);
+        uint32x2_t cmp_1 = vcge_u32(c32_1, vp);
+        uint32x2_t p_to_sub_0 = vand_u32(cmp_0, vp);
+        uint32x2_t p_to_sub_1 = vand_u32(cmp_1, vp);
+        c32_0 = vsub_u32(c32_0, p_to_sub_0);
+        c32_1 = vsub_u32(c32_1, p_to_sub_1);
 
         // Stocks the value
-        vst1_u32(res.elements + i, c32);
+        vst1_u32(res.elements + i, c32_0);
+        vst1_u32(res.elements + i + 2, c32_1);
     }
     for (; i < size; i++)
         *(res.elements + i) = shoup_algorithm(*(v.elements + i), param.b, param.b_bis, param.p);

@@ -1,8 +1,6 @@
 #include "../include/shoup.h"
 #include "../include/calculation.h"
 #include "../include/utils.h"
-#include "flint/nmod.h"
-#include "flint/ulong_extras.h"
 
 int main(void)
 {
