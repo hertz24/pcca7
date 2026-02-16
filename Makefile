@@ -10,11 +10,12 @@ endif
 CC := /usr/bin/gcc
 SRC_DIR := src
 OBJ_DIR := obj
-TARGET = main
+TARGET := pcca7
 
 SRCS := $(shell find $(SRC_DIR) -name "*.c")
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
-TARGET := pcca7
+
+LIB_OBJS := $(filter-out $(OBJ_DIR)/main.o,$(OBJS))
 
 all: $(TARGET)
 
@@ -25,11 +26,20 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+TEST_SRCS := $(wildcard tests/*.c)
+TEST_BINS := $(TEST_SRCS:.c=)
+
+tests/%: tests/%.c $(LIB_OBJS)
+	$(CC) $(CFLAGS) -I$(SRC_DIR) -o $@ $< $(LIB_OBJS) $(LDFLAGS)
+
+check: $(TEST_BINS)
+	@for test in $(TEST_BINS); do \
+		./$$test || exit 1; \
+	done
+
 clean:
 	rm -rf $(OBJ_DIR)
 	rm -f $(TARGET)
+	rm -f $(TEST_BINS)
 
-.PHONY: all clean
-
-# -I$(HOME)/local/include
-# -L$(HOME)/local/lib
+.PHONY: all clean check

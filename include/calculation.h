@@ -36,6 +36,12 @@ typedef struct
     ulong size;
 } Vector;
 
+/**
+ * @brief Return a random prime number less than @p n
+ *
+ * @n The excluded supremum
+ * @return The random prime number
+ */
 uint32_t rand_prime(int n);
 
 Parameters init_parameters(uint32_t b, uint32_t p);
