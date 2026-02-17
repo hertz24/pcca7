@@ -84,8 +84,8 @@ static Vector shoup_scalar_avx(Parameters param, Vector v)
      * https://github.com/vneiger/pml/blob/main/flint-extras/src/nmod32_vec/dot_split.c#L62
      * */
 
-    ulong i = 0;
-    for (; i + 7 < n; i += 8)
+    int i = 0;
+    for (; i + 7 < size; i += 8)
     {
         // Load 4 elements in 32 bits
         __m128i va128_0 = _mm_loadu_si128((__m128i const *)(v.elements + i));
@@ -128,8 +128,8 @@ static Vector shoup_scalar_avx(Parameters param, Vector v)
 
         // Convert to 32 bits
         // FIXME lignes a ameliorer pour "store" la bonne partie de c
-        __m128i c_tmp1 = _mm256_castsi256_si128(c);
-        __m128i c_tmp2 = _mm256_extracti128_si256(c, 1);
+        __m128i c_tmp1 = _mm256_castsi256_si128(c_0);
+        __m128i c_tmp2 = _mm256_extracti128_si256(c_1, 1);
 
         __m128i tmp = _mm_setr_epi32((int)_mm_extract_epi64(c_tmp1, 0), (int)_mm_extract_epi64(c_tmp1, 1), (int)_mm_extract_epi64(c_tmp2, 0), (int)_mm_extract_epi64(c_tmp2, 1));
 
@@ -140,6 +140,67 @@ static Vector shoup_scalar_avx(Parameters param, Vector v)
         *(res.elements + i) = shoup_algorithm(*(v.elements + i), param.b, param.b_bis, param.p);
     return res;
 }
+
+static inline __m256i shoup_core_avx2(__m256i va, __m256i vb, __m256i vb_bis, __m256i vp, __m256i mask32) {
+    // 1. q = (a * b_bis) >> 32:
+    __m256i q = _mm256_mul_epu32(va, vb_bis);
+    q = _mm256_srli_epi64(q, 32);
+
+    // 2. ab:
+    __m256i ab = _mm256_mul_epu32(va, vb);
+
+    // 3. qp:
+    __m256i qp = _mm256_mul_epu32(q, vp);
+
+    // 4. c = (ab - qp) & mask:
+    __m256i c = _mm256_sub_epi64(ab, qp);
+    c = _mm256_and_si256(c, mask32);
+
+    // 5. if (c >= p) c -= p
+    __m256i p_gt_c = _mm256_cmpgt_epi64(vp, c);
+    __m256i sub_mask = _mm256_andnot_si256(p_gt_c, vp);
+    
+    return _mm256_sub_epi64(c, sub_mask);
+}
+
+static Vector shoup_scalar_avx_256(Parameters param, Vector v)
+{
+    int size = v.size;
+    Vector res = init_vector(size);
+    __m256i vb = _mm256_set1_epi64x(param.b);
+    __m256i vb_bis = _mm256_set1_epi64x(param.b_bis);
+    __m256i vp = _mm256_set1_epi64x(param.p);
+    __m256i mask_32 = _mm256_set1_epi64x(0xFFFFFFFF);
+
+    int i = 0;
+    for (; i + 7 < size; i += 8) {
+        // 2. Load 8 elements [v7 v6 v5 v4 v3 v2 v1 v0]:
+        __m256i v_input = _mm256_loadu_si256((__m256i const *)(v.elements + i));
+
+        // 3. Split 8 elements into two sets of 4 :
+        __m256i va_even = _mm256_and_si256(v_input, mask_32); // Elements [null, 6, null, 4, null, 2, null, 0]
+        __m256i va_odd  = _mm256_srli_epi64(v_input, 32);    // Elements [null, 7, null, 5, null , 3, null, 1]
+
+        // 4. Process Even Lanes:
+        __m256i c_even = shoup_core_avx2(va_even, vb, vb_bis, vp, mask_32);
+
+        // 5. Process Odd Lanes:
+        __m256i c_odd  = shoup_core_avx2(va_odd,  vb, vb_bis, vp, mask_32);
+
+        // 6. Shift odd by 32 bits to the left results back and merge:
+        __m256i res_odd_shifted = _mm256_slli_epi64(c_odd, 32); // [7, null, 5, null, 3, null, 1, null]
+        __m256i res_combined    = _mm256_or_si256(c_even, res_odd_shifted); // [7, null, 5, null, 3, null, 1, null] or [null, 6, null, 4, null, 2, null, 0]
+
+        // 7. Store:
+        _mm256_storeu_si256((__m256i *)(res.elements + i), res_combined);
+    }
+
+    for (; i < size; i++) {
+        res.elements[i] = shoup_algorithm(v.elements[i], param.b, param.b_bis, param.p);
+    }
+
+    return res;
+}
 #endif
 
 Vector shoup_scalar(Parameters param, Vector v)
@@ -147,6 +208,6 @@ Vector shoup_scalar(Parameters param, Vector v)
 #if NEON
     return shoup_scalar_neon(param, v);
 #else
-    return shoup_scalar_avx(param, v);
+    return shoup_scalar_avx_256(param, v);
 #endif
 }
