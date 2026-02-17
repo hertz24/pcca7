@@ -12,5 +12,6 @@ int main(void)
         printf("n_is_prime error: %d isn't a prime number.\n", p);
         return 1;
     }
+    printf("test_prime: no error\n");
     return 0;
 }

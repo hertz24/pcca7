@@ -19,7 +19,7 @@ int compare_vectors(Vector v1, Vector v2)
         if (*(v1.elements + i) != *(v2.elements + i))
         {
             printf("v1: %d and v2: %d at index %ld\n", *(v1.elements + i), *(v2.elements + i), i);
-            return 0;
+            return 1;
         }
-    return 1;
+    return 0;
 }
