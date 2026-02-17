@@ -173,26 +173,50 @@ static Vector shoup_scalar_avx_256(Parameters param, Vector v)
     __m256i mask_32 = _mm256_set1_epi64x(0xFFFFFFFF);
 
     int i = 0;
-    for (; i + 7 < size; i += 8) {
+    for (; i + 31 < size; i += 32) {
         // 2. Load 8 elements [v7 v6 v5 v4 v3 v2 v1 v0]:
-        __m256i v_input = _mm256_loadu_si256((__m256i const *)(v.elements + i));
+        __m256i v1_input = _mm256_loadu_si256((__m256i const *)(v.elements + i));
+        __m256i v2_input = _mm256_loadu_si256((__m256i const *)(v.elements + 8));
+        __m256i v3_input = _mm256_loadu_si256((__m256i const *)(v.elements + 16));
+        __m256i v4_input = _mm256_loadu_si256((__m256i const *)(v.elements + 24));
 
         // 3. Split 8 elements into two sets of 4 :
-        __m256i va_even = _mm256_and_si256(v_input, mask_32); // Elements [null, 6, null, 4, null, 2, null, 0]
-        __m256i va_odd  = _mm256_srli_epi64(v_input, 32);    // Elements [null, 7, null, 5, null , 3, null, 1]
+        __m256i va_even_1 = _mm256_and_si256(v1_input, mask_32); // Elements [null, 6, null, 4, null, 2, null, 0]
+        __m256i va_even_2 = _mm256_and_si256(v2_input, mask_32); 
+        __m256i va_even_3 = _mm256_and_si256(v3_input, mask_32); 
+        __m256i va_even_4 = _mm256_and_si256(v4_input, mask_32); 
+        __m256i va_odd_1  = _mm256_srli_epi64(v1_input, 32);    // Elements [null, 7, null, 5, null , 3, null, 1]
+        __m256i va_odd_2  = _mm256_srli_epi64(v2_input, 32);    
+        __m256i va_odd_3  = _mm256_srli_epi64(v3_input, 32);    
+        __m256i va_odd_4  = _mm256_srli_epi64(v4_input, 32);    
 
         // 4. Process Even Lanes:
-        __m256i c_even = shoup_core_avx2(va_even, vb, vb_bis, vp, mask_32);
+        __m256i c_even_1 = shoup_core_avx2(va_even_1, vb, vb_bis, vp, mask_32);
+        __m256i c_even_2 = shoup_core_avx2(va_even_2, vb, vb_bis, vp, mask_32);
+        __m256i c_even_3 = shoup_core_avx2(va_even_3, vb, vb_bis, vp, mask_32);
+        __m256i c_even_4 = shoup_core_avx2(va_even_4, vb, vb_bis, vp, mask_32);
 
         // 5. Process Odd Lanes:
-        __m256i c_odd  = shoup_core_avx2(va_odd,  vb, vb_bis, vp, mask_32);
+        __m256i c_odd_1  = shoup_core_avx2(va_odd_1,  vb, vb_bis, vp, mask_32);
+        __m256i c_odd_2  = shoup_core_avx2(va_odd_2,  vb, vb_bis, vp, mask_32);
+        __m256i c_odd_3  = shoup_core_avx2(va_odd_3,  vb, vb_bis, vp, mask_32);
+        __m256i c_odd_4  = shoup_core_avx2(va_odd_4,  vb, vb_bis, vp, mask_32);
 
         // 6. Shift odd by 32 bits to the left results back and merge:
-        __m256i res_odd_shifted = _mm256_slli_epi64(c_odd, 32); // [7, null, 5, null, 3, null, 1, null]
-        __m256i res_combined    = _mm256_or_si256(c_even, res_odd_shifted); // [7, null, 5, null, 3, null, 1, null] or [null, 6, null, 4, null, 2, null, 0]
+        __m256i res1_odd_shifted = _mm256_slli_epi64(c_odd_1, 32); // [7, null, 5, null, 3, null, 1, null]
+        __m256i res2_odd_shifted = _mm256_slli_epi64(c_odd_2, 32); 
+        __m256i res3_odd_shifted = _mm256_slli_epi64(c_odd_3, 32); 
+        __m256i res4_odd_shifted = _mm256_slli_epi64(c_odd_4, 32); 
+        __m256i res1_combined    = _mm256_or_si256(c_even_1, res1_odd_shifted); // [7, null, 5, null, 3, null, 1, null] or [null, 6, null, 4, null, 2, null, 0]
+        __m256i res2_combined    = _mm256_or_si256(c_even_2, res2_odd_shifted); 
+        __m256i res3_combined    = _mm256_or_si256(c_even_3, res3_odd_shifted); 
+        __m256i res4_combined    = _mm256_or_si256(c_even_4, res4_odd_shifted); 
 
         // 7. Store:
-        _mm256_storeu_si256((__m256i *)(res.elements + i), res_combined);
+        _mm256_storeu_si256((__m256i *)(res.elements + i), res1_combined);
+        _mm256_storeu_si256((__m256i *)(res.elements + 8), res2_combined);
+        _mm256_storeu_si256((__m256i *)(res.elements + 16), res3_combined);
+        _mm256_storeu_si256((__m256i *)(res.elements + 24), res4_combined);
     }
 
     for (; i < size; i++) {
