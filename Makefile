@@ -27,9 +27,10 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 TEST_SRCS := $(wildcard tests/*.c)
-TEST_BINS := $(TEST_SRCS:.c=)
+TEST_BINS := $(patsubst tests/%.c,tests/obj/%,$(TEST_SRCS))
 
-tests/%: tests/%.c $(LIB_OBJS)
+tests/obj/%: tests/%.c $(LIB_OBJS)
+	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -I$(SRC_DIR) -o $@ $< $(LIB_OBJS) $(LDFLAGS)
 
 check: $(TEST_BINS)
@@ -40,6 +41,6 @@ check: $(TEST_BINS)
 clean:
 	rm -rf $(OBJ_DIR)
 	rm -f $(TARGET)
-	rm -f $(TEST_BINS)
+	rm -rf tests/obj
 
 .PHONY: all clean check
