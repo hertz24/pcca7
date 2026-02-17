@@ -1,14 +1,19 @@
 #include "../include/shoup.h"
+#include <flint/flint.h>
 
 uint32_t shoup_algorithm(uint32_t a, uint32_t b, uint32_t b_bis, uint32_t p)
 {
-    assert(n_is_prime(p) && a < p && b < p);
+    /* FLINT ASSERT: disabled until specified at configure */
+    /* --> this avoids disturbing benchmarks with unwanted operations */
+    FLINT_ASSERT(n_is_prime(p) && a < p && b < p);
 
     // a * b_bis / 2^32
     uint32_t q = ((uint64_t)a * b_bis) >> 32;
 
     // (a * b - q * p) % 2^32
-    uint32_t c = (a * b - q * p) % (1UL << 32);
+    /* uint32_t c = (a * b - q * p) % (1UL << 32); */
+    // NOTE the "% .." is useless since all variables are uint32
+    uint32_t c = a * b - q * p;
 
     if (c >= p)
         c -= p;
