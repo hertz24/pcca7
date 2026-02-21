@@ -8,24 +8,24 @@
 
 typedef struct
 {
-   flint_bitcnt_t bits;
-   ulong len;
+    flint_bitcnt_t bits;
+    ulong len;
 } info_t;
 
-void sample_mulmod_uint64(void * arg, ulong count)
+void sample_mulmod_uint64(void *arg, ulong count)
 {
-    info_t * info = (info_t *) arg;
+    info_t *info = (info_t *)arg;
 
-    nn_ptr array = (nn_ptr) flint_malloc(info->len * sizeof(ulong));
+    nn_ptr array = (nn_ptr)flint_malloc(info->len * sizeof(ulong));
     FLINT_TEST_INIT(state);
 
     for (ulong i = 0; i < count; i++)
     {
         ulong p = n_randbits(state, info->bits);
-        ulong b = n_randint(state, p);  // b must be < p
+        ulong b = n_randint(state, p); // b must be < p
 
         for (ulong j = 0; j < info->len; j++)
-            array[j] = n_randlimb(state);  // array[j] is arbitrary
+            array[j] = n_randlimb(state); // array[j] is arbitrary
 
         const ulong b_pr = n_mulmod_precomp_shoup(b, p);
 
@@ -42,21 +42,21 @@ void sample_mulmod_uint64(void * arg, ulong count)
     FLINT_TEST_CLEAR(state);
 }
 
-void sample_mulmod_uint32_noavx(void * arg, ulong count)
+void sample_mulmod_uint32_noavx(void *arg, ulong count)
 {
-    info_t * info = (info_t *) arg;
+    info_t *info = (info_t *)arg;
 
-    uint32_t * array = (uint32_t *) flint_malloc(info->len * sizeof(uint32_t));
+    uint32_t *array = (uint32_t *)flint_malloc(info->len * sizeof(uint32_t));
     FLINT_TEST_INIT(state);
 
     for (ulong i = 0; i < count; i++)
     {
-        ulong bits = n_randint(state, FLINT_BITS/2 - 1) + 1;  // 1...31
-        uint32_t p = n_randbits(state, bits);  // 0 < p < 2**31
-        uint32_t b = n_randint(state, p);  // a must be < p
+        ulong bits = n_randint(state, FLINT_BITS / 2 - 1) + 1; // 1...31
+        uint32_t p = n_randbits(state, bits);                  // 0 < p < 2**31
+        uint32_t b = n_randint(state, p);                      // a must be < p
 
         for (ulong j = 0; j < info->len; j++)
-            array[j] = n_randlimb(state);  // array[j] is arbitrary
+            array[j] = n_randlimb(state); // array[j] is arbitrary
 
         const uint32_t b_pr = ((uint64_t)b << 32) / p;
 
@@ -64,7 +64,7 @@ void sample_mulmod_uint32_noavx(void * arg, ulong count)
         for (ulong rep = 0; rep < NB_ITER; rep++)
         {
             for (ulong j = 0; j < info->len; j++)
-                array[j] = n32_mulmod_shoup_noavx(b, array[j], b_pr, p);
+                array[j] = normal_shoup(b, array[j], b_pr, p);
         }
         prof_stop();
     }
@@ -73,21 +73,21 @@ void sample_mulmod_uint32_noavx(void * arg, ulong count)
     FLINT_TEST_CLEAR(state);
 }
 
-void sample_mulmod_uint32_autoavx(void * arg, ulong count)
+void sample_mulmod_uint32_autoavx(void *arg, ulong count)
 {
-    info_t * info = (info_t *) arg;
+    info_t *info = (info_t *)arg;
 
-    uint32_t * array = (uint32_t *) flint_malloc(info->len * sizeof(uint32_t));
+    uint32_t *array = (uint32_t *)flint_malloc(info->len * sizeof(uint32_t));
     FLINT_TEST_INIT(state);
 
     for (ulong i = 0; i < count; i++)
     {
-        ulong bits = n_randint(state, FLINT_BITS/2 - 1) + 1;  // 1...31
-        uint32_t p = n_randbits(state, bits);  // 0 < p < 2**31
-        uint32_t b = n_randint(state, p);  // a must be < p
+        ulong bits = n_randint(state, FLINT_BITS / 2 - 1) + 1; // 1...31
+        uint32_t p = n_randbits(state, bits);                  // 0 < p < 2**31
+        uint32_t b = n_randint(state, p);                      // a must be < p
 
         for (ulong j = 0; j < info->len; j++)
-            array[j] = n_randlimb(state);  // array[j] is arbitrary
+            array[j] = n_randlimb(state); // array[j] is arbitrary
 
         const uint32_t b_pr = ((uint64_t)b << 32) / p;
 
@@ -95,7 +95,7 @@ void sample_mulmod_uint32_autoavx(void * arg, ulong count)
         for (ulong rep = 0; rep < NB_ITER; rep++)
         {
             for (ulong j = 0; j < info->len; j++)
-                array[j] = n32_mulmod_shoup_autoavx(b, array[j], b_pr, p);
+                array[j] = vectorized_shoup(b, array[j], b_pr, p);
         }
         prof_stop();
     }
@@ -103,7 +103,6 @@ void sample_mulmod_uint32_autoavx(void * arg, ulong count)
     flint_free(array);
     FLINT_TEST_CLEAR(state);
 }
-
 
 int main(void)
 {
@@ -115,7 +114,7 @@ int main(void)
 
     flint_printf("*** all times in microseconds ***\n");
     flint_printf("length:    ");
-    for (ulong len = 1; len < 10000; len = 2*len)
+    for (ulong len = 1; len < 10000; len = 2 * len)
         flint_printf("%-8d", len);
     flint_printf("\n");
 
@@ -129,19 +128,17 @@ int main(void)
 
     /* non-vectorized mulmod */
     flint_printf("64b,noavx  ");
-    for (ulong len = 1; len < 10000; len = 2*len)
+    for (ulong len = 1; len < 10000; len = 2 * len)
     {
         info.len = len;
-        prof_repeat(&min, &max, sample_mulmod_uint64, (void *) &info);
-        flint_printf("%.1e ", min/NB_ITER);
+        prof_repeat(&min, &max, sample_mulmod_uint64, (void *)&info);
+        flint_printf("%.1e ", min / NB_ITER);
     }
     flint_printf("\n");
 
     /* non-vectorized mod...  (TODO) */
 
     /* vectorized mulmod...  (TODO) */
-
-
 
     /* UINT32 */
     /* ------ */
@@ -152,29 +149,27 @@ int main(void)
 
     /* non-vectorized mulmod */
     flint_printf("32b,noavx  ");
-    for (ulong len = 1; len < 10000; len = 2*len)
+    for (ulong len = 1; len < 10000; len = 2 * len)
     {
         info.len = len;
-        prof_repeat(&min, &max, sample_mulmod_uint32_noavx, (void *) &info);
-        flint_printf("%.1e ", min/NB_ITER);
+        prof_repeat(&min, &max, sample_mulmod_uint32_noavx, (void *)&info);
+        flint_printf("%.1e ", min / NB_ITER);
     }
     flint_printf("\n");
 
     /* non-vectorized mulmod */
     flint_printf("32b,auto   ");
-    for (ulong len = 1; len < 10000; len = 2*len)
+    for (ulong len = 1; len < 10000; len = 2 * len)
     {
         info.len = len;
-        prof_repeat(&min, &max, sample_mulmod_uint32_autoavx, (void *) &info);
-        flint_printf("%.1e ", min/NB_ITER);
+        prof_repeat(&min, &max, sample_mulmod_uint32_autoavx, (void *)&info);
+        flint_printf("%.1e ", min / NB_ITER);
     }
     flint_printf("\n");
-
 
     /* non-vectorized mod...  (TODO) */
 
     /* vectorized mulmod...  (TODO) */
-
 
     FLINT_TEST_CLEAR(state);
 
