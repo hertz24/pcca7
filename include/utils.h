@@ -9,8 +9,14 @@
 
 #include <stdint.h>
 #include <flint/profiler.h>
+#include <fcntl.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #include "calculation.h"
+
+#define MAX_BUFFER 1024
 
 /**
  * @brief Compare the elements of two vectors
@@ -32,5 +38,7 @@ int compare_vectors(Vector v1, Vector v2);
  * @return The time taken by the algorithm in milliseconds
  */
 double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param, Vector vector);
+
+int generate_curve(int scale, ulong nb_points);
 
 #endif

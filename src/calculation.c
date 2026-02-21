@@ -21,6 +21,12 @@ Parameters init_parameters(uint32_t b, uint32_t p)
     return (Parameters){b, ((uint64_t)b << 32) / p, p};
 }
 
+Parameters rand_parameters(int n)
+{
+    uint32_t p = rand_prime(n);
+    return init_parameters(rand() % p, p);
+}
+
 void print_param(Parameters param)
 {
     printf("b = %u\nb_bis = %u\np = %u\n", param.b, param.b_bis, param.p);

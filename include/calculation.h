@@ -46,6 +46,8 @@ uint32_t rand_prime(int n);
 
 Parameters init_parameters(uint32_t b, uint32_t p);
 
+Parameters rand_parameters(int n);
+
 void print_param(Parameters param);
 
 Vector init_vector(ulong size);

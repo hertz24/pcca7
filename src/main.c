@@ -5,17 +5,12 @@
 int main(void)
 {
     srand(time(NULL));
-    Parameters param1 = init_parameters(96, rand_prime(1000000));
+    Parameters param1 = rand_parameters(100000);
     print_param(param1);
-    Vector rand_v = rand_vector(50, param1.p);
-    print_vector(rand_v);
-    Vector v = shoup_scalar(param1, rand_v);
-    printf("%.20f s\n", time_algorithm(shoup_scalar, param1, rand_v));
-    print_vector(v);
-    printf("\n");
-    Vector v1 = naive_scalar_product(param1, rand_v);
-    printf("%.20f s\n", time_algorithm(naive_scalar_product, param1, rand_v));
-    print_vector(v1);
-    printf("%d\n", compare_vectors(v, v1));
+    Vector v1 = rand_vector(1, param1.p);
+    printf("Naive scalar product: %.20f ms\n", time_algorithm(naive_scalar_product, param1, v1));
+    printf("Shoup scalar product: %.20f ms\n", time_algorithm(shoup_scalar, param1, v1));
+    free_vector(v1);
+    generate_curve(1, 100);
     return 0;
 }

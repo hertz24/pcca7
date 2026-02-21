@@ -1,4 +1,5 @@
 #include "../include/utils.h"
+#include "../include/shoup.h"
 
 int compare_vectors(Vector v1, Vector v2)
 {
@@ -45,4 +46,68 @@ double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param,
     prof_repeat(&min, &max, test_algorithm, data);
     free(data);
     return min;
+}
+
+static int write_fd(int fd, char buffer[])
+{
+    int size = strlen(buffer);
+    int total = 0;
+    int bytes_written;
+    while (total < size)
+    {
+        if ((bytes_written = write(fd, buffer + total, size - total)) == -1)
+        {
+            perror("write_fd write");
+            return -1;
+        }
+        total += bytes_written;
+    }
+    return total;
+}
+
+int generate_curve(int scale, ulong nb_points)
+{
+    char filename[MAX_BUFFER] = "graph.gp";
+    int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    if (fd == -1)
+    {
+        perror("generate_curve fd open");
+        return 1;
+    }
+    write_fd(fd, "set terminal pngcairo enhanced font 'arial,10'\n");
+    write_fd(fd, "set datafile separator ','\n");
+    write_fd(fd, "set key outside\n");
+    write_fd(fd, "set title 'Execution time'\n");
+    write_fd(fd, "set output 'graph.png'\n");
+    write_fd(fd, "set xlabel 'Size of the vector'\n");
+    write_fd(fd, "set ylabel 'Time in milliseconds'\n");
+    write_fd(fd, "set logscale y\n");
+    write_fd(fd, "plot '-' title 'Naive scalar product' with points pt 7 ps 0.25 linecolor 'red', '-' title 'Shoup scalar product' with points pt 7 ps 0.25 linecolor 'blue'\n");
+    Parameters param = rand_parameters(100000);
+    Vector *vectors = malloc(nb_points * sizeof(Vector));
+    char buffer[MAX_BUFFER];
+    for (ulong i = 1; i <= nb_points; i++)
+    {
+        *(vectors + i - 1) = rand_vector(i * scale, param.p);
+        snprintf(buffer, MAX_BUFFER - 1, "%ld,%.20f\n", i * scale, time_algorithm(naive_scalar_product, param, *(vectors + i - 1)));
+        write_fd(fd, buffer);
+    }
+    write_fd(fd, "e\n");
+    for (ulong i = 0; i < nb_points; i++)
+    {
+        snprintf(buffer, MAX_BUFFER - 1, "%ld,%.20f\n", (i + 1) * scale, time_algorithm(shoup_scalar, param, *(vectors + i)));
+        free_vector(*(vectors + i));
+        write_fd(fd, buffer);
+    }
+    write_fd(fd, "e\n");
+    close(fd);
+    if (fork() == 0)
+    {
+        execlp("gnuplot", "gnuplot", filename, (char *)NULL);
+        perror("generate_curve execlp");
+        exit(1);
+    }
+    int ret = 0;
+    wait(&ret);
+    return ret;
 }
