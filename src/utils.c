@@ -67,25 +67,38 @@ static int write_fd(int fd, char buffer[])
 
 int generate_curve(int scale, ulong nb_points)
 {
-    char filename[MAX_BUFFER] = "graph.gp";
-    int fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    int fd = open("graph.gp", O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (fd == -1)
     {
         perror("generate_curve fd open");
         return 1;
     }
+    Parameters param = rand_parameters(100000);
     write_fd(fd, "set terminal pngcairo enhanced font 'arial,10'\n");
     write_fd(fd, "set datafile separator ','\n");
     write_fd(fd, "set key outside\n");
-    write_fd(fd, "set title 'Execution time'\n");
+    char buffer[MAX_BUFFER];
+    snprintf(buffer, MAX_BUFFER - 1, "set title 'Execution time for p = %u'\n", param.p);
+    write_fd(fd, buffer);
     write_fd(fd, "set output 'graph.png'\n");
     write_fd(fd, "set xlabel 'Size of the vector'\n");
     write_fd(fd, "set ylabel 'Time in milliseconds'\n");
     write_fd(fd, "set logscale y\n");
-    write_fd(fd, "plot '-' title 'Naive scalar product' with points pt 7 ps 0.25 linecolor 'red', '-' title 'Shoup scalar product' with points pt 7 ps 0.25 linecolor 'blue'\n");
-    Parameters param = rand_parameters(100000);
+    write_fd(fd, "plot '-' title 'Naive scalar product' with points pt 7 ps 0.25 linecolor 'red', '-' title 'Shoup scalar product (");
+#ifdef NEON
+    snprintf(buffer, MAX_BUFFER - 1, "NEON");
+#else
+    snprintf(buffer, MAX_BUFFER - 1, "AVX");
+#endif
+    write_fd(fd, buffer);
+    write_fd(fd, ")' with points pt 7 ps 0.25 linecolor 'blue'\n");
     Vector *vectors = malloc(nb_points * sizeof(Vector));
-    char buffer[MAX_BUFFER];
+    if (vectors == NULL)
+    {
+        perror("generate_curve vectors malloc");
+        close(fd);
+        return 1;
+    }
     for (ulong i = 1; i <= nb_points; i++)
     {
         *(vectors + i - 1) = rand_vector(i * scale, param.p);
@@ -99,11 +112,12 @@ int generate_curve(int scale, ulong nb_points)
         free_vector(*(vectors + i));
         write_fd(fd, buffer);
     }
+    free(vectors);
     write_fd(fd, "e\n");
     close(fd);
     if (fork() == 0)
     {
-        execlp("gnuplot", "gnuplot", filename, (char *)NULL);
+        execlp("gnuplot", "gnuplot", "graph.gp", (char *)NULL);
         perror("generate_curve execlp");
         exit(1);
     }

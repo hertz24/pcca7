@@ -5,9 +5,8 @@
 int main(void)
 {
     srand(time(NULL));
-    int n = 100;
     uint32_t p;
-    if (!n_is_prime((p = rand_prime(n))))
+    if (!n_is_prime((p = rand_prime())))
     {
         printf("n_is_prime error: %d isn't a prime number.\n", p);
         return 1;

@@ -1,17 +1,10 @@
 #include "../include/calculation.h"
 
-uint32_t rand_prime(int n)
+uint32_t rand_prime()
 {
-    n_primes_t iter;
-    n_primes_init(iter);
-    n = rand() % n;
-    uint32_t p;
-    int i = 0;
-    do
-    {
-        p = n_primes_next(iter);
-    } while (i++ < n);
-    n_primes_clear(iter);
+    FLINT_TEST_INIT(state);
+    uint32_t p = n_randprime(state, 31, 1);
+    FLINT_TEST_CLEAR(state);
     return p;
 }
 
@@ -21,10 +14,13 @@ Parameters init_parameters(uint32_t b, uint32_t p)
     return (Parameters){b, ((uint64_t)b << 32) / p, p};
 }
 
-Parameters rand_parameters(int n)
+Parameters rand_parameters()
 {
-    uint32_t p = rand_prime(n);
-    return init_parameters(rand() % p, p);
+    FLINT_TEST_INIT(state);
+    uint32_t p = rand_prime();
+    Parameters param = init_parameters(n_randint(state, p), p);
+    FLINT_TEST_CLEAR(state);
+    return param;
 }
 
 void print_param(Parameters param)
@@ -68,6 +64,6 @@ Vector naive_scalar_product(Parameters param, Vector v)
 {
     Vector res = init_vector(v.size);
     for (ulong i = 0; i < v.size; i++)
-        *(res.elements + i) = *(v.elements + i) * param.b % param.p;
+        *(res.elements + i) = ((uint64_t)*(v.elements + i) * param.b) % param.p;
     return res;
 }
