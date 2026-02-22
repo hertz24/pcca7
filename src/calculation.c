@@ -3,7 +3,7 @@
 uint32_t rand_prime()
 {
     FLINT_TEST_INIT(state);
-    uint32_t p = n_randprime(state, 31, 1);
+    uint32_t p = n_randprime(state, rand() % 32, 1);
     FLINT_TEST_CLEAR(state);
     return p;
 }

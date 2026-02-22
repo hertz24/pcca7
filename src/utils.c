@@ -85,7 +85,7 @@ int generate_curve(int scale, ulong nb_points)
     write_fd(fd, "set ylabel 'Time in milliseconds'\n");
     write_fd(fd, "set logscale y\n");
     write_fd(fd, "plot '-' title 'Naive scalar product' with points pt 7 ps 0.25 linecolor 'red', '-' title 'Shoup scalar product (");
-#ifdef NEON
+#if NEON
     snprintf(buffer, MAX_BUFFER - 1, "NEON");
 #else
     snprintf(buffer, MAX_BUFFER - 1, "AVX");
