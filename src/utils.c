@@ -22,16 +22,16 @@ static void test_algorithm(void *arg, ulong count)
     void **data = (void **)arg;
     Vector (*algorithm)(Parameters, Vector) = *data;
     Parameters param = *((Parameters *)*(data + 1));
-    Vector vector = *((Vector *)*(data + 2));
+    Vector v = *((Vector *)*(data + 2));
     for (ulong i = 0; i < count; i++)
     {
         prof_start();
-        free_vector(algorithm(param, vector));
+        free_vector(algorithm(param, v));
         prof_stop();
     }
 }
 
-double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param, Vector vector)
+double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param, Vector v)
 {
     double min, max;
     void **data = malloc(3 * sizeof(void *));
@@ -42,7 +42,7 @@ double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param,
     }
     *data = algorithm;
     *(data + 1) = &param;
-    *(data + 2) = &vector;
+    *(data + 2) = &v;
     prof_repeat(&min, &max, test_algorithm, data);
     free(data);
     return min;
@@ -84,7 +84,7 @@ int generate_curve(int scale, ulong nb_points)
     write_fd(fd, "set xlabel 'Size of the vector'\n");
     write_fd(fd, "set ylabel 'Time in milliseconds'\n");
     write_fd(fd, "set logscale y\n");
-    write_fd(fd, "plot '-' title 'Naive scalar product' with points pt 7 ps 0.25 linecolor 'red', '-' title 'Shoup scalar product (");
+    write_fd(fd, "plot '-' title 'Naive scale' with points pt 7 ps 0.25 linecolor 'red', '-' title 'Shoup scale (reference)' with points pt 7 ps 0.25 linecolor 'green', '-' title 'Shoup scale (");
 #if NEON
     snprintf(buffer, MAX_BUFFER - 1, "NEON");
 #else
@@ -102,13 +102,19 @@ int generate_curve(int scale, ulong nb_points)
     for (ulong i = 1; i <= nb_points; i++)
     {
         *(vectors + i - 1) = rand_vector(i * scale, param.p);
-        snprintf(buffer, MAX_BUFFER - 1, "%ld,%.20f\n", i * scale, time_algorithm(naive_scalar_product, param, *(vectors + i - 1)));
+        snprintf(buffer, MAX_BUFFER - 1, "%ld,%.20f\n", i * scale, time_algorithm(naive_scale, param, *(vectors + i - 1)));
         write_fd(fd, buffer);
     }
     write_fd(fd, "e\n");
     for (ulong i = 0; i < nb_points; i++)
     {
-        snprintf(buffer, MAX_BUFFER - 1, "%ld,%.20f\n", (i + 1) * scale, time_algorithm(shoup_scalar, param, *(vectors + i)));
+        snprintf(buffer, MAX_BUFFER - 1, "%ld,%.20f\n", (i + 1) * scale, time_algorithm(shoup_scale_ref, param, *(vectors + i)));
+        write_fd(fd, buffer);
+    }
+    write_fd(fd, "e\n");
+    for (ulong i = 0; i < nb_points; i++)
+    {
+        snprintf(buffer, MAX_BUFFER - 1, "%ld,%.20f\n", (i + 1) * scale, time_algorithm(shoup_scale, param, *(vectors + i)));
         free_vector(*(vectors + i));
         write_fd(fd, buffer);
     }

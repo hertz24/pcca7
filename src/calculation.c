@@ -25,7 +25,7 @@ Parameters rand_parameters()
 
 void print_param(Parameters param)
 {
-    printf("b = %u\nb_bis = %u\np = %u\n", param.b, param.b_bis, param.p);
+    printf("b = %u\nb_precomp = %u\np = %u\n", param.b, param.b_precomp, param.p);
 }
 
 Vector init_vector(ulong size)
@@ -60,7 +60,7 @@ void print_vector(Vector v)
     printf("%d]\n", *(v.elements + v.size - 1));
 }
 
-Vector naive_scalar_product(Parameters param, Vector v)
+Vector naive_scale(Parameters param, Vector v)
 {
     Vector res = init_vector(v.size);
     for (ulong i = 0; i < v.size; i++)

@@ -1,27 +1,35 @@
 #include "../include/shoup.h"
 
+Vector shoup_scale_ref(Parameters param, Vector v)
+{
+    Vector res = init_vector(v.size);
+    for (ulong i = 0; i < v.size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+    return res;
+}
+
 #if NEON
-static Vector shoup_scalar_neon(Parameters param, Vector v)
+static Vector _shoup_scale_neon(Parameters param, Vector v)
 {
     ulong size = v.size;
     Vector res = init_vector(size);
     ulong n = size - (size % 4);
     uint32x2_t vb = vdup_n_u32(param.b);
     uint32x2_t vp = vdup_n_u32(param.p);
-    uint32x2_t vb_bis = vdup_n_u32(param.b_bis);
+    uint32x2_t vb_precomp = vdup_n_u32(param.b_precomp);
     ulong i = 0;
     for (; i + 3 < n; i += 4)
     {
         uint32x2_t va_0 = vld1_u32(v.elements + i);
         uint32x2_t va_1 = vld1_u32(v.elements + i + 2);
 
-        // Calculates a * b_bis
-        uint64x2_t ab_bis_0 = vmull_u32(va_0, vb_bis);
-        uint64x2_t ab_bis_1 = vmull_u32(va_1, vb_bis);
+        // Calculates a * b_precomp
+        uint64x2_t ab_precomp_0 = vmull_u32(va_0, vb_precomp);
+        uint64x2_t ab_precomp_1 = vmull_u32(va_1, vb_precomp);
 
-        // q = (a * b_bis) >> 32
-        uint64x2_t q_0 = vshrq_n_u64(ab_bis_0, 32);
-        uint64x2_t q_1 = vshrq_n_u64(ab_bis_1, 32);
+        // q = (a * b_precomp) >> 32
+        uint64x2_t q_0 = vshrq_n_u64(ab_precomp_0, 32);
+        uint64x2_t q_1 = vshrq_n_u64(ab_precomp_1, 32);
 
         // Convert uint64x2_t to uint32x2_t
         uint32x2_t q32_0 = vmovn_u64(q_0);
@@ -50,16 +58,16 @@ static Vector shoup_scalar_neon(Parameters param, Vector v)
         vst1_u32(res.elements + i + 2, c32_1);
     }
     for (; i < size; i++)
-        *(res.elements + i) = vectorized_shoup(*(v.elements + i), param.b, param.b_bis, param.p);
+        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
 #endif
 
 #if AVX2
-static inline __m256i shoup_core_avx2(__m256i va, __m256i vb, __m256i vb_bis, __m256i vp, __m256i mask32)
+static inline __m256i _shoup_core_avx2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp, __m256i mask32)
 {
-    // 1. q = (a * b_bis) >> 32:
-    __m256i q = _mm256_mul_epu32(va, vb_bis);
+    // 1. q = (a * b_precomp) >> 32:
+    __m256i q = _mm256_mul_epu32(va, vb_precomp);
     q = _mm256_srli_epi64(q, 32);
 
     // 2. ab:
@@ -79,12 +87,12 @@ static inline __m256i shoup_core_avx2(__m256i va, __m256i vb, __m256i vb_bis, __
     return _mm256_sub_epi64(c, sub_mask);
 }
 
-static Vector shoup_scalar_avx_256(Parameters param, Vector v)
+static Vector _shoup_scale_avx256(Parameters param, Vector v)
 {
     int size = v.size;
     Vector res = init_vector(size);
     __m256i vb = _mm256_set1_epi64x(param.b);
-    __m256i vb_bis = _mm256_set1_epi64x(param.b_bis);
+    __m256i vb_precomp = _mm256_set1_epi64x(param.b_precomp);
     __m256i vp = _mm256_set1_epi64x(param.p);
     __m256i mask_32 = _mm256_set1_epi64x(0xFFFFFFFF);
 
@@ -108,16 +116,16 @@ static Vector shoup_scalar_avx_256(Parameters param, Vector v)
         __m256i va_odd_4 = _mm256_srli_epi64(v4_input, 32);
 
         // 4. Process Even Lanes:
-        __m256i c_even_1 = shoup_core_avx2(va_even_1, vb, vb_bis, vp, mask_32);
-        __m256i c_even_2 = shoup_core_avx2(va_even_2, vb, vb_bis, vp, mask_32);
-        __m256i c_even_3 = shoup_core_avx2(va_even_3, vb, vb_bis, vp, mask_32);
-        __m256i c_even_4 = shoup_core_avx2(va_even_4, vb, vb_bis, vp, mask_32);
+        __m256i c_even_1 = _shoup_core_avx2(va_even_1, vb, vb_precomp, vp, mask_32);
+        __m256i c_even_2 = _shoup_core_avx2(va_even_2, vb, vb_precomp, vp, mask_32);
+        __m256i c_even_3 = _shoup_core_avx2(va_even_3, vb, vb_precomp, vp, mask_32);
+        __m256i c_even_4 = _shoup_core_avx2(va_even_4, vb, vb_precomp, vp, mask_32);
 
         // 5. Process Odd Lanes:
-        __m256i c_odd_1 = shoup_core_avx2(va_odd_1, vb, vb_bis, vp, mask_32);
-        __m256i c_odd_2 = shoup_core_avx2(va_odd_2, vb, vb_bis, vp, mask_32);
-        __m256i c_odd_3 = shoup_core_avx2(va_odd_3, vb, vb_bis, vp, mask_32);
-        __m256i c_odd_4 = shoup_core_avx2(va_odd_4, vb, vb_bis, vp, mask_32);
+        __m256i c_odd_1 = _shoup_core_avx2(va_odd_1, vb, vb_precomp, vp, mask_32);
+        __m256i c_odd_2 = _shoup_core_avx2(va_odd_2, vb, vb_precomp, vp, mask_32);
+        __m256i c_odd_3 = _shoup_core_avx2(va_odd_3, vb, vb_precomp, vp, mask_32);
+        __m256i c_odd_4 = _shoup_core_avx2(va_odd_4, vb, vb_precomp, vp, mask_32);
 
         // 6. Shift odd by 32 bits to the left results back and merge:
         __m256i res1_odd_shifted = _mm256_slli_epi64(c_odd_1, 32); // [7, null, 5, null, 3, null, 1, null]
@@ -136,16 +144,16 @@ static Vector shoup_scalar_avx_256(Parameters param, Vector v)
         _mm256_storeu_si256((__m256i *)(res.elements + 24), res4_combined);
     }
     for (; i < size; i++)
-        res.elements[i] = vectorized_shoup(v.elements[i], param.b, param.b_bis, param.p);
+        res.elements[i] = shoup(v.elements[i], param.b, param.b_precomp, param.p);
     return res;
 }
 #endif
 
-Vector shoup_scalar(Parameters param, Vector v)
+Vector shoup_scale(Parameters param, Vector v)
 {
 #if NEON
-    return shoup_scalar_neon(param, v);
+    return _shoup_scale_neon(param, v);
 #else
-    return shoup_scalar_avx_256(param, v);
+    return _shoup_scale_avx256(param, v);
 #endif
 }

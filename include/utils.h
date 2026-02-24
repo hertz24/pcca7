@@ -33,11 +33,11 @@ int compare_vectors(Vector v1, Vector v2);
  *
  * @param algorithm The algorithm to measure
  * @param param
- * @param vector The vector to calculate
+ * @param v The vector to calculate
  *
  * @return The time taken by the algorithm in milliseconds
  */
-double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param, Vector vector);
+double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param, Vector v);
 
 int generate_curve(int scale, ulong nb_points);
 

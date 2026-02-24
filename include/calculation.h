@@ -26,8 +26,8 @@ typedef struct
      * #b must be in [0, p[.
      */
     uint32_t b;
-    uint32_t b_bis; /**< @brief Precomputed value for Shoup's algorithm */
-    uint32_t p;     /**< @brief The prime modulus */
+    uint32_t b_precomp; /**< @brief Precomputed value for Shoup's algorithm */
+    uint32_t p;         /**< @brief The prime modulus */
 } Parameters;
 
 typedef struct
@@ -52,6 +52,6 @@ void free_vector(Vector v);
 
 void print_vector(Vector v);
 
-Vector naive_scalar_product(Parameters param, Vector v);
+Vector naive_scale(Parameters param, Vector v);
 
 #endif
