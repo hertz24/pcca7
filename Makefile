@@ -2,10 +2,10 @@ ARCH := $(shell uname -m)
 
 ifeq ($(ARCH),x86_64)
     CFLAGS := -Wall -Wextra -O3 -mavx2
-    LDFLAGS := -lm -fopenmp -mfma -lflint -lgmp
+    LDFLAGS := -lflint
 else
 	CFLAGS := -Wall -Wextra -O3 -march=armv8-a+simd
-	LDFLAGS :=  -lm -fopenmp -lflint -lgmp
+	LDFLAGS := -lflint
 endif
 CC := /usr/bin/gcc
 SRC_DIR := src
