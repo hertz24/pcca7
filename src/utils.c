@@ -10,10 +10,7 @@ int compare_vectors(Vector v1, Vector v2)
     }
     for (ulong i = 0; i < v1.size; i++)
         if (*(v1.elements + i) != *(v2.elements + i))
-        {
-            printf("v1: %d and v2: %d at index %ld\n", *(v1.elements + i), *(v2.elements + i), i);
             return 1;
-        }
     return 0;
 }
 

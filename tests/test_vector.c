@@ -8,7 +8,7 @@ int main(void)
     for (int i = 0; i < 100000; i++)
         if (*(v.elements + i) >= p)
         {
-            printf("a >= p: %u >= %u at index %d\n", *(v.elements + i), p, i);
+            printf("test_vector error: a == %u >= p == %u at index %d\n", *(v.elements + i), p, i);
             ret = 1;
             break;
         }

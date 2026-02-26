@@ -12,7 +12,7 @@ int main(void)
     }
     if (param.b >= param.p)
     {
-        printf("param.b >= param.p: %u >= %u\n", param.b, param.p);
+        printf("n_is_prime error: param.b == %u >= param.p == %u\n", param.b, param.p);
         return 1;
     }
     printf("test_param: no error\n");

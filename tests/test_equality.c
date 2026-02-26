@@ -13,6 +13,14 @@ int main(void)
     int ret = compare_vectors(v1, v2) || compare_vectors(v2, v3);
     if (!ret)
         printf("test_equality: no error\n");
+    else
+    {
+        printf("test_equality: error:\n");
+        print_param(param);
+        print_vector(v1);
+        print_vector(v2);
+        print_vector(v3);
+    }
     free_vector(v1);
     free_vector(v2);
     free_vector(v3);
