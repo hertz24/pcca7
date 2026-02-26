@@ -65,7 +65,7 @@ static int write_fd(int fd, char buffer[])
     return total;
 }
 
-int generate_curve(int scale, ulong nb_points)
+int generate_curve(int scale, ulong nb_points, uint32_t b, uint32_t p)
 {
     int fd = open("graph.gp", O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (fd == -1)
@@ -73,12 +73,12 @@ int generate_curve(int scale, ulong nb_points)
         perror("generate_curve fd open");
         return 1;
     }
-    Parameters param = rand_parameters(100000);
+    Parameters param = init_parameters(b, p);
     write_fd(fd, "set terminal pngcairo enhanced font 'arial,10'\n");
     write_fd(fd, "set datafile separator ','\n");
     write_fd(fd, "set key outside\n");
     char buffer[MAX_BUFFER];
-    snprintf(buffer, MAX_BUFFER - 1, "set title 'Execution time for p = %u'\n", param.p);
+    snprintf(buffer, MAX_BUFFER - 1, "set title 'Execution time for b = %u and p = %u'\n", param.b, param.p);
     write_fd(fd, buffer);
     write_fd(fd, "set output 'graph.png'\n");
     write_fd(fd, "set xlabel 'Size of the vector'\n");

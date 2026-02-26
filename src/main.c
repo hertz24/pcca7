@@ -5,5 +5,5 @@
 int main(void)
 {
     srand(time(NULL));
-    return generate_curve(1, 100);
+    return generate_curve(1, 100, 1, 17);
 }

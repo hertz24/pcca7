@@ -11,6 +11,7 @@
 #include <math.h>
 #include <assert.h>
 #include <flint/flint.h>
+#include <string.h>
 
 #if defined(__ARM_NEON)
 #define NEON 1
