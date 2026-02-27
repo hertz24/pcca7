@@ -4,7 +4,7 @@ ifeq ($(ARCH),x86_64)
     CFLAGS := -Wall -Wextra -O3 -mavx2
     LDFLAGS := -lflint
 else
-	CFLAGS := -Wall -Wextra -O3 -march=armv8-a+simd
+	CFLAGS := -Wall -Wextra -O3
 	LDFLAGS := -lflint
 endif
 CC := /usr/bin/gcc

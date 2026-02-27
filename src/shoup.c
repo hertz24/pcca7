@@ -3,11 +3,8 @@
 Vector shoup_scale_ref(Parameters param, Vector v)
 {
     Vector res = init_vector(v.size);
-    if (param.b == 1)
-        memcpy(res.elements, v.elements, v.size * sizeof(uint32_t));
-    else
-        for (ulong i = 0; i < v.size; i++)
-            *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+    for (ulong i = 0; i < v.size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
 
