@@ -1,5 +1,3 @@
-#include "../include/shoup.h"
-#include "../include/calculation.h"
 #include "../include/utils.h"
 
 int main(int argc, char const *argv[])

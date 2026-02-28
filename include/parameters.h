@@ -25,33 +25,20 @@ typedef struct
      * It is the constant scalar value to multiply each element of #tab_a.
      * #b must be in [0, p[.
      */
-    uint32_t b;
-    uint32_t b_precomp; /**< @brief Precomputed value for Shoup's algorithm */
-    uint32_t p;         /**< @brief The prime modulus */
+    const uint32_t b;
+    const uint32_t b_precomp; /**< @brief Precomputed value for Shoup's algorithm */
+    const uint32_t p;         /**< @brief The prime modulus */
 } Parameters;
 
-typedef struct
+uint32_t rand_prime(void);
+
+static inline Parameters init_parameters(uint32_t b, uint32_t p)
 {
-    uint32_t *elements;
-    ulong size;
-} Vector;
+    return (Parameters){b, ((uint64_t)b << 32) / p, p};
+}
 
-uint32_t rand_prime();
-
-Parameters init_parameters(uint32_t b, uint32_t p);
-
-Parameters rand_parameters();
+Parameters rand_parameters(void);
 
 void print_param(Parameters param);
-
-Vector init_vector(ulong size);
-
-Vector rand_vector(ulong size, uint32_t p);
-
-void free_vector(Vector v);
-
-void print_vector(Vector v);
-
-Vector naive_scale(Parameters param, Vector v);
 
 #endif

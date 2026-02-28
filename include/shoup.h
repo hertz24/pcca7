@@ -27,7 +27,7 @@
 #define AVX2 0
 #endif
 
-#include "calculation.h"
+#include "vector.h"
 
 __attribute__((optimize("no-tree-vectorize"))) static inline uint32_t shoup_ref(uint32_t a, uint32_t b, uint32_t b_precomp, uint32_t p)
 {

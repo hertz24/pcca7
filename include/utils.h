@@ -14,19 +14,10 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-#include "calculation.h"
+#include "vector.h"
+#include "shoup.h"
 
 #define MAX_BUFFER 1024
-
-/**
- * @brief Compare the elements of two vectors
- *
- * @param v1 The first vector
- * @param v2 The second vector
- *
- * @return 0 if there is not error, otherwise 1
- */
-int compare_vectors(Vector v1, Vector v2);
 
 /**
  * @brief Measure the time of an algorithm in milliseconds

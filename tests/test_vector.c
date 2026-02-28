@@ -1,4 +1,4 @@
-#include "../include/calculation.h"
+#include "../include/vector.h"
 
 int main(void)
 {

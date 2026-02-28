@@ -1,32 +1,4 @@
-#include "../include/calculation.h"
-
-uint32_t rand_prime()
-{
-    FLINT_TEST_INIT(state);
-    uint32_t p = n_randprime(state, rand() % 32, 1);
-    FLINT_TEST_CLEAR(state);
-    return p;
-}
-
-Parameters init_parameters(uint32_t b, uint32_t p)
-{
-    assert(n_is_prime(p) && b < p);
-    return (Parameters){b, ((uint64_t)b << 32) / p, p};
-}
-
-Parameters rand_parameters()
-{
-    FLINT_TEST_INIT(state);
-    uint32_t p = rand_prime();
-    Parameters param = init_parameters(n_randint(state, p), p);
-    FLINT_TEST_CLEAR(state);
-    return param;
-}
-
-void print_param(Parameters param)
-{
-    printf("b = %u\nb_precomp = %u\np = %u\n", param.b, param.b_precomp, param.p);
-}
+#include "../include/vector.h"
 
 Vector init_vector(ulong size)
 {
@@ -58,6 +30,19 @@ void print_vector(Vector v)
     for (ulong i = 0; i < v.size - 1; i++)
         printf("%d, ", *(v.elements + i));
     printf("%d]\n", *(v.elements + v.size - 1));
+}
+
+int compare_vectors(Vector v1, Vector v2)
+{
+    if (v1.size != v2.size)
+    {
+        fprintf(stderr, "The size of vectors isn't the same.\n");
+        return 0;
+    }
+    for (ulong i = 0; i < v1.size; i++)
+        if (*(v1.elements + i) != *(v2.elements + i))
+            return 1;
+    return 0;
 }
 
 Vector naive_scale(Parameters param, Vector v)

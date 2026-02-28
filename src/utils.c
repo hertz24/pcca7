@@ -1,18 +1,4 @@
 #include "../include/utils.h"
-#include "../include/shoup.h"
-
-int compare_vectors(Vector v1, Vector v2)
-{
-    if (v1.size != v2.size)
-    {
-        fprintf(stderr, "The size of vectors aren't the same.\n");
-        return 0;
-    }
-    for (ulong i = 0; i < v1.size; i++)
-        if (*(v1.elements + i) != *(v2.elements + i))
-            return 1;
-    return 0;
-}
 
 static void test_algorithm(void *arg, ulong count)
 {

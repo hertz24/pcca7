@@ -1,6 +1,6 @@
-#include "../include/shoup.h"
-#include "../include/calculation.h"
-#include "../include/utils.h"
+#include <time.h>
+
+#include "../include/parameters.h"
 
 int main(void)
 {

@@ -1,5 +1,5 @@
 #include <time.h>
-#include "../include/calculation.h"
+#include "../include/parameters.h"
 
 int main(void)
 {
