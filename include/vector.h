@@ -21,7 +21,7 @@ typedef struct
 
 Vector init_vector(ulong size);
 
-Vector rand_vector(ulong size, uint32_t p);
+Vector rand_vector(ulong size);
 
 void free_vector(Vector v);
 

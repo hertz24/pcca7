@@ -6,7 +6,7 @@ int main(void)
 {
     srand(time(NULL));
     Parameters param = rand_parameters();
-    Vector rand_v = rand_vector(10, param.p);
+    Vector rand_v = rand_vector(10);
     Vector v1 = naive_scale(param, rand_v);
     Vector v2 = shoup_scale_ref(param, rand_v);
     Vector v3 = shoup_scale(param, rand_v);

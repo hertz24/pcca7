@@ -84,7 +84,7 @@ int generate_curve(int scale, ulong nb_points, uint32_t b, uint32_t p)
     }
     for (ulong i = 1; i <= nb_points; i++)
     {
-        *(vectors + i - 1) = rand_vector(i * scale, param.p);
+        *(vectors + i - 1) = rand_vector(i * scale);
         snprintf(buffer, MAX_BUFFER - 1, "%ld,%.20f\n", i * scale, time_algorithm(naive_scale, param, *(vectors + i - 1)));
         write_fd(fd, buffer);
     }
