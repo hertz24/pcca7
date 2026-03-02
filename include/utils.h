@@ -30,6 +30,6 @@
  */
 double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param, Vector v);
 
-int generate_curve(int scale, ulong nb_points, uint32_t b, uint32_t p);
+int generate_curve(int scale, ulong nb_points, Parameters param);
 
 #endif

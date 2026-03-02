@@ -25,12 +25,17 @@ typedef struct
      * It is the constant scalar value to multiply each element of #tab_a.
      * #b must be in [0, p[.
      */
-    const uint32_t b;
-    const uint32_t b_precomp; /**< @brief Precomputed value for Shoup's algorithm */
-    const uint32_t p;         /**< @brief The prime modulus */
+    uint32_t b;
+    uint32_t b_precomp; /**< @brief Precomputed value for Shoup's algorithm */
+    uint32_t p;         /**< @brief The prime modulus */
 } Parameters;
 
 uint32_t rand_prime(void);
+
+static inline uint32_t closest_prime(uint32_t b)
+{
+    return n_nextprime(b, 1);
+}
 
 static inline Parameters init_parameters(uint32_t b, uint32_t p)
 {

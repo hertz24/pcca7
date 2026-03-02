@@ -48,7 +48,7 @@ static int write_fd(int fd, char buffer[])
     return total;
 }
 
-int generate_curve(int scale, ulong nb_points, uint32_t b, uint32_t p)
+int generate_curve(int scale, ulong nb_points, Parameters param)
 {
     int fd = open("graph.gp", O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (fd == -1)
@@ -56,7 +56,6 @@ int generate_curve(int scale, ulong nb_points, uint32_t b, uint32_t p)
         perror("generate_curve fd open");
         return 1;
     }
-    Parameters param = init_parameters(b, p);
     write_fd(fd, "set terminal pngcairo enhanced font 'arial,10'\n");
     write_fd(fd, "set datafile separator ','\n");
     write_fd(fd, "set key outside\n");
