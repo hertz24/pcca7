@@ -47,7 +47,7 @@ int compare_vectors(Vector v1, Vector v2)
     return 0;
 }
 
-Vector naive_scale(Parameters param, Vector v)
+__attribute__((optimize("O0"))) Vector naive_scale(Parameters param, Vector v)
 {
     Vector res = init_vector(v.size);
     for (ulong i = 0; i < v.size; i++)
