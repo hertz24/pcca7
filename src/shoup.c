@@ -1,6 +1,6 @@
 #include "../include/shoup.h"
 
-Vector shoup_scale_ref(Parameters param, Vector v)
+__attribute__((optimize("O0"))) Vector shoup_scale_ref(Parameters param, Vector v)
 {
     Vector res = init_vector(v.size);
     for (ulong i = 0; i < v.size; i++)
