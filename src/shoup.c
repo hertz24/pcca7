@@ -64,6 +64,28 @@ static Vector _shoup_scale_neon(Parameters param, Vector v)
 #endif
 
 #if AVX2
+static inline __m256i _shoup_core_avx2_mullo(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp, __m256i mask32)
+{
+    // 1. q = (a * b_precomp) >> 32:
+    __m256i q = _mm256_mul_epu32(va, vb_precomp);
+    q = _mm256_srli_epi64(q, 32);
+
+    // 2. ab:
+    __m256i ab = _mm256_mullo_epi32(va, vb);
+
+    // 3. qp
+    __m256i qp = _mm256_mullo_epi32(q, vp);
+
+    // 4. c = ab - qp
+    __m256i c = _mm256_sub_epi32(ab, qp);
+
+    // 5. if (c >= p) c -= p
+    __m256i compare = _mm256_cmpgt_epi64(vp, c);
+    __m256i sub_mask = _mm256_andnot_si256(compare, vp);
+
+    return _mm256_sub_epi64(c, sub_mask);
+}
+
 static inline __m256i _shoup_core_avx2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp, __m256i mask32)
 {
     // 1. q = (a * b_precomp) >> 32:
@@ -81,8 +103,8 @@ static inline __m256i _shoup_core_avx2(__m256i va, __m256i vb, __m256i vb_precom
     c = _mm256_and_si256(c, mask32);
 
     // 5. if (c >= p) c -= p
-    __m256i p_gt_c = _mm256_cmpgt_epi64(vp, c);
-    __m256i sub_mask = _mm256_andnot_si256(p_gt_c, vp);
+    __m256i compare = _mm256_cmpgt_epi64(vp, c);
+    __m256i sub_mask = _mm256_andnot_si256(compare, vp);
 
     return _mm256_sub_epi64(c, sub_mask);
 }
