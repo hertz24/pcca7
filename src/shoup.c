@@ -9,6 +9,25 @@ __attribute__((optimize("O0"))) Vector shoup_scale_ref(Parameters param, Vector 
 }
 
 #if NEON
+static inline uint32x2_t _shoup_neon(uint32x2_t va, uint32x2_t vb, uint32x2_t vb_precomp, uint32x2_t vp)
+{
+    // Calculates a * b_precomp
+    uint64x2_t vab_precomp = vmull_u32(va, vb_precomp);
+
+    // q = (a * b_precomp) >> 32
+    // vmovn_u64 converts into 32 bits
+    uint32x2_t vq = vmovn_u64(vshrq_n_u64(vab_precomp, 32));
+
+    // c = a * b - q * p
+    uint64x2_t vab = vmull_u32(va, vb);
+    uint64x2_t vqp = vmull_u32(vq, vp);
+    uint32x2_t vc = vmovn_u64(vsubq_u64(vab, vqp));
+
+    // Compare c >= p
+    uint32x2_t cmp = vcge_u32(vc, vp);
+    return vsub_u32(vc, vand_u32(cmp, vp));
+}
+
 static Vector _shoup_scale_neon(Parameters param, Vector v)
 {
     ulong size = v.size;
@@ -20,42 +39,12 @@ static Vector _shoup_scale_neon(Parameters param, Vector v)
     ulong i = 0;
     for (; i + 3 < n; i += 4)
     {
-        uint32x2_t va_0 = vld1_u32(v.elements + i);
-        uint32x2_t va_1 = vld1_u32(v.elements + i + 2);
-
-        // Calculates a * b_precomp
-        uint64x2_t ab_precomp_0 = vmull_u32(va_0, vb_precomp);
-        uint64x2_t ab_precomp_1 = vmull_u32(va_1, vb_precomp);
-
-        // q = (a * b_precomp) >> 32
-        uint64x2_t q_0 = vshrq_n_u64(ab_precomp_0, 32);
-        uint64x2_t q_1 = vshrq_n_u64(ab_precomp_1, 32);
-
-        // Convert uint64x2_t to uint32x2_t
-        uint32x2_t q32_0 = vmovn_u64(q_0);
-        uint32x2_t q32_1 = vmovn_u64(q_1);
-
-        // c = (a * b - q * p) % 2^32 = (a * b - q * p) & (2^32 - 1)
-        uint64x2_t vab_0 = vmull_u32(va_0, vb);
-        uint64x2_t vab_1 = vmull_u32(va_1, vb);
-        uint64x2_t vqp_0 = vmull_u32(q32_0, vp);
-        uint64x2_t vqp_1 = vmull_u32(q32_1, vp);
-        uint64x2_t c_0 = vandq_u64(vsubq_u64(vab_0, vqp_0), vdupq_n_u64((1UL << 32) - 1));
-        uint64x2_t c_1 = vandq_u64(vsubq_u64(vab_1, vqp_1), vdupq_n_u64((1UL << 32) - 1));
-        uint32x2_t c32_0 = vmovn_u64(c_0);
-        uint32x2_t c32_1 = vmovn_u64(c_1);
-
-        // Compare c >= p
-        uint32x2_t cmp_0 = vcge_u32(c32_0, vp);
-        uint32x2_t cmp_1 = vcge_u32(c32_1, vp);
-        uint32x2_t p_to_sub_0 = vand_u32(cmp_0, vp);
-        uint32x2_t p_to_sub_1 = vand_u32(cmp_1, vp);
-        c32_0 = vsub_u32(c32_0, p_to_sub_0);
-        c32_1 = vsub_u32(c32_1, p_to_sub_1);
+        uint32x2_t va0 = vld1_u32(v.elements + i);
+        uint32x2_t va1 = vld1_u32(v.elements + i + 2);
 
         // Stocks the value
-        vst1_u32(res.elements + i, c32_0);
-        vst1_u32(res.elements + i + 2, c32_1);
+        vst1_u32(res.elements + i, _shoup_neon(va0, vb, vb_precomp, vp));
+        vst1_u32(res.elements + i + 2, _shoup_neon(va1, vb, vb_precomp, vp));
     }
     for (; i < size; i++)
         *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
@@ -64,7 +53,7 @@ static Vector _shoup_scale_neon(Parameters param, Vector v)
 #endif
 
 #if AVX2
-static inline __m256i _shoup_core_avx2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp, __m256i mask32)
+static inline __m256i _shoup_avx(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp, __m256i mask32)
 {
     // 1. q = (a * b_precomp) >> 32:
     __m256i q = _mm256_mul_epu32(va, vb_precomp);
@@ -87,7 +76,7 @@ static inline __m256i _shoup_core_avx2(__m256i va, __m256i vb, __m256i vb_precom
     return _mm256_sub_epi64(c, sub_mask);
 }
 
-static Vector _shoup_scale_avx256(Parameters param, Vector v)
+static Vector _shoup_scale_avx(Parameters param, Vector v)
 {
     int size = v.size;
     Vector res = init_vector(size);
@@ -112,16 +101,16 @@ static Vector _shoup_scale_avx256(Parameters param, Vector v)
         __m256i va_odd_4 = _mm256_srli_epi64(va_input_4, 32);
 
         // 4. Process Even Lanes:
-        __m256i c_even_1 = _shoup_core_avx2(va_input_1, vb, vb_precomp, vp, mask_32);
-        __m256i c_even_2 = _shoup_core_avx2(va_input_2, vb, vb_precomp, vp, mask_32);
-        __m256i c_even_3 = _shoup_core_avx2(va_input_3, vb, vb_precomp, vp, mask_32);
-        __m256i c_even_4 = _shoup_core_avx2(va_input_4, vb, vb_precomp, vp, mask_32);
+        __m256i c_even_1 = _shoup_avx(va_input_1, vb, vb_precomp, vp, mask_32);
+        __m256i c_even_2 = _shoup_avx(va_input_2, vb, vb_precomp, vp, mask_32);
+        __m256i c_even_3 = _shoup_avx(va_input_3, vb, vb_precomp, vp, mask_32);
+        __m256i c_even_4 = _shoup_avx(va_input_4, vb, vb_precomp, vp, mask_32);
 
         // 5. Process Odd Lanes:
-        __m256i c_odd_1 = _shoup_core_avx2(va_odd_1, vb, vb_precomp, vp, mask_32);
-        __m256i c_odd_2 = _shoup_core_avx2(va_odd_2, vb, vb_precomp, vp, mask_32);
-        __m256i c_odd_3 = _shoup_core_avx2(va_odd_3, vb, vb_precomp, vp, mask_32);
-        __m256i c_odd_4 = _shoup_core_avx2(va_odd_4, vb, vb_precomp, vp, mask_32);
+        __m256i c_odd_1 = _shoup_avx(va_odd_1, vb, vb_precomp, vp, mask_32);
+        __m256i c_odd_2 = _shoup_avx(va_odd_2, vb, vb_precomp, vp, mask_32);
+        __m256i c_odd_3 = _shoup_avx(va_odd_3, vb, vb_precomp, vp, mask_32);
+        __m256i c_odd_4 = _shoup_avx(va_odd_4, vb, vb_precomp, vp, mask_32);
 
         // 6. Shift odd by 32 bits to the left results back and merge:
         __m256i res1_odd_shifted = _mm256_slli_epi64(c_odd_1, 32); // [7, null, 5, null, 3, null, 1, null]
@@ -144,7 +133,7 @@ static Vector _shoup_scale_avx256(Parameters param, Vector v)
     return res;
 }
 
-static inline __m256i _shoup_core_avx2_mullo(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
+static inline __m256i _shoup_avx_mullo(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
 {
     // 1. q = (a * b_precomp) >> 32:
     __m256i q = _mm256_mul_epu32(va, vb_precomp);
@@ -166,7 +155,7 @@ static inline __m256i _shoup_core_avx2_mullo(__m256i va, __m256i vb, __m256i vb_
     return _mm256_sub_epi64(c, sub_mask);
 }
 
-static Vector _shoup_scale_avx256_mullo(Parameters param, Vector v)
+static Vector _shoup_scale_avx_mullo(Parameters param, Vector v)
 {
     int size = v.size;
     Vector res = init_vector(size);
@@ -190,16 +179,16 @@ static Vector _shoup_scale_avx256_mullo(Parameters param, Vector v)
         __m256i va_odd_4 = _mm256_srli_epi64(va_input_4, 32);
 
         // 4. Process Even Lanes:
-        __m256i c_even_1 = _shoup_core_avx2_mullo(va_input_1, vb, vb_precomp, vp);
-        __m256i c_even_2 = _shoup_core_avx2_mullo(va_input_2, vb, vb_precomp, vp);
-        __m256i c_even_3 = _shoup_core_avx2_mullo(va_input_3, vb, vb_precomp, vp);
-        __m256i c_even_4 = _shoup_core_avx2_mullo(va_input_4, vb, vb_precomp, vp);
+        __m256i c_even_1 = _shoup_avx_mullo(va_input_1, vb, vb_precomp, vp);
+        __m256i c_even_2 = _shoup_avx_mullo(va_input_2, vb, vb_precomp, vp);
+        __m256i c_even_3 = _shoup_avx_mullo(va_input_3, vb, vb_precomp, vp);
+        __m256i c_even_4 = _shoup_avx_mullo(va_input_4, vb, vb_precomp, vp);
 
         // 5. Process Odd Lanes:
-        __m256i c_odd_1 = _shoup_core_avx2_mullo(va_odd_1, vb, vb_precomp, vp);
-        __m256i c_odd_2 = _shoup_core_avx2_mullo(va_odd_2, vb, vb_precomp, vp);
-        __m256i c_odd_3 = _shoup_core_avx2_mullo(va_odd_3, vb, vb_precomp, vp);
-        __m256i c_odd_4 = _shoup_core_avx2_mullo(va_odd_4, vb, vb_precomp, vp);
+        __m256i c_odd_1 = _shoup_avx_mullo(va_odd_1, vb, vb_precomp, vp);
+        __m256i c_odd_2 = _shoup_avx_mullo(va_odd_2, vb, vb_precomp, vp);
+        __m256i c_odd_3 = _shoup_avx_mullo(va_odd_3, vb, vb_precomp, vp);
+        __m256i c_odd_4 = _shoup_avx_mullo(va_odd_4, vb, vb_precomp, vp);
 
         // 6. Shift odd by 32 bits to the left results back and merge:
         __m256i res1_odd_shifted = _mm256_slli_epi64(c_odd_1, 32); // [7, null, 5, null, 3, null, 1, null]
@@ -228,7 +217,7 @@ Vector shoup_scale(Parameters param, Vector v)
 #if NEON
     return _shoup_scale_neon(param, v);
 #else
-    return _shoup_scale_avx256(param, v);
+    return _shoup_scale_avx(param, v);
 #endif
 }
 
@@ -237,6 +226,6 @@ Vector shoup_scale_mullo(Parameters param, Vector v)
 #if NEON
     // TODO
 #else
-    return _shoup_scale_avx256_mullo(param, v);
+    return _shoup_scale_avx_mullo(param, v);
 #endif
 }

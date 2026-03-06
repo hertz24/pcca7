@@ -38,7 +38,7 @@ __attribute__((optimize("no-tree-vectorize"))) static inline uint32_t shoup_ref(
     // a * b_precomp / 2^32
     uint32_t q = ((uint64_t)a * b_precomp) >> 32;
 
-    // (a * b - q * p): no need % 2^32 since all variables are uint32_t
+    // c = a * b - q * p: no need % 2^32 since all variables are uint32_t
     uint32_t c = a * b - q * p;
 
     if (c >= p)
