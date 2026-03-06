@@ -228,6 +228,15 @@ Vector shoup_scale(Parameters param, Vector v)
 #if NEON
     return _shoup_scale_neon(param, v);
 #else
+    return _shoup_scale_avx256(param, v);
+#endif
+}
+
+Vector shoup_scale_mullo(Parameters param, Vector v)
+{
+#if NEON
+    // TODO
+#else
     return _shoup_scale_avx256_mullo(param, v);
 #endif
 }

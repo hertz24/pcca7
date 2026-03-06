@@ -10,7 +10,8 @@ int main(void)
     Vector v1 = naive_scale(param, rand_v);
     Vector v2 = shoup_scale_ref(param, rand_v);
     Vector v3 = shoup_scale(param, rand_v);
-    int ret = compare_vectors(v1, v2) || compare_vectors(v2, v3);
+    Vector v4 = shoup_scale_mullo(param, rand_v);
+    int ret = compare_vectors(v1, v2) || compare_vectors(v2, v3) || compare_vectors(v3, v4);
     if (!ret)
         printf("test_equality: no error\n");
     else
