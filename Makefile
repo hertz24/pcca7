@@ -1,7 +1,7 @@
 ARCH := $(shell uname -m)
 
 ifeq ($(ARCH),x86_64)
-    CFLAGS := -Wall -Wextra -O3 -mavx2
+    CFLAGS := -Wall -Wextra -O3 -mavx2 -mavx512f
     LDFLAGS := -lflint
 else
 	CFLAGS := -Wall -Wextra -O3

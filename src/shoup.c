@@ -244,6 +244,69 @@ static Vector _shoup_scale_avx_mullo(Parameters param, Vector v)
 }
 #endif
 
+#ifdef AVX512
+static inline __m512i _shoup_avx512(__m512i va, __m512i vb, __m512i vb_precomp, __m512i vp)
+{
+    __m512i vq = _mm512_mul_epu32(va, vb_precomp);
+    vq = _mm512_srli_epi64(vq, 32);
+    __m512i vab = _mm512_mul_epu32(va, vb);
+    __m512i vqp = _mm512_mul_epu32(vq, vp);
+    __m512i vc = _mm512_sub_epi64(vab, vqp);
+    __mmask8 cmp = _mm512_cmple_epu64_mask(vp, vc);
+    return _mm512_mask_sub_epi64(vc, cmp, vc, vp);
+}
+
+Vector shoup_scale_avx512(Parameters param, Vector v)
+{
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    __m512i vb = _mm512_set1_epi64(param.b);
+    __m512i vb_precomp = _mm512_set1_epi64(param.b_precomp);
+    __m512i vp = _mm512_set1_epi64(param.p);
+    ulong i = 0;
+    for (; i + 63 < size; i += 64)
+    {
+        __m512i even_va1 = _mm512_loadu_si512((__m512i const *)(v.elements + i));
+        __m512i even_va2 = _mm512_loadu_si512((__m512i const *)(v.elements + i + 16));
+        __m512i even_va3 = _mm512_loadu_si512((__m512i const *)(v.elements + i + 32));
+        __m512i even_va4 = _mm512_loadu_si512((__m512i const *)(v.elements + i + 48));
+
+        __m512i odd_va1 = _mm512_srli_epi64(even_va1, 32);
+        __m512i odd_va2 = _mm512_srli_epi64(even_va2, 32);
+        __m512i odd_va3 = _mm512_srli_epi64(even_va3, 32);
+        __m512i odd_va4 = _mm512_srli_epi64(even_va4, 32);
+
+        __m512i even_vc_1 = _shoup_avx512(even_va1, vb, vb_precomp, vp);
+        __m512i even_vc_2 = _shoup_avx512(even_va2, vb, vb_precomp, vp);
+        __m512i even_vc_3 = _shoup_avx512(even_va3, vb, vb_precomp, vp);
+        __m512i even_vc_4 = _shoup_avx512(even_va4, vb, vb_precomp, vp);
+
+        __m512i odd_vc_1 = _shoup_avx512(odd_va1, vb, vb_precomp, vp);
+        __m512i odd_vc_2 = _shoup_avx512(odd_va2, vb, vb_precomp, vp);
+        __m512i odd_vc_3 = _shoup_avx512(odd_va3, vb, vb_precomp, vp);
+        __m512i odd_vc_4 = _shoup_avx512(odd_va4, vb, vb_precomp, vp);
+
+        __m512i shift_1 = _mm512_slli_epi64(odd_vc_1, 32);
+        __m512i shift_2 = _mm512_slli_epi64(odd_vc_2, 32);
+        __m512i shift_3 = _mm512_slli_epi64(odd_vc_3, 32);
+        __m512i shift_4 = _mm512_slli_epi64(odd_vc_4, 32);
+
+        __m512i merge_1 = _mm512_or_si512(even_vc_1, shift_1);
+        __m512i merge_2 = _mm512_or_si512(even_vc_2, shift_2);
+        __m512i merge_3 = _mm512_or_si512(even_vc_3, shift_3);
+        __m512i merge_4 = _mm512_or_si512(even_vc_4, shift_4);
+
+        _mm512_storeu_si512((__m512 *)(res.elements + i), merge_1);
+        _mm512_storeu_si512((__m512 *)(res.elements + i + 16), merge_2);
+        _mm512_storeu_si512((__m512 *)(res.elements + i + 32), merge_3);
+        _mm512_storeu_si512((__m512 *)(res.elements + i + 48), merge_4);
+    }
+    for (; i < size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+    return res;
+}
+#endif
+
 Vector shoup_scale(Parameters param, Vector v)
 {
 #if NEON

@@ -26,6 +26,11 @@
 #else
 #define AVX2 0
 #endif
+#if defined(__AVX512F__)
+#define AVX512 1
+#else
+#define AVX512 0
+#endif
 
 #include "vector.h"
 
@@ -61,5 +66,9 @@ Vector shoup_scale_ref(Parameters param, Vector v);
 Vector shoup_scale(Parameters param, Vector v);
 
 Vector shoup_scale_mullo(Parameters param, Vector v);
+
+#ifdef AVX512
+Vector shoup_scale_avx512(Parameters param, Vector v);
+#endif
 
 #endif
