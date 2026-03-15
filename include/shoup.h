@@ -71,7 +71,7 @@ Vector shoup_scale(Parameters param, Vector v);
 
 Vector shoup_scale_mullo(Parameters param, Vector v);
 
-#ifdef AVX512
+#if AVX512
 Vector shoup_scale_avx512(Parameters param, Vector v);
 #endif
 

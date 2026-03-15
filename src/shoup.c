@@ -244,7 +244,7 @@ static Vector _shoup_scale_avx_mullo(Parameters param, Vector v)
 }
 #endif
 
-#ifdef AVX512
+#if AVX512
 static inline __m512i _shoup_avx512(__m512i va, __m512i vb, __m512i vb_precomp, __m512i vp)
 {
     __m512i vq = _mm512_mul_epu32(va, vb_precomp);

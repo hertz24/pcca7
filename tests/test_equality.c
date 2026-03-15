@@ -3,6 +3,12 @@
 #include "../include/shoup.h"
 #include "../include/utils.h"
 
+#if AVX512
+#define NB_ALGO 4
+#else
+#define NB_ALGO 3
+#endif
+
 #define SIZE 100
 
 int main(void)
@@ -18,11 +24,17 @@ int main(void)
             // Always correct
             Vector ref = naive_scale(param, rand_v);
 
-            Vector results[4] = {
+            Vector results[NB_ALGO] = {
                 shoup_scale_ref(param, rand_v),
-                shoup_scale(param, rand_v), shoup_scale_mullo(param, rand_v), shoup_scale_avx512(param, rand_v)};
+                shoup_scale(param, rand_v),
+                shoup_scale_mullo(param, rand_v)
+#if AVX512
+                    ,
+                shoup_scale_avx512(param, rand_v)
+#endif
+            };
             int error = 0;
-            for (int k = 0; k < 4; k++)
+            for (int k = 0; k < NB_ALGO; k++)
             {
                 int index = compare_vectors(ref, results[k]);
                 if (index != SIZE)
@@ -47,7 +59,7 @@ int main(void)
                 }
             }
             free_vector(ref);
-            for (int k = 0; k < 4; k++)
+            for (int k = 0; k < NB_ALGO; k++)
                 free_vector(results[k]);
             if (i == 0)
                 j++;

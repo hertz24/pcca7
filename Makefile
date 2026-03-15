@@ -1,7 +1,11 @@
 ARCH := $(shell uname -m)
+AVX512 := $(shell grep -q '\<avx512' /proc/cpuinfo && echo yes)
 
 ifeq ($(ARCH),x86_64)
-    CFLAGS := -Wall -Wextra -O3 -mavx2 -mavx512f
+    CFLAGS := -Wall -Wextra -O3 -mavx2
+	ifeq ($(AVX512),yes)
+		CFLAGS += -mavx512f
+	endif
     LDFLAGS := -lflint
 else
 	CFLAGS := -Wall -Wextra -O3
