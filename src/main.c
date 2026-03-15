@@ -1,4 +1,4 @@
-#include "../include/utils.h"
+#include "../include/curve.h"
 
 int main(int argc, char const *argv[])
 {
