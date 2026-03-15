@@ -63,7 +63,10 @@ int generate_curve(int scale, ulong nb_points, Parameters param)
         perror("generate_curve execlp");
         exit(1);
     }
-    wait(&ret);
+    int status;
+    wait(&status);
+    if (WIFEXITED(status))
+        ret = WEXITSTATUS(status);
 end:
     close(fd);
     return ret;
