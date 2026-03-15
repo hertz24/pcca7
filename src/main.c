@@ -43,13 +43,18 @@ int main(int argc, char const *argv[])
     switch (opts)
     {
     case 0:
-        param = rand_parameters();
+        param = rand_parameters(0);
         break;
     case 1:
         b = n_randint(state, p);
         break;
     case 2:
-        p = closest_prime(b);
+        ulong bits = nb_bits(b);
+        ulong limit = (33 - bits);
+        do
+        {
+            p = n_randprime(state, bits + rand() % limit, 1);
+        } while (p <= b);
         break;
     }
     FLINT_TEST_CLEAR(state);

@@ -22,14 +22,18 @@
 
 #if defined(__AVX2__)
 #define AVX2 1
-#include <immintrin.h>
 #else
 #define AVX2 0
 #endif
+
 #if defined(__AVX512F__)
 #define AVX512 1
 #else
 #define AVX512 0
+#endif
+
+#if AVX2 || AVX512
+#include <immintrin.h>
 #endif
 
 #include "vector.h"

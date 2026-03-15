@@ -16,7 +16,7 @@ Vector rand_vector(ulong size)
     Vector v = init_vector(size);
     FLINT_TEST_INIT(state);
     for (ulong i = 0; i < size; i++)
-        *(v.elements + i) = n_randbits(state, 31);
+        *(v.elements + i) = n_randbits(state, rand() % 33);
     FLINT_TEST_CLEAR(state);
     return v;
 }
@@ -30,8 +30,8 @@ void print_vector(Vector v)
 {
     printf("[");
     for (ulong i = 0; i < v.size - 1; i++)
-        printf("%d, ", *(v.elements + i));
-    printf("%d]\n", *(v.elements + v.size - 1));
+        printf("%u, ", *(v.elements + i));
+    printf("%u]\n", *(v.elements + v.size - 1));
 }
 
 int compare_vectors(Vector v1, Vector v2)
@@ -39,15 +39,15 @@ int compare_vectors(Vector v1, Vector v2)
     if (v1.size != v2.size)
     {
         fprintf(stderr, "The size of vectors isn't the same.\n");
-        return 0;
+        return -1;
     }
     for (ulong i = 0; i < v1.size; i++)
         if (*(v1.elements + i) != *(v2.elements + i))
-            return 1;
-    return 0;
+            return i;
+    return v1.size;
 }
 
-__attribute__((optimize("O0"))) Vector naive_scale(Parameters param, Vector v)
+__attribute__((optimize("no-tree-vectorize"))) Vector naive_scale(Parameters param, Vector v)
 {
     Vector res = init_vector(v.size);
     for (ulong i = 0; i < v.size; i++)

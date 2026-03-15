@@ -31,6 +31,14 @@ double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param,
     return min;
 }
 
+ulong nb_bits(ulong x)
+{
+    ulong n = 0;
+    for (; x != 0; x >>= 1)
+        n++;
+    return n;
+}
+
 static int write_fd(int fd, char buffer[])
 {
     int size = strlen(buffer);
