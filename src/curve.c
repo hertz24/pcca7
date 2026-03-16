@@ -8,10 +8,23 @@ static int benchmark(int fd, int scale, ulong nb_points, Parameters param)
         perror("benchmark vectors malloc");
         return 1;
     }
-    Vector (*algorithms[4])(Parameters, Vector) = {naive_scale, shoup_scale_ref, shoup_scale, shoup_scale_mullo};
+    Vector (*algorithms[NB_ALGO])(Parameters, Vector) = {naive_scale,
+                                                         shoup_scale_ref
+#if NEON
+                                                             shoup_scale_neon,
+                                                         shoup_scale_mullo_neon
+#elif AVX2
+                                                         ,
+                                                         shoup_scale_avx2, shoup_scale_mullo_avx2
+#endif
+#if AVX512
+                                                         ,
+                                                         shoup_scale_avx512
+#endif
+    };
     for (ulong i = 0; i < nb_points; i++)
         *(vectors + i) = rand_vector((i + 1) * scale);
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < NB_ALGO; i++)
     {
         for (ulong j = 0; j < nb_points; j++)
             dprintf(fd, "%ld,%.20f\n", (j + 1) * scale, time_algorithm(algorithms[i], param, *(vectors + j)));
@@ -36,7 +49,7 @@ int generate_curve(int scale, ulong nb_points, Parameters param)
 #if NEON
         "NEON";
 #else
-        "AVX";
+        "AVX2";
 #endif
     dprintf(fd, "set terminal pngcairo enhanced font 'arial,10'\n"
                 "set datafile separator ','\n"
@@ -49,7 +62,11 @@ int generate_curve(int scale, ulong nb_points, Parameters param)
                 "plot '-' title 'Naive scale' with points pt 7 ps 0.25 linecolor 'red',"
                 "'-' title 'Shoup scale (reference)' with points pt 7 ps 0.25 linecolor 'green',"
                 "'-' title 'Shoup scale (%s)' with points pt 7 ps 0.25 linecolor 'blue',"
-                "'-' title 'Shoup scale with multiply low (%s)' with points pt 7 ps 0.25 linecolor 'purple'\n",
+                "'-' title 'Shoup scale with multiply low (%s)' with points pt 7 ps 0.25 linecolor 'purple'"
+#if AVX512
+                ",'-' title 'Shoup scale (AVX512)' with points pt 7 ps 0.25 linecolor 'cyan'"
+#endif
+                "\n",
             param.b, param.p, instruction, instruction);
     if (benchmark(fd, scale, nb_points, param) == 1)
     {

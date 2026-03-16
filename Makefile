@@ -38,9 +38,11 @@ tests/obj/%: tests/%.c $(LIB_OBJS)
 	$(CC) $(CFLAGS) -I$(SRC_DIR) -o $@ $< $(LIB_OBJS) $(LDFLAGS)
 
 check: $(TEST_BINS)
-	@for test in $(TEST_BINS); do \
-		./$$test || exit 1; \
-	done
+	@failed=0; \
+	for test in $(TEST_BINS); do \
+		./$$test || failed=1; \
+	done; \
+	exit $$failed
 
 clean:
 	rm -rf $(OBJ_DIR)

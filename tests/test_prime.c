@@ -8,9 +8,9 @@ int main(void)
     uint32_t p;
     if (!n_is_prime((p = rand_prime())))
     {
-        printf("n_is_prime error: %d isn't a prime number.\n", p);
+        printf("n_is_prime...\t\e[1m\033[31merror\033[0m\e[m: %d isn't a prime number.\n", p);
         return 1;
     }
-    printf("test_prime: no error\n");
+    printf("test_prime...\t\e[1m\033[32mno error\033[0m\e[m\n");
     return 0;
 }
