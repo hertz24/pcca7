@@ -82,9 +82,7 @@ Vector shoup_scale_mullo_neon(Parameters param, Vector v)
         *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
-#endif
-
-#if AVX2
+#elif AVX2
 static inline __m256i _shoup_avx2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp, __m256i mask32)
 {
     // 1. q = (a * b_precomp) >> 32:

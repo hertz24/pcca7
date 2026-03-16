@@ -5,8 +5,10 @@
 
 #if AVX512
 #define NB_ALGO 4
-#else
+#elif NEON || AVX2
 #define NB_ALGO 3
+#else
+#define NB_ALGO 1
 #endif
 
 #define SIZE 100
@@ -17,8 +19,10 @@ int main(void)
     char instruction[5] =
 #if NEON
         "NEON";
-#else
+#elif AVX2
         "AVX2";
+#else
+        "\0";
 #endif
     Parameters (*functions[2])(ulong) = {rand_parameters, rand_parameters_b};
     for (int i = 0; i <= 1; i++)
@@ -31,11 +35,13 @@ int main(void)
             Vector ref = naive_scale(param, rand_v);
 
             Vector results[NB_ALGO] = {
-                shoup_scale_ref(param, rand_v),
+                shoup_scale_ref(param, rand_v)
 #if NEON
+                    ,
                 shoup_scale_neon(param, rand_v),
                 shoup_scale_mullo_neon(param, rand_v)
-#else
+#elif AVX2
+                    ,
                 shoup_scale_avx2(param, rand_v),
                 shoup_scale_mullo_avx2(param, rand_v)
 #endif
