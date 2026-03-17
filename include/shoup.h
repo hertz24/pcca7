@@ -13,29 +13,7 @@
 #include <flint/flint.h>
 #include <string.h>
 
-#if defined(__ARM_NEON)
-#define NEON 1
-#include <arm_neon.h>
-#else
-#define NEON 0
-#endif
-
-#if defined(__AVX2__)
-#define AVX2 1
-#else
-#define AVX2 0
-#endif
-
-#if defined(__AVX512F__)
-#define AVX512 1
-#else
-#define AVX512 0
-#endif
-
-#if AVX2 || AVX512
-#include <immintrin.h>
-#endif
-
+#include "instruction.h"
 #include "vector.h"
 
 __attribute__((optimize("no-tree-vectorize"))) static inline uint32_t shoup_ref(uint32_t a, uint32_t b, uint32_t b_precomp, uint32_t p)
