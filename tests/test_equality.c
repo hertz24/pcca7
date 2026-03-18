@@ -1,6 +1,6 @@
 #include <time.h>
 
-#include "../include/shoup.h"
+#include "../include/algo_registry.h"
 #include "../include/utils.h"
 
 #define SIZE 100
@@ -24,29 +24,13 @@ int main(void)
             Vector rand_v = rand_vector(SIZE);
 
             // Always correct
-            Vector ref = naive_scale(param, rand_v);
+            Vector ref = algorithms[0](param, rand_v);
 
-            Vector results[NB_ALGO - 1] = {
-                shoup_scale_ref(param, rand_v),
-                shoup_scale_flint(param, rand_v)
-#if NEON
-                    ,
-                shoup_scale_neon(param, rand_v),
-                shoup_scale_mullo_neon(param, rand_v)
-#elif AVX2
-                    ,
-                shoup_scale_avx2(param, rand_v),
-                shoup_scale_mullo_avx2(param, rand_v)
-#endif
-#if AVX512
-                    ,
-                shoup_scale_avx512(param, rand_v)
-#endif
-            };
             int error = 0;
-            for (int k = 0; k < NB_ALGO - 1; k++)
+            for (int k = 1; k < NB_ALGO; k++)
             {
-                int index = compare_vectors(ref, results[k]);
+                Vector result = algorithms[k](param, rand_v);
+                int index = compare_vectors(ref, result);
                 if (index != SIZE)
                 {
                     if (!error)
@@ -55,27 +39,25 @@ int main(void)
                     printf("\t- When multiplying %lu bits and %lu bits for ", nb_bits(*(rand_v.elements + index)), j);
                     switch (k)
                     {
-                    case 0:
+                    case 1:
                         printf("shoup_scale_ref\n");
                         break;
-                    case 1:
+                    case 2:
                         printf("shoup_scale_flint\n");
                         break;
-                    case 2:
+                    case 3:
                         printf("shoup_scale (%s)\n", instruction);
                         break;
-                    case 3:
+                    case 4:
                         printf("shoup_scale_mullo (%s)\n", instruction);
                         break;
-                    case 4:
+                    case 5:
                         printf("shoup_scale_avx512\n");
                         break;
                     }
                 }
             }
             free_vector(ref);
-            for (int k = 0; k < NB_ALGO - 1; k++)
-                free_vector(results[k]);
             if (i == 0)
                 j++;
             if (error)

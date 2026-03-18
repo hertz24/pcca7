@@ -8,21 +8,6 @@ static int benchmark(int fd, int scale, ulong nb_points, Parameters param)
         perror("benchmark vectors malloc");
         return 1;
     }
-    Vector (*algorithms[NB_ALGO])(Parameters, Vector) = {naive_scale,
-                                                         shoup_scale_ref
-#if NEON
-                                                         ,
-                                                         shoup_scale_neon,
-                                                         shoup_scale_mullo_neon
-#elif AVX2
-                                                         ,
-                                                         shoup_scale_avx2, shoup_scale_mullo_avx2
-#endif
-#if AVX512
-                                                         ,
-                                                         shoup_scale_avx512
-#endif
-    };
     for (ulong i = 0; i < nb_points; i++)
         *(vectors + i) = rand_vector((i + 1) * scale);
     for (int i = 0; i < NB_ALGO; i++)
@@ -63,7 +48,8 @@ int generate_curve(int scale, ulong nb_points, Parameters param)
                 "set ylabel 'Time in milliseconds'\n"
                 "set logscale y\n"
                 "plot '-' title 'Naive scale' with points pt 7 ps 0.25 linecolor 'red',"
-                "'-' title 'Shoup scale (reference)' with points pt 7 ps 0.25 linecolor 'green'",
+                "'-' title 'Shoup scale (reference)' with points pt 7 ps 0.25 linecolor 'green',"
+                "'-' title 'Shoup scale (FLINT)' with points pt 7 ps 0.25 linecolor 'orange'",
             param.b, param.p);
 #if NEON || AVX2
     dprintf(fd, ",'-' title 'Shoup scale (%s)' with points pt 7 ps 0.25 linecolor 'blue',"

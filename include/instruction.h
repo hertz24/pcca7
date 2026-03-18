@@ -30,12 +30,4 @@
 #include <immintrin.h>
 #endif
 
-#if AVX512
-#define NB_ALGO 6
-#elif NEON || AVX2
-#define NB_ALGO 5
-#else
-#define NB_ALGO 3
-#endif
-
 #endif

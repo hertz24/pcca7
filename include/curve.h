@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-#include "instruction.h"
+#include "algo_registry.h"
 #include "utils.h"
 
 int generate_curve(int scale, ulong nb_points, Parameters param);
