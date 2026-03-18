@@ -10,7 +10,9 @@
 #include <flint/profiler.h>
 
 #include "vector.h"
-#include "shoup.h"
+
+#define TAB_SIZE(tab) \
+    (sizeof(tab) / sizeof(tab[0]))
 
 /**
  * @brief Measure the time of an algorithm in milliseconds

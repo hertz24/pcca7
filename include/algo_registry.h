@@ -1,13 +1,23 @@
+/**
+ * @authors
+ * - Henry Zheng
+ * - Duc Vinh Nguyen
+ */
+
 #ifndef ALGO_REGISTRY_H
 #define ALGO_REGISTRY_H
 
 #include "instruction.h"
-#include "vector.h"
+#include "utils.h"
 #include "shoup.h"
 
-extern const char *algo_names[];
+typedef struct
+{
+    const char *name;
+    Vector (*const algorithm)(Parameters, Vector);
+} Algorithms;
 
-extern Vector (*const algorithms[])(Parameters, Vector);
+extern const Algorithms algorithms[];
 
 extern const int NB_ALGO;
 

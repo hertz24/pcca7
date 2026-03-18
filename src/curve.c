@@ -13,7 +13,7 @@ static int benchmark(int fd, int scale, ulong nb_points, Parameters param)
     for (int i = 0; i < NB_ALGO; i++)
     {
         for (ulong j = 0; j < nb_points; j++)
-            dprintf(fd, "%ld,%.20f\n", (j + 1) * scale, time_algorithm(algorithms[i], param, *(vectors + j)));
+            dprintf(fd, "%ld,%.20f\n", (j + 1) * scale, time_algorithm(algorithms[i].algorithm, param, *(vectors + j)));
         dprintf(fd, "e\n");
     }
     for (ulong i = 0; i < nb_points; i++)

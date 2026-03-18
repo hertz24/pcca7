@@ -1,5 +1,6 @@
 #include <time.h>
 
+#include "test.h"
 #include "../include/parameters.h"
 
 int main(void)
@@ -13,17 +14,19 @@ int main(void)
             Parameters param = functions[i](j);
             if (!n_is_prime(param.p))
             {
-                printf("test_param...\t\e[1m\033[31merror\033[0m\e[m: for %s, %d isn't a prime number.\n", names[i], param.p);
+                ERROR("test_param");
+                fprintf(stderr, "for %s, %d isn't a prime number.\n", names[i], param.p);
                 return 1;
             }
             if (param.b >= param.p)
             {
-                printf("test_param error for %s: param.b == %u >= param.p == %u\n", names[i], param.b, param.p);
+                ERROR("test_param");
+                fprintf(stderr, "for %s, param.b == %u >= param.p == %u\n", names[i], param.b, param.p);
                 return 1;
             }
             if (i == 0)
                 j++;
         }
-    printf("test_param...\t\e[1m\033[32mno error\033[0m\e[m\n");
+    SUCCESS("test_param");
     return 0;
 }
