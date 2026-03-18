@@ -8,6 +8,17 @@ __attribute__((optimize("no-tree-vectorize"))) Vector shoup_scale_ref(Parameters
     return res;
 }
 
+/*
+ * FIXME: return incorrect values
+ */
+Vector shoup_scale_flint(Parameters param, Vector v)
+{
+    Vector res = init_vector(v.size);
+    for (ulong i = 0; i < v.size; i++)
+        *(res.elements + i) = n_mulmod_shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+    return res;
+}
+
 #if NEON
 static inline uint32x2_t _shoup_neon(uint32x2_t va, uint32x2_t vb, uint32x2_t vb_precomp, uint32x2_t vp)
 {

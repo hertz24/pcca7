@@ -27,7 +27,8 @@ int main(void)
             Vector ref = naive_scale(param, rand_v);
 
             Vector results[NB_ALGO - 1] = {
-                shoup_scale_ref(param, rand_v)
+                shoup_scale_ref(param, rand_v),
+                shoup_scale_flint(param, rand_v)
 #if NEON
                     ,
                 shoup_scale_neon(param, rand_v),
@@ -58,12 +59,15 @@ int main(void)
                         printf("shoup_scale_ref\n");
                         break;
                     case 1:
-                        printf("shoup_scale (%s)\n", instruction);
+                        printf("shoup_scale_flint\n");
                         break;
                     case 2:
-                        printf("shoup_scale_mullo (%s)\n", instruction);
+                        printf("shoup_scale (%s)\n", instruction);
                         break;
                     case 3:
+                        printf("shoup_scale_mullo (%s)\n", instruction);
+                        break;
+                    case 4:
                         printf("shoup_scale_avx512\n");
                         break;
                     }

@@ -45,6 +45,8 @@ static inline uint32_t shoup(uint32_t a, uint32_t b, uint32_t b_precomp, uint32_
 
 Vector shoup_scale_ref(Parameters param, Vector v);
 
+Vector shoup_scale_flint(Parameters param, Vector v);
+
 #if NEON
 Vector shoup_scale_neon(Parameters param, Vector v);
 
