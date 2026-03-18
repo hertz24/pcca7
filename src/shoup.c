@@ -8,14 +8,15 @@ __attribute__((optimize("no-tree-vectorize"))) Vector shoup_scale_ref(Parameters
     return res;
 }
 
-/*
- * FIXME: return incorrect values
- */
 Vector shoup_scale_flint(Parameters param, Vector v)
 {
     Vector res = init_vector(v.size);
+    /*
+     * NOTE: double precomputation
+     */
+    ulong b_precomp = n_mulmod_precomp_shoup(param.b, param.p);
     for (ulong i = 0; i < v.size; i++)
-        *(res.elements + i) = n_mulmod_shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+        *(res.elements + i) = n_mulmod_shoup(param.b, *(v.elements + i), b_precomp, param.p);
     return res;
 }
 
