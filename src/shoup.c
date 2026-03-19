@@ -49,14 +49,39 @@ Vector shoup_scale_neon(Parameters param, Vector v)
     uint32x2_t vp = vdup_n_u32(param.p);
     uint32x2_t vb_precomp = vdup_n_u32(param.b_precomp);
     ulong i = 0;
-    for (; i + 3 < n; i += 4)
+    for (; i + 1 < n; i += 2)
     {
-        uint32x2_t va0 = vld1_u32(v.elements + i);
-        uint32x2_t va1 = vld1_u32(v.elements + i + 2);
+        uint32x2_t va = vld1_u32(v.elements + i);
 
         // Stocks the value
-        vst1_u32(res.elements + i, _shoup_neon(va0, vb, vb_precomp, vp));
-        vst1_u32(res.elements + i + 2, _shoup_neon(va1, vb, vb_precomp, vp));
+        vst1_u32(res.elements + i, _shoup_neon(va, vb, vb_precomp, vp));
+    }
+    for (; i < size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+    return res;
+}
+
+Vector unrolling_shoup_scale_neon(Parameters param, Vector v)
+{
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    ulong n = size - (size % 4);
+    uint32x2_t vb = vdup_n_u32(param.b);
+    uint32x2_t vp = vdup_n_u32(param.p);
+    uint32x2_t vb_precomp = vdup_n_u32(param.b_precomp);
+    ulong i = 0;
+    for (; i + 7 < n; i += 8)
+    {
+        uint32x2_t va_0 = vld1_u32(v.elements + i);
+        uint32x2_t va_1 = vld1_u32(v.elements + i + 2);
+        uint32x2_t va_2 = vld1_u32(v.elements + i + 4);
+        uint32x2_t va_3 = vld1_u32(v.elements + i + 6);
+
+        // Stocks the value
+        vst1_u32(res.elements + i, _shoup_neon(va_0, vb, vb_precomp, vp));
+        vst1_u32(res.elements + i + 2, _shoup_neon(va_1, vb, vb_precomp, vp));
+        vst1_u32(res.elements + i + 4, _shoup_neon(va_2, vb, vb_precomp, vp));
+        vst1_u32(res.elements + i + 6, _shoup_neon(va_3, vb, vb_precomp, vp));
     }
     for (; i < size; i++)
         *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
@@ -83,12 +108,16 @@ Vector shoup_scale_mullo_neon(Parameters param, Vector v)
     uint32x2_t vp = vdup_n_u32(param.p);
     uint32x2_t vb_precomp = vdup_n_u32(param.b_precomp);
     ulong i = 0;
-    for (; i + 3 < n; i += 4)
+    for (; i + 7 < n; i += 8)
     {
-        uint32x2_t va0 = vld1_u32(v.elements + i);
-        uint32x2_t va1 = vld1_u32(v.elements + i + 2);
-        vst1_u32(res.elements + i, _shoup_mullo_neon(va0, vb, vb_precomp, vp));
-        vst1_u32(res.elements + i + 2, _shoup_mullo_neon(va1, vb, vb_precomp, vp));
+        uint32x2_t va_0 = vld1_u32(v.elements + i);
+        uint32x2_t va_1 = vld1_u32(v.elements + i + 2);
+        uint32x2_t va_2 = vld1_u32(v.elements + i + 4);
+        uint32x2_t va_3 = vld1_u32(v.elements + i + 6);
+        vst1_u32(res.elements + i, _shoup_mullo_neon(va_0, vb, vb_precomp, vp));
+        vst1_u32(res.elements + i + 2, _shoup_mullo_neon(va_1, vb, vb_precomp, vp));
+        vst1_u32(res.elements + i + 4, _shoup_mullo_neon(va_2, vb, vb_precomp, vp));
+        vst1_u32(res.elements + i + 6, _shoup_mullo_neon(va_3, vb, vb_precomp, vp));
     }
     for (; i < size; i++)
         *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);

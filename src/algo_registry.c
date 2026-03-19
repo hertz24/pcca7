@@ -4,6 +4,7 @@ const Algorithm algorithms[] = {{"Naive scale", naive_scale}, {"Shoup scale (ref
 #if NEON
                                 ,
                                 {"Shoup scale (NEON)", shoup_scale_neon},
+                                {"Unorlling Shoup scale (NEON)", unrolling_shoup_scale_neon},
                                 {"Shoup scale with multiply low (NEON)", shoup_scale_mullo_neon}
 #elif AVX2
                                 ,

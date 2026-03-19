@@ -77,6 +77,8 @@ Vector shoup_scale_flint(Parameters param, Vector v);
 #if NEON
 Vector shoup_scale_neon(Parameters param, Vector v);
 
+Vector unrolling_shoup_scale_neon(Parameters param, Vector v);
+
 Vector shoup_scale_mullo_neon(Parameters param, Vector v);
 #endif
 
