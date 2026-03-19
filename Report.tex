@@ -1,0 +1,105 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage[ruled, vlined, linesnumbered]{algorithm2e}
+\usepackage{amsmath}
+\usepackage{parskip}
+
+\title{32 bit Modular Arithmetic and SIMD Vectorisation}
+\author{Duc Vinh Nguyen, Henry Zheng}
+\date{March 2026}
+\begin{document}
+\maketitle
+
+\section{Introduction}
+This project explores and optimize modular reductions for prime numbers  $p < 2^{32}$ using SIMD Vectorisation (AVX2, AVX512, NEON) along with various different techniques and algorithmes.
+
+\textbf{Objective: } The aim of this study is to be able to realize an optimized implementation with minimal performance cost for modular reductions.
+
+\section{Fundamental Cost of Modular Reduction}
+The most naive way to compute $a \pmod{n}$ is to perform the operation :
+
+\begin{equation}
+    a - \left\lfloor \frac{a}{n} \right\rfloor \cdot n
+\end{equation}
+
+However, on modern processor architectures (Intel, AMD,\dots), integer division is non-pipelined and has significantly higher computational cost than other operations like additions and multiplications.
+
+Since equation (1) requires a divsion and substraction operation, its considered highly inefficient from both a software and hardware perspective.
+
+\section{Shoup's Modular Multiplication}
+Shoup's algorithm is centraled around precomputation as a work around the costly division operations
+
+\begin{algorithm}[H]
+    \caption{Shoup's modular multiplication algorithm}
+    
+    % Input and Output definitions
+    \SetKwInOut{Input}{Input}
+    \SetKwInOut{Output}{Output}
+
+    % The content
+    \Input{$A, B \in [0, p[$, we suppose that $p < \beta$ \\
+           \hspace{1.2cm} precompute $B' = \lfloor B\beta/p \rfloor$}
+    \Output{$R = AB \bmod p$}
+    
+    \BlankLine
+    
+    % Steps
+    $Q \leftarrow \lfloor AB'/\beta \rfloor$ \quad ;\\
+    $R \leftarrow (AB - Qp) \bmod \beta$ \quad ;
+    
+    \If{$R \ge p$}{
+        $R \leftarrow R - p$\;
+    }
+\end{algorithm}
+
+\begin{description}
+    \item[Specifications:]\hfill
+    \begin{itemize}
+        \item $\beta$: For this case is $2^{32}$
+        \item A: An integer over 32 bits ( $<\beta = 2^{32}$)
+        \item B: An integer over 32 bits ( $<\beta = 2^{32}$)
+        \item p: A prime number over 32 bits ( $< \beta = 2^{32}$)
+        \item Q: The quotient
+        \item R: The remainder
+    \end{itemize}
+\end{description}
+
+
+
+
+
+\subsection{Procomputational Logic}
+The precomputed value $B'$ is defined over 32 bits as:
+\[B'= \lfloor (B \cdot 2^{32}) / p \rfloor \]
+
+When computing the $a \cdot b \pmod{p}$ :
+\begin{equation*}
+  A \cdot B \pmod{p} = A \cdot B -  \left\lfloor \frac{A \cdot B}{p} \right\rfloor \cdot p
+\end{equation*}
+We can rewrite this: 
+\begin{align*}
+  A \cdot B \pmod{p} &= A \cdot B -  \left\lfloor \frac{A \cdot \left\lfloor (\frac{B \cdot 2^{32}}{p}) \right\rfloor}{2^{32}} \right\rfloor \cdot p \\
+  &\approx A \cdot B -  \left\lfloor \frac{A \cdot B'}{2^{32}} \right\rfloor \cdot p \\
+\end{align*}
+
+Using the precomputed value B' to approxiamtely calculate $\left\lfloor \frac{A \cdot B}{p} \right\rfloor$ improves on the naive method by 2 ways:
+\begin{itemize}
+  \item $B'$ is computed with 1 division and can be stored to be used in other modular reduction provided the same B
+  \item $\frac{A \cdot B'}{2^{32}}$ has only 1 multiplication operation and a bit shift to the right of 32 bits. On a CPU, both multiplication and bit shift operations can be done efficiently compared to division
+\end{itemize}
+
+\subsection{Fundamental Principal}
+Given x the quotient of 2 32 bits integers: \\
+The proof of this algorithm based on the non decimal value of ($\lfloor x \rfloor$): 
+$$x - 1 < \lfloor x \rfloor \le x$$
+We can rewrite as:
+$$0 \le x - \lfloor x \rfloor < 1$$
+\subsection{Réduction Basique: B = 1}
+\subsection{Demonstration:}
+
+\subsection{SIMD Vectorization}
+\subsubsection{Intel \_mm256\_mul\_epu32}
+\subsubsection{Intel \_mm256\_mullo\_epi32}
+\subsection{Avantages:}
+
+\end{document}
