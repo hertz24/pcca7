@@ -96,5 +96,22 @@ int main(int argc, char const *argv[])
         }
         param = init_parameters(b, p);
     }
-    return generate_curve(scale, points, param);
+    Algorithm graph1[] = {algorithms[0], algorithms[1], algorithms[2]
+#if NEON || AVX2
+                          ,
+                          algorithms[3]
+#endif
+#if AVX512
+                          ,
+                          algorithms[5]
+#endif
+    };
+#if NEON || AVX2
+    Algorithm graph2[2] = {algorithms[3], algorithms[4]};
+#endif
+    return generate_curve(scale, points, param, graph1, TAB_SIZE(graph1))
+#if NEON || AVX2
+           || generate_curve(scale, points, param, graph2, 2)
+#endif
+        ;
 }

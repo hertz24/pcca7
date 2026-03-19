@@ -14,10 +14,10 @@
 typedef struct
 {
     const char *name;
-    Vector (*const algorithm)(Parameters, Vector);
-} Algorithms;
+    Vector (*const address)(Parameters, Vector);
+} Algorithm;
 
-extern const Algorithms algorithms[];
+extern const Algorithm algorithms[];
 
 extern const int NB_ALGO;
 

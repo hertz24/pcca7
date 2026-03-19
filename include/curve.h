@@ -15,6 +15,8 @@
 #include "algo_registry.h"
 #include "utils.h"
 
-int generate_curve(int scale, ulong nb_points, Parameters param);
+extern const char *colors[9];
+
+int generate_curve(int scale, ulong nb_points, Parameters param, Algorithm algorithms[], int nb_algo);
 
 #endif

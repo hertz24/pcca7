@@ -14,13 +14,13 @@ int main(void)
             Parameters param = functions[i](j);
             Vector rand_v = rand_vector(VECTOR_SIZE);
 
-            // Always correct
-            Vector ref = algorithms[0].algorithm(param, rand_v);
+            // Always correct for naive algorithm
+            Vector ref = algorithms[0].address(param, rand_v);
 
             int error = 0;
             for (int k = 1; k < NB_ALGO; k++)
             {
-                Vector result = algorithms[k].algorithm(param, rand_v);
+                Vector result = algorithms[k].address(param, rand_v);
                 int index = compare_vectors(ref, result);
                 if (index != VECTOR_SIZE)
                 {
@@ -34,6 +34,7 @@ int main(void)
                 }
                 free_vector(result);
             }
+            free_vector(rand_v);
             free_vector(ref);
             if (i == 0)
                 j++;

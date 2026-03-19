@@ -1,18 +1,18 @@
 #include "../include/algo_registry.h"
 
-const Algorithms algorithms[] = {{"naive_scale", naive_scale}, {"shoup_scale_ref", shoup_scale_ref}, {"shoup_scale_flint", shoup_scale_flint}
+const Algorithm algorithms[] = {{"Naive scale", naive_scale}, {"Shoup scale (reference)", shoup_scale_ref}, {"Shoup scale (FLINT)", shoup_scale_flint}
 #if NEON
-                                 ,
-                                 {"shoup_scale_neon", shoup_scale_neon},
-                                 {"shoup_scale_mullo_neon", shoup_scale_mullo_neon}
+                                ,
+                                {"Shoup scale (NEON)", shoup_scale_neon},
+                                {"Shoup scale with multiply low (NEON)", shoup_scale_mullo_neon}
 #elif AVX2
-                                 ,
-                                 {"shoup_scale_avx2", shoup_scale_avx2},
-                                 {"shoup_scale_mullo_avx2", shoup_scale_mullo_avx2}
+                                ,
+                                {"Shoup scale (AVX2)", shoup_scale_avx2},
+                                {"Shoup scale with multiply low (AVX2)", shoup_scale_mullo_avx2}
 #endif
 #if AVX512
-                                 ,
-                                 {"shoup_scale_avx512", shoup_scale_avx512}
+                                ,
+                                {"Shoup scale (AVX512)", shoup_scale_avx512}
 #endif
 };
 
