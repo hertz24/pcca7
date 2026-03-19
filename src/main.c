@@ -111,7 +111,7 @@ int main(int argc, char const *argv[])
 #endif
     return generate_curve(scale, points, param, graph1, TAB_SIZE(graph1))
 #if NEON || AVX2
-           || generate_curve(scale, points, param, graph2, 2)
+           | generate_curve(scale, points, param, graph2, 2)
 #endif
         ;
 }

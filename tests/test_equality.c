@@ -30,7 +30,7 @@ int main(void)
                         fprintf(stderr, "\n");
                     }
                     error = 1;
-                    fprintf(stderr, "\t- When multiplying %lu bits and %lu bits for %s\n", nb_bits(*(rand_v.elements + index)), j, algorithms[k].name);
+                    fprintf(stderr, "\t- When multiplying %lu bits and %lu bits for %s\n", nb_bits(*(rand_v.elements + index)), nb_bits(param.b), algorithms[k].name);
                 }
                 free_vector(result);
             }
