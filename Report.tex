@@ -3,6 +3,7 @@
 \usepackage[ruled, vlined, linesnumbered]{algorithm2e}
 \usepackage{amsmath}
 \usepackage{parskip}
+\usepackage{cancel}
 
 \title{32 bit Modular Arithmetic and SIMD Vectorisation}
 \author{Duc Vinh Nguyen, Henry Zheng}
@@ -64,10 +65,6 @@ Shoup's algorithm is centraled around precomputation as a work around the costly
     \end{itemize}
 \end{description}
 
-
-
-
-
 \subsection{Procomputational Logic}
 The precomputed value $B'$ is defined over 32 bits as:
 \[B'= \lfloor (B \cdot 2^{32}) / p \rfloor \]
@@ -94,12 +91,64 @@ The proof of this algorithm based on the non decimal value of ($\lfloor x \rfloo
 $$x - 1 < \lfloor x \rfloor \le x$$
 We can rewrite as:
 $$0 \le x - \lfloor x \rfloor < 1$$
-\subsection{Réduction Basique: B = 1}
+
+\subsection{Basic Reduction B = 1:}
+
 \subsection{Demonstration:}
+The algorithm uses the precomputation $B' = \lfloor B\beta/p \rfloor$ such that:
+\[0 \le \frac{B\beta}{p} - \left\lfloor \frac{B\beta}{p} \right\rfloor < 1 \]
+\begin{equation}
+    0 \le \frac{B\beta}{p} - B' < 1
+\end{equation}
+
+Using the same logic, the algorithm estimates the quotient $Q = \lfloor AB'/\beta \rfloor$  such that:
+\[0 \le \frac{AB'}{\beta} - \left\lfloor\frac{AB'}{\beta}\right\rfloor < 1\]
+\begin{equation}
+    0 \le \frac{AB'}{\beta} - Q < 1
+\end{equation}
+
+We now prouve that remainder $R = (A \cdot B -Q \cdot p)$ is within the interval [0, 2p[:
+
+We firstly multiply the equation (1) by $Ap/\beta$:
+\[0 \le \left( \frac{B\beta}{p} - B' \right) \cdot \frac{Ap}{\beta} < 1 \cdot \frac{Ap}{\beta}\]
+\begin{equation}
+    0 \le AB - \frac{B'Tp}{\beta} < \frac{Bp}{\beta}
+\end{equation}
+
+Similarly, we multiply the equation (2) by $p$:
+\[0 \le \left( \frac{AB'}{\beta} - Q \right) \cdot p < 1 \cdot p\]
+\begin{equation}
+    0 \le \frac{AB'p}{\beta} - Qp < p
+\end{equation}
+
+By adding the equation (3) and (4), we deduce:
+\[0 \le (AB - \cancel{\frac{AB'p}{\beta}}) + (\cancel{\frac{AB'p}{\beta}} - Qp) < \frac{Ap}{\beta} + p\]
+Simplifying this result, we are left with:
+\begin{align*}
+    0 \le AB - Qp &< p + \frac{Ap}{\beta} \\
+    0 \le AB - Qp &< p \cdot (1 + \frac{A}{\beta}) 
+\end{align*}
+
+By constraint, $A \in [0, p[$ and $p < \beta$ thus $A < \beta$. Therefore we can rewrite:
+\begin{align*}
+    0 \le AB - Qp &< p \cdot (1 + \frac{\beta}{\beta}) \\
+    0 \le AB - Qp &< p \cdot (1 + 1)\\
+    0 \le AB - Qp &< 2p \\
+    0 \le R &< 2p
+\end{align*}
+
+We have now prouven that $A \in [0, 2p[$ the final if statement of the helps correct the remainder. If $R > p$ the 
+modular reduction needs 1 more step $R - p$, if not $R$ is the correct result
+
 
 \subsection{SIMD Vectorization}
+We decided to create 2 versions for implementating a high performance Shoup algorithm
 \subsubsection{Intel \_mm256\_mul\_epu32}
 \subsubsection{Intel \_mm256\_mullo\_epi32}
+\subsection{Performance}
+\subsubsection{Choice of unrolling}
+\subsubsection{Simplification when B = 1}
+\subsubsection{Overall Performance}
 \subsection{Avantages:}
 
 \end{document}
