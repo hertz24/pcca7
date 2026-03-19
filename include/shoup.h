@@ -83,11 +83,15 @@ Vector shoup_scale_mullo_neon(Parameters param, Vector v);
 #if AVX2
 Vector shoup_scale_avx2(Parameters param, Vector v);
 
+Vector unrolling_shoup_scale_avx2(Parameters param, Vector v);
+
 Vector shoup_scale_mullo_avx2(Parameters param, Vector v);
 #endif
 
 #if AVX512
 Vector shoup_scale_avx512(Parameters param, Vector v);
+
+Vector unrolling_shoup_scale_avx512(Parameters param, Vector v);
 #endif
 
 #endif
