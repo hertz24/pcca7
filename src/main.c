@@ -106,14 +106,15 @@ int main(int argc, char const *argv[])
                           algorithms[6]
 #endif
     };
-    return generate_curve(scale, points, param, graph1, TAB_SIZE(graph1))
-    // Graph 2
+    int ret = generate_curve(scale, points, param, graph1, TAB_SIZE(graph1));
 #if NEON || AVX2
-           | generate_curve(scale, points, param, (Algorithm[]){algorithms[3], algorithms[4]}, 2)
+    ret |= generate_curve(scale, points, param, (Algorithm[]){algorithms[3], algorithms[4]}, 2);
+    ret |= generate_curve(scale, points, param, (Algorithm[]){algorithms[3], algorithms[5]}, 2);
+    if (b == 1)
+        ret |= generate_curve(scale, points, param, (Algorithm[]){algorithms[3], algorithms[6]}, 2);
 #endif
 #if AVX512
-           // Graph 3
-           | generate_curve(scale, points, param, (Algorithm[]){algorithms[6], algorithms[7]}, 2)
+    ret |= generate_curve(scale, points, param, (Algorithm[]){algorithms[7], algorithms[8]}, 2);
 #endif
-        ;
+    return ret;
 }
