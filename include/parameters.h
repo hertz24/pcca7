@@ -42,7 +42,21 @@ static inline Parameters init_parameters(uint32_t b, uint32_t p)
     return (Parameters){b, ((uint64_t)b << 32) / p, p};
 }
 
-Parameters rand_parameters(void);
+/**
+ * @brief Returns a random paramaters
+ *
+ * @param bits The number of bits of b
+ * @return The parameters
+ */
+Parameters rand_parameters_b(ulong bits);
+
+/**
+ * @brief Returns a random paramaters
+ *
+ * @param bits The number of bits of p. If @p bits <= 1, then the number of bits of p is random
+ * @return The parameters
+ */
+Parameters rand_parameters(ulong bits);
 
 void print_param(Parameters param);
 

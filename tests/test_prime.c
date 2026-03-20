@@ -1,5 +1,6 @@
 #include <time.h>
 
+#include "test.h"
 #include "../include/parameters.h"
 
 int main(void)
@@ -8,9 +9,10 @@ int main(void)
     uint32_t p;
     if (!n_is_prime((p = rand_prime())))
     {
-        printf("n_is_prime error: %d isn't a prime number.\n", p);
+        ERROR("n_is_prime");
+        fprintf(stderr, "%d isn't a prime number.\n", p);
         return 1;
     }
-    printf("test_prime: no error\n");
+    SUCCESS("n_is_prime");
     return 0;
 }

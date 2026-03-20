@@ -21,6 +21,13 @@ typedef struct
 
 Vector init_vector(ulong size);
 
+/**
+ * @brief Generates a random vector
+ *
+ * @param size The size of the vector
+ *
+ * @return The random vector
+ */
 Vector rand_vector(ulong size);
 
 void free_vector(Vector v);
@@ -33,7 +40,7 @@ void print_vector(Vector v);
  * @param v1 The first vector
  * @param v2 The second vector
  *
- * @return 0 if there is not error, otherwise 1
+ * @return -1 if the two vectors haven't the same size, the size of the vectors if there isn't error, otherwise the index of the error
  */
 int compare_vectors(Vector v1, Vector v2);
 

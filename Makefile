@@ -1,7 +1,11 @@
 ARCH := $(shell uname -m)
+AVX512 := $(shell grep -q '\<avx512' /proc/cpuinfo && echo yes)
 
 ifeq ($(ARCH),x86_64)
     CFLAGS := -Wall -Wextra -O3 -mavx2
+	ifeq ($(AVX512),yes)
+		CFLAGS += -mavx512f
+	endif
     LDFLAGS := -lflint
 else
 	CFLAGS := -Wall -Wextra -O3
@@ -34,9 +38,11 @@ tests/obj/%: tests/%.c $(LIB_OBJS)
 	$(CC) $(CFLAGS) -I$(SRC_DIR) -o $@ $< $(LIB_OBJS) $(LDFLAGS)
 
 check: $(TEST_BINS)
-	@for test in $(TEST_BINS); do \
-		./$$test || exit 1; \
-	done
+	@failed=0; \
+	for test in $(TEST_BINS); do \
+		./$$test || failed=1; \
+	done; \
+	exit $$failed
 
 clean:
 	rm -rf $(OBJ_DIR)
