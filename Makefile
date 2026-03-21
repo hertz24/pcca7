@@ -1,15 +1,14 @@
 ARCH := $(shell uname -m)
-AVX512 := $(shell grep -q '\<avx512' /proc/cpuinfo && echo yes)
 
+CFLAGS := -Wall -Wextra -O3
+LDFLAGS := -lflint
 ifeq ($(ARCH),x86_64)
-    CFLAGS := -Wall -Wextra -O3 -mavx2
-	ifeq ($(AVX512),yes)
+	CFLAGS += -mavx2
+	ifeq ($(shell grep -q '\<avx512' /proc/cpuinfo && echo yes),yes)
 		CFLAGS += -mavx512f
 	endif
-    LDFLAGS := -lflint
-else
-	CFLAGS := -Wall -Wextra -O3
-	LDFLAGS := -lflint
+else ifeq ($(ARCH),aarch64)
+	CFLAGS += -march=armv8-a+simd
 endif
 CC := /usr/bin/gcc
 SRC_DIR := src

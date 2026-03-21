@@ -16,3 +16,4 @@ pcca7
 *.synctex.gz
 *.lof
 *.lot
+latex/*

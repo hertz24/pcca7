@@ -112,7 +112,7 @@ int complete_options(Options *options)
         } while (options->p <= options->b);
     }
     FLINT_TEST_CLEAR(state);
-    if (options->b >= options->p)
+    if ((OPT_P & OPT_B) && (options->b >= options->p))
     {
         fprintf(stderr, "b must be less than p.\n");
         return 1;

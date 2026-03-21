@@ -1,0 +1,10 @@
+PROJECT_NAME           = "32-bit Modular Arithmetic and SIMD Vectorisation"
+
+INPUT                  = src/ include/
+
+RECURSIVE              = YES
+
+GENERATE_HTML          = NO
+GENERATE_LATEX         = YES
+
+EXTRACT_ALL            = YES
