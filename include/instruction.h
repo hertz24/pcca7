@@ -1,7 +1,8 @@
 /**
- * @authors
- * - Henry Zheng
- * - Duc Vinh Nguyen
+ * @file instruction.h
+ * @brief Verifies the presence of instruction set architectures.
+ * @author Henry Zheng
+ * @author Duc Vinh Nguyen
  */
 
 #ifndef INSTRUCTION_H

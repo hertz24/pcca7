@@ -1,7 +1,8 @@
 /**
- * @authors
- * - Henry Zheng
- * - Duc Vinh Nguyen
+ * @file algo_registry.h
+ * @brief List of available algorithms.
+ * @author Henry Zheng
+ * @author Duc Vinh Nguyen
  */
 
 #ifndef ALGO_REGISTRY_H

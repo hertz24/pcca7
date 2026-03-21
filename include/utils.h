@@ -1,7 +1,8 @@
 /**
- * @authors
- * - Henry Zheng
- * - Duc Vinh Nguyen
+ * @file utils.h
+ * @brief Various utility functions.
+ * @author Henry Zheng
+ * @author Duc Vinh Nguyen
  */
 
 #ifndef UTILS_H
@@ -15,10 +16,10 @@
     (sizeof(tab) / sizeof(tab[0]))
 
 /**
- * @brief Measure the time of an algorithm in milliseconds
+ * @brief Measure the time of an algorithm in milliseconds.
  *
  * @param algorithm The algorithm to measure
- * @param param
+ * @param param The parameters containing the data
  * @param v The vector to calculate
  *
  * @return The time taken by the algorithm in milliseconds

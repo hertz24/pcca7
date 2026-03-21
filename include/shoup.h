@@ -1,7 +1,8 @@
 /**
- * @authors
- * - Henry Zheng
- * - Duc Vinh Nguyen
+ * @file shoup.h
+ * @brief Shoup's modular multiplication: scalar versions and SIMD.
+ * @author Henry Zheng
+ * @author Duc Vinh Nguyen
  */
 
 #ifndef SHOUP_H

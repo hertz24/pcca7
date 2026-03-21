@@ -1,7 +1,8 @@
 /**
- * @authors
- * - Henry Zheng
- * - Duc Vinh Nguyen
+ * @file vector.h
+ * @brief 32-bit integer vectors for modular calculations.
+ * @author Henry Zheng
+ * @author Duc Vinh Nguyen
  */
 
 #ifndef VECTOR_H
@@ -22,7 +23,7 @@ typedef struct
 Vector init_vector(ulong size);
 
 /**
- * @brief Generates a random vector
+ * @brief Generates a random vector.
  *
  * @param size The size of the vector
  *
@@ -35,7 +36,7 @@ void free_vector(Vector v);
 void print_vector(Vector v);
 
 /**
- * @brief Compare the elements of two vectors
+ * @brief Compare the elements of two vectors.
  *
  * @param v1 The first vector
  * @param v2 The second vector

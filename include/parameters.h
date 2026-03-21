@@ -1,7 +1,8 @@
 /**
- * @authors
- * - Henry Zheng
- * - Duc Vinh Nguyen
+ * @file parameters.h
+ * @brief Parameter management for modular operations.
+ * @author Henry Zheng
+ * @author Duc Vinh Nguyen
  */
 
 #ifndef CALCULATION_H
@@ -15,12 +16,12 @@
 
 /**
  * @struct Parameters
- * @brief Contains the data to be calculated
+ * @brief Contains the data to be calculated.
  */
 typedef struct
 {
     /**
-     * @brief Constant multiplier #b
+     * @brief Constant multiplier #b.
      *
      * It is the constant scalar value to multiply each element of #tab_a.
      * #b must be in [0, p[.
@@ -43,7 +44,7 @@ static inline Parameters init_parameters(uint32_t b, uint32_t p)
 }
 
 /**
- * @brief Returns a random paramaters
+ * @brief Returns a random paramaters.
  *
  * @param bits The number of bits of @c b
  *
@@ -52,9 +53,9 @@ static inline Parameters init_parameters(uint32_t b, uint32_t p)
 Parameters rand_parameters_b(ulong bits);
 
 /**
- * @brief Returns a random paramaters
+ * @brief Returns a random paramaters.
  *
- * @param bits The number of bits of @c p. If @p bits <= 1, then the number of bits of @c p is random
+ * @param bits The number of bits of @c p. If @p bits <= 1, then the number of bits of @c p is random.
  *
  * @return The parameters
  */

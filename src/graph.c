@@ -1,4 +1,4 @@
-#include "../include/curve.h"
+#include "../include/graph.h"
 
 const char *colors[9] = {"red", "dark-green", "orange", "blue", "purple", "dark-cyan", "grey", "brown", "dark-pink"};
 
@@ -24,7 +24,7 @@ static int benchmark(int fd, int scale, ulong nb_points, Parameters param, Algor
     return 0;
 }
 
-int generate_curve(int scale, ulong nb_points, Parameters param, Algorithm algorithms[], int nb_algo)
+int generate_graph(int scale, ulong nb_points, Parameters param, Algorithm algorithms[], int nb_algo)
 {
     static int count = 1;
     char file_name[16];

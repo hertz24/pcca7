@@ -1,6 +1,13 @@
+/**
+ * @file main.c
+ * @brief Main benchmark program for modular algorithms.
+ * @author Henry Zheng
+ * @author Duc Vinh Nguyen
+ */
+
 #include <time.h>
 
-#include "../include/curve.h"
+#include "../include/graph.h"
 
 #define OPT_P 1
 #define OPT_B 2
@@ -124,7 +131,7 @@ Parameters init_param(Options options)
         return rand_parameters_b(options.bits);
 }
 
-int generate_graph(Options options, Parameters param)
+int generate_graphs(Options options, Parameters param)
 {
     ulong scale = options.scale;
     ulong points = options.points;
@@ -138,15 +145,15 @@ int generate_graph(Options options, Parameters param)
                           algorithms[7]
 #endif
     };
-    int ret = generate_curve(scale, points, param, graph1, TAB_SIZE(graph1));
+    int ret = generate_graph(scale, points, param, graph1, TAB_SIZE(graph1));
 #if NEON || AVX2
-    ret |= generate_curve(scale, points, param, (Algorithm[]){algorithms[3], algorithms[4]}, 2);
-    ret |= generate_curve(scale, points, param, (Algorithm[]){algorithms[3], algorithms[5]}, 2);
+    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[4]}, 2);
+    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[5]}, 2);
     if (options.b == 1)
-        ret |= generate_curve(scale, points, param, (Algorithm[]){algorithms[3], algorithms[6]}, 2);
+        ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[6]}, 2);
 #endif
 #if AVX512
-    ret |= generate_curve(scale, points, param, (Algorithm[]){algorithms[7], algorithms[8]}, 2);
+    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[8]}, 2);
 #endif
     return ret;
 }
@@ -166,7 +173,7 @@ int main(int argc, char const *argv[])
     if ((ret = complete_options(&options)))
         goto end;
     Parameters param = init_param(options);
-    ret = generate_graph(options, param);
+    ret = generate_graphs(options, param);
 end:
     return ret;
 }
