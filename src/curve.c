@@ -43,7 +43,7 @@ int generate_curve(int scale, ulong nb_points, Parameters param, Algorithm algor
                 "set output 'graph%d.png'\n"
                 "set xlabel 'Size of the vector'\n"
                 "set ylabel 'Time in milliseconds'\n"
-                "set logscale y\nplot ",
+                "plot ",
             param.b, param.p, count++);
     for (int i = 0; i < nb_algo; i++)
     {

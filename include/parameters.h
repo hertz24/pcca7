@@ -45,7 +45,8 @@ static inline Parameters init_parameters(uint32_t b, uint32_t p)
 /**
  * @brief Returns a random paramaters
  *
- * @param bits The number of bits of b
+ * @param bits The number of bits of @c b
+ *
  * @return The parameters
  */
 Parameters rand_parameters_b(ulong bits);
@@ -53,7 +54,8 @@ Parameters rand_parameters_b(ulong bits);
 /**
  * @brief Returns a random paramaters
  *
- * @param bits The number of bits of p. If @p bits <= 1, then the number of bits of p is random
+ * @param bits The number of bits of @c p. If @p bits <= 1, then the number of bits of @c p is random
+ *
  * @return The parameters
  */
 Parameters rand_parameters(ulong bits);
