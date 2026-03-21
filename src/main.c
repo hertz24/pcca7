@@ -105,10 +105,10 @@ int complete_options(Options *options)
     else if (flags == OPT_B)
     {
         ulong b_bits = nb_bits(options->b);
-        ulong limit = (33 - b_bits);
+        ulong lower = (b_bits < 2) ? 2 : b_bits;
         do
         {
-            options->p = n_randprime(state, b_bits + rand() % limit, 1);
+            options->p = n_randprime(state, lower + rand() % (33 - lower), 1);
         } while (options->p <= options->b);
     }
     FLINT_TEST_CLEAR(state);

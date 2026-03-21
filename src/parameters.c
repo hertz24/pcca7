@@ -13,12 +13,10 @@ Parameters rand_parameters_b(ulong bits)
     FLINT_TEST_INIT(state);
     uint32_t b = n_randbits(state, bits);
     uint32_t p;
-    if (bits == 1)
-        bits++;
-    ulong limit = (33 - bits);
+    ulong lower = (bits < 2) ? 2 : bits;
     do
     {
-        p = n_randprime(state, bits + rand() % limit, 1);
+        p = n_randprime(state, lower + rand() % (33 - lower), 1);
     } while (p <= b);
     FLINT_TEST_CLEAR(state);
     return init_parameters(b, p);

@@ -1,7 +1,6 @@
 /**
- * @authors
- * - Henry Zheng
- * - Duc Vinh Nguyen
+ * @author Henry Zheng
+ * @author Duc Vinh Nguyen
  */
 
 #ifndef TEST_H
