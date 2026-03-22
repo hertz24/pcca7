@@ -7,12 +7,13 @@ int main(void)
 {
     srand(time(NULL));
     uint32_t p;
-    if (!n_is_prime((p = rand_prime())))
-    {
-        ERROR("n_is_prime");
-        fprintf(stderr, "%d isn't a prime number.\n", p);
-        return 1;
-    }
+    for (ulong i = 0; i <= 32; i++)
+        if (!n_is_prime((p = rand_prime(i))))
+        {
+            ERROR("n_is_prime");
+            fprintf(stderr, "%d isn't a prime number.\n", p);
+            return 1;
+        }
     SUCCESS("n_is_prime");
     return 0;
 }

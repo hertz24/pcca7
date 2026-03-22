@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <time.h>
 #include "flint/ulong_extras.h"
 
 extern flint_rand_t state;
@@ -33,12 +34,12 @@ typedef struct
     uint32_t p;         /**< @brief The prime modulus */
 } Parameters;
 
-void rand_init(void);
-
 static inline Parameters init_parameters(uint32_t b, uint32_t p)
 {
     return (Parameters){b, ((uint64_t)b << 32) / p, p};
 }
+
+void rand_init(void);
 
 /**
  * @brief Returns a random prime number.
@@ -49,21 +50,22 @@ static inline Parameters init_parameters(uint32_t b, uint32_t p)
  */
 uint32_t rand_prime(ulong bits);
 
-Parameters rand_parameters_b(ulong bits);
-
 /**
  * @brief Returns a random paramaters.
  *
- * @param bits The number of bits of @c p. If @p bits <= 1, then the number of bits of @c p is random.
+ * @param bits The number of bits of @c p. If @p bits < 2 or @p bits > 32, then the number of bits of @c p is random.
  *
  * @return The parameters
  */
 Parameters rand_parameters_p(ulong bits);
 
+Parameters rand_parameters_b(ulong bits);
+
 /**
  * @brief Returns a random paramaters.
  *
- * @param bits The number of bits of @c p. If @p bits <= 1, then the number of bits of @c p is random.
+ * @param p_bits The number of bits of @c p. If @p bits < 2 or @p bits > 32, then the number of bits of @c p is random.
+ * @param b_bits The number of bits of @c b
  *
  * @return The parameters
  */

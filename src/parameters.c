@@ -17,6 +17,13 @@ uint32_t rand_prime(ulong bits)
     return p;
 }
 
+Parameters rand_parameters_p(ulong bits)
+{
+    uint32_t p = rand_prime(bits);
+    Parameters param = init_parameters(n_randint(state, p), p);
+    return param;
+}
+
 Parameters rand_parameters_b(ulong bits)
 {
     uint32_t b = n_randbits(state, bits);
@@ -27,13 +34,6 @@ Parameters rand_parameters_b(ulong bits)
         p = n_randprime(state, lower + rand() % (33 - lower), 1);
     } while (p <= b);
     return init_parameters(b, p);
-}
-
-Parameters rand_parameters_p(ulong bits)
-{
-    uint32_t p = rand_prime(bits);
-    Parameters param = init_parameters(n_randint(state, p), p);
-    return param;
 }
 
 Parameters rand_parameters(ulong p_bits, ulong b_bits)
