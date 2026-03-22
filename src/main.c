@@ -21,7 +21,8 @@ typedef struct
     unsigned char flags;
     int scale;
     ulong points;
-    ulong bits;
+    ulong p_bits;
+    ulong b_bits;
 } Options;
 
 /**
@@ -39,7 +40,7 @@ int set_options(int argc, char const *argv[], Options *options)
     for (int i = 1; i < argc; i += 2)
         if (strcmp("-p", argv[i]) == 0)
         {
-            if ((options->flags & (OPT_P | OPT_P_BITS | OPT_B_BITS)) == 0)
+            if (!(options->flags & (OPT_P | OPT_P_BITS)))
             {
                 options->p = atoi(argv[i + 1]);
                 if (!n_is_prime(options->p))
@@ -52,7 +53,7 @@ int set_options(int argc, char const *argv[], Options *options)
         }
         else if (strcmp("-b", argv[i]) == 0)
         {
-            if ((options->flags & (OPT_B | OPT_P_BITS | OPT_B_BITS)) == 0)
+            if ((options->flags & (OPT_B | OPT_B_BITS)) == 0)
             {
                 options->b = atoi(argv[i + 1]);
                 options->flags |= OPT_B;
@@ -60,17 +61,17 @@ int set_options(int argc, char const *argv[], Options *options)
         }
         else if (strcmp("-p_bits", argv[i]) == 0)
         {
-            if (!options->flags)
+            if ((options->flags & (OPT_P | OPT_P_BITS)) == 0)
             {
-                options->bits = strtoul(argv[i + 1], NULL, 10);
+                options->p_bits = strtoul(argv[i + 1], NULL, 10);
                 options->flags |= OPT_P_BITS;
             }
         }
         else if (strcmp("-b_bits", argv[i]) == 0)
         {
-            if (options->flags == 0)
+            if (!(options->flags & (OPT_B | OPT_B_BITS)))
             {
-                options->bits = strtoul(argv[i + 1], NULL, 10);
+                options->b_bits = strtoul(argv[i + 1], NULL, 10);
                 options->flags |= OPT_B_BITS;
             }
         }
@@ -96,39 +97,75 @@ int set_options(int argc, char const *argv[], Options *options)
  * @retval 0 success
  * @retval 1 error
  */
-int complete_options(Options *options)
+int init_param(Options *options, Parameters *param)
 {
-    FLINT_TEST_INIT(state);
-    unsigned char flags = options->flags & (OPT_P | OPT_B);
-    if (flags == OPT_P)
-        options->b = n_randint(state, options->p);
-    else if (flags == OPT_B)
+    unsigned char flags = options->flags;
+    uint32_t p = options->p;
+    uint32_t b = options->b;
+    ulong p_bits = options->p_bits;
+    ulong b_bits = options->b_bits;
+    switch (flags & (OPT_P | OPT_B | OPT_P_BITS | OPT_B_BITS))
     {
-        ulong b_bits = nb_bits(options->b);
-        ulong lower = (b_bits < 2) ? 2 : b_bits;
+    case (OPT_P | OPT_B):
+        if (b >= p)
+        {
+            fprintf(stderr, "b must be less than p.\n");
+            return 1;
+        }
+        else
+            *param = init_parameters(b, p);
+        break;
+    case (OPT_P | OPT_B_BITS):
+        if (nb_bits(p) < b_bits)
+        {
+            fprintf(stderr, "The number of bits of p must be greater than or equal to the number of bits of b.\n");
+            return 1;
+        }
         do
         {
-            options->p = n_randprime(state, lower + rand() % (33 - lower), 1);
-        } while (options->p <= options->b);
-    }
-    FLINT_TEST_CLEAR(state);
-    if ((OPT_P & OPT_B) && (options->b >= options->p))
-    {
-        fprintf(stderr, "b must be less than p.\n");
-        return 1;
+            b = n_randbits(state, b_bits);
+        } while (b >= p);
+        *param = init_parameters(b, p);
+        break;
+    case OPT_P:
+        *param = init_parameters(n_randint(state, p), p);
+        break;
+    case (OPT_B | OPT_P_BITS):
+        if (nb_bits(b) > p_bits)
+        {
+            fprintf(stderr, "The number of bits of p must be greater than or equal to the number of bits of b.\n");
+            return 1;
+        }
+        do
+        {
+            p = n_randbits(state, p_bits);
+        } while (p <= b);
+        *param = init_parameters(b, p);
+        break;
+    case OPT_B:
+        ulong bits = nb_bits(b);
+        uint32_t p;
+        ulong lower = (bits < 2) ? 2 : bits;
+        do
+        {
+            p = n_randprime(state, lower + rand() % (33 - lower), 1);
+        } while (p <= b);
+        *param = init_parameters(b, p);
+        break;
+    case (OPT_P_BITS | OPT_B_BITS):
+        *param = rand_parameters(p_bits, b_bits);
+        break;
+    case OPT_P_BITS:
+        *param = rand_parameters_p(p_bits);
+        break;
+    case OPT_B_BITS:
+        *param = rand_parameters_b(b_bits);
+        break;
+    default:
+        *param = rand_parameters_p(0);
+        break;
     }
     return 0;
-}
-
-Parameters init_param(Options options)
-{
-    unsigned char flags = options.flags;
-    if (!flags || flags == OPT_P_BITS)
-        return rand_parameters(options.bits);
-    else if ((flags & (OPT_P | OPT_B)))
-        return init_parameters(options.b, options.p);
-    else
-        return rand_parameters_b(options.bits);
 }
 
 int generate_graphs(Options options, Parameters param)
@@ -161,18 +198,19 @@ int generate_graphs(Options options, Parameters param)
 int main(int argc, char const *argv[])
 {
     srand(time(NULL));
+    rand_init();
     if (argc % 2 == 0)
     {
         fprintf(stderr, "Error input arguments.\n");
         return 1;
     }
     int ret;
-    Options options = {0, 0, 0, 1, 100, 0};
+    Options options = {0, 0, 0, 1, 100, 0, 0};
+    Parameters param;
     if ((ret = set_options(argc, argv, &options)))
         goto end;
-    if ((ret = complete_options(&options)))
+    if ((ret = init_param(&options, &param)))
         goto end;
-    Parameters param = init_param(options);
     ret = generate_graphs(options, param);
 end:
     return ret;

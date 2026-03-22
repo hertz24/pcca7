@@ -1,16 +1,24 @@
 #include "../include/parameters.h"
 
-uint32_t rand_prime(void)
+flint_rand_t state;
+
+void rand_init(void)
 {
-    FLINT_TEST_INIT(state);
-    uint32_t p = n_randprime(state, 2 + rand() % 31, 1);
-    FLINT_TEST_CLEAR(state);
+    flint_rand_init(state);
+    unsigned long seed = time(NULL);
+    flint_randseed(state, seed, seed + 1);
+}
+
+uint32_t rand_prime(ulong bits)
+{
+    if (bits < 2 || bits > 32)
+        bits = 2 + rand() % 31;
+    uint32_t p = n_randprime(state, bits, 1);
     return p;
 }
 
 Parameters rand_parameters_b(ulong bits)
 {
-    FLINT_TEST_INIT(state);
     uint32_t b = n_randbits(state, bits);
     uint32_t p;
     ulong lower = (bits < 2) ? 2 : bits;
@@ -18,16 +26,37 @@ Parameters rand_parameters_b(ulong bits)
     {
         p = n_randprime(state, lower + rand() % (33 - lower), 1);
     } while (p <= b);
-    FLINT_TEST_CLEAR(state);
     return init_parameters(b, p);
 }
 
-Parameters rand_parameters(ulong bits)
+Parameters rand_parameters_p(ulong bits)
 {
-    FLINT_TEST_INIT(state);
-    uint32_t p = (bits <= 1) ? rand_prime() : n_randprime(state, bits, 1);
+    uint32_t p = rand_prime(bits);
     Parameters param = init_parameters(n_randint(state, p), p);
-    FLINT_TEST_CLEAR(state);
+    return param;
+}
+
+Parameters rand_parameters(ulong p_bits, ulong b_bits)
+{
+    if (p_bits < b_bits && p_bits >= 2 && p_bits <= 32)
+    {
+        fprintf(stderr, "The number of bits of p must be greater than or equal to the number of bits of b.\n");
+        return (Parameters){0};
+    }
+    uint32_t p;
+    uint32_t b;
+    Parameters param;
+    if (p_bits >= 2 && p_bits <= 32)
+    {
+        p = rand_prime(p_bits);
+        do
+        {
+            b = n_randbits(state, b_bits);
+        } while (p <= b);
+        param = init_parameters(b, p);
+    }
+    else
+        param = rand_parameters_b(b_bits);
     return param;
 }
 
