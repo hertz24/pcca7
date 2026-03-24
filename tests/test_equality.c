@@ -9,7 +9,7 @@ int main(void)
     srand(time(NULL));
     Parameters (*functions[2])(ulong) = {rand_parameters_p, rand_parameters_b};
     for (int i = 0; i <= 1; i++)
-        for (ulong j = 0; j <= 32; j++)
+        for (ulong j = 0; j <= 31; j++)
         {
             Parameters param = functions[i](j);
             Vector rand_v = rand_vector(VECTOR_SIZE);
@@ -38,8 +38,6 @@ int main(void)
             }
             free_vector(rand_v);
             free_vector(ref);
-            if (i == 0)
-                j++;
             if (error)
                 return 1;
         }

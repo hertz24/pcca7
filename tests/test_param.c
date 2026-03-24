@@ -9,13 +9,19 @@ int main(void)
     Parameters (*functions[2])(ulong) = {rand_parameters_p, rand_parameters_b};
     char *names[2] = {"rand_parameters", "rand_parameters_b"};
     for (int i = 0; i <= 1; i++)
-        for (ulong j = 0; j <= 32; j++)
+        for (ulong j = 0; j <= 31; j++)
         {
             Parameters param = functions[i](j);
             if (!n_is_prime(param.p))
             {
                 ERROR("test_param");
                 fprintf(stderr, "for %s, %d isn't a prime number.\n", names[i], param.p);
+                return 1;
+            }
+            if (param.p >= (1UL << 31))
+            {
+                ERROR("test_param");
+                fprintf(stderr, "for %s, %d is greater than or equal to 2^{31}.\n", names[i], param.p);
                 return 1;
             }
             if (param.b >= param.p)
