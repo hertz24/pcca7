@@ -47,5 +47,6 @@ clean:
 	rm -rf $(OBJ_DIR)
 	rm -f $(TARGET)
 	rm -rf tests/obj
+	rm -rf latex
 
 .PHONY: all clean check
