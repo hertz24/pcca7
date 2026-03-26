@@ -206,7 +206,7 @@ int main(int argc, char const *argv[])
         return 1;
     }
     int ret;
-    Options options = {0, 0, 0, 1, 100, 0, 0};
+    Options options = {0, 0, 0, 1, 1000, 0, 0};
     Parameters param;
     if ((ret = set_options(argc, argv, &options)))
         goto end;

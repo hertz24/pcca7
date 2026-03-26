@@ -6,6 +6,13 @@
 \usepackage{cancel}
 \usepackage{listings}
 \usepackage{color}
+\usepackage{float}
+\usepackage{caption}
+\usepackage[table]{xcolor}
+\usepackage[margin=1.5in]{geometry}
+
+\captionsetup[table]{skip=10pt, justification=centering}
+\captionsetup[figure]{skip=10pt, justification=centering}
 
 \definecolor{codegreen}{rgb}{0,0.6,0}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
@@ -59,7 +66,7 @@ Shoup's algorithm is centraled around precomputation as a work around the costly
     \SetKwInOut{Output}{Output}
 
     % The content
-    \Input{$A, B \in [0, p[$, we suppose that $p < \beta$ \\
+    \Input{$A, B \in [0, p[$, we suppose that $p < \beta$/2 \\
            \hspace{1.2cm} precompute $B' = \lfloor B\beta/p \rfloor$}
     \Output{$R = AB \bmod p$}
     
@@ -74,18 +81,23 @@ Shoup's algorithm is centraled around precomputation as a work around the costly
     }
 \end{algorithm}
 
-\begin{description}
-    \item[Specifications:]\hfill
-    \begin{itemize}
-        \item $\beta$: For this case is $2^{32}$
-        \item A: An integer over 32 bits ( $<\beta = 2^{32}$)
-        \item B: An integer over 32 bits ( $<\beta = 2^{32}$)
-        \item p: A prime number over 32 bits ( $< \beta = 2^{32}$)
-        \item Q: The quotient
-        \item R: The remainder
-    \end{itemize}
-\end{description}
 
+
+\subsection{Input constraint}
+To ensure the correctness of the modular reduction and prevent register overflow during SIMD operations, 
+the following conditions must be satisfied:
+\begin{itemize}
+    \item \textbf{Word Size ($\beta$):} Set to $2^{32}$ for 32-bit modular arithmetic
+    \item \textbf{Input 1 ($A$):} Integer defined over 32 bits
+    \item \textbf{Input 2 ($B$):} Integers within the range $[0, p[$
+    \item \textbf{Modulus ($p$):} A prime number defined over 31 bits ($p < 2^{31}$)
+\end{itemize}
+
+\subsection{Theorem:}
+Let $p$ be a prime number such that $p < \beta/2$ where $\beta = 2^{32}$. Given integers $A$ an integer defined over 32 bits and
+$ B \in [0, p)$, let $B'$ be the precomputed value $B' = \lfloor B\beta/p \rfloor$. 
+If the estimated quotient is defined as $Q = \lfloor AB'/\beta \rfloor$, then the intermediate remainder $R = AB - Qp$ satisfies the following condition:
+$$0 \le AB - Qp < 2p$$
 \subsection{Procomputational Logic}
 The precomputed value $B'$ is defined over 32 bits as:
 \[B'= \lfloor (B \cdot 2^{32}) / p \rfloor \]
@@ -170,6 +182,9 @@ modular reduction needs 1 more step $R - p$, if not $R$ is the correct result
 We decided to create 2 versions for implementating a high performance Shoup algorithm
 \pagebreak
 \subsubsection{AVX}
+For the AVX version, we decided to use 2 main AVX function: 
+\_mm256\_mul\_epu32 and \_mm256\_mul\_epi32. \\
+
 \textbf{Intel \_mm256\_mul\_epu32}
 \begin{lstlisting} [caption = Auxilary Function of Shoup's Modular Reduction ]
     static inline __m256i _shoup_avx(__m256i va, 
@@ -213,67 +228,35 @@ We decided to create 2 versions for implementating a high performance Shoup algo
     __m256i mask_32 = _mm256_set1_epi64x(0xFFFFFFFF);
 
     int i = 0;
-    for (; i + 31 < size; i += 32)
+    for (; i + 7 < size; i += 8)
     {
         /* 2. Load 8 elements [v7 v6 v5 v4 v3 v2 v1 v0]: */
-        __m256i va_input_1 = _mm256_loadu_si256((__m256i const *)
-                            (v.elements + i));
-        __m256i va_input_2 = _mm256_loadu_si256((__m256i const *)
-                            (v.elements + i + 8));
-        __m256i va_input_3 = _mm256_loadu_si256((__m256i const *)
-                            (v.elements + i + 16));
-        __m256i va_input_4 = _mm256_loadu_si256((__m256i const *)
-                            (v.elements + i + 24));
+        __m256i va_input = _mm256_loadu_si256((__m256i const *)
+                            (v.elements));
         /* 3. Split into two sets of 4 : va_input and va_odd */
         // Elements [null, 7, null, 5, null , 3, null, 1]
-        __m256i va_odd_1 = _mm256_srli_epi64(va_input_1, 32); 
-        __m256i va_odd_2 = _mm256_srli_epi64(va_input_2, 32);
-        __m256i va_odd_3 = _mm256_srli_epi64(va_input_3, 32);
-        __m256i va_odd_4 = _mm256_srli_epi64(va_input_4, 32);
+        __m256i va_odd = _mm256_srli_epi64(va_input, 32); 
+        
         /* 4. Process Even Lanes: */
-        __m256i c_even_1 = _shoup_avx(va_input_1, vb, 
+        __m256i c_even = _shoup_avx(va_input, vb, 
                                       vb_precomp, vp, mask_32);
-        __m256i c_even_2 = _shoup_avx(va_input_2, vb, 
-                                      vb_precomp, vp, mask_32);
-        __m256i c_even_3 = _shoup_avx(va_input_3, vb, 
-                                      vb_precomp, vp, mask_32);
-        __m256i c_even_4 = _shoup_avx(va_input_4, vb, 
-                                      vb_precomp, vp, mask_32);
+       
         /* 5. Process Odd Lanes: */
-        __m256i c_odd_1 = _shoup_avx(va_odd_1, vb, 
-                                     vb_precomp, vp, mask_32);
-        __m256i c_odd_2 = _shoup_avx(va_odd_2, vb, 
-                                     vb_precomp, vp, mask_32);
-        __m256i c_odd_3 = _shoup_avx(va_odd_3, vb, 
-                                     vb_precomp, vp, mask_32);
-        __m256i c_odd_4 = _shoup_avx(va_odd_4, vb, 
-                                     vb_precomp, vp, mask_32);
+        __m256i c_odd = _shoup_avx(va_odd, vb, vb_precomp,
+                                   vp, mask_32);
+        
         /* 6. Shift odd by 32 bits to the left results back 
         and merge: */
         // [7, null, 5, null, 3, null, 1, null]
-        __m256i res1_odd_shifted = _mm256_slli_epi64(c_odd_1, 32); 
-        __m256i res2_odd_shifted = _mm256_slli_epi64(c_odd_2, 32);
-        __m256i res3_odd_shifted = _mm256_slli_epi64(c_odd_3, 32);
-        __m256i res4_odd_shifted = _mm256_slli_epi64(c_odd_4, 32);
+        __m256i res_odd_shifted = _mm256_slli_epi64(c_odd, 32); 
+        
         // [7, null, 5, null, 3, null, 1, null] 
         //or null, 6, null, 4, null, 2, null, 0]
-        __m256i res1_combined = _mm256_or_si256(c_even_1, 
-                                                res1_odd_shifted); 
-        __m256i res2_combined = _mm256_or_si256(c_even_2, 
-                                                res2_odd_shifted);
-        __m256i res3_combined = _mm256_or_si256(c_even_3, 
-                                                res3_odd_shifted);
-        __m256i res4_combined = _mm256_or_si256(c_even_4, 
-                                                res4_odd_shifted);
+        __m256i res_combined = _mm256_or_si256(c_even, 
+                                               res_odd_shifted); 
         /* 7. Store: */
-        _mm256_storeu_si256((__m256i *)(res.elements + i),
-                                        res1_combined);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 8), 
-                                        res2_combined);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 16), 
-                                        res3_combined);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 24), 
-                                        res4_combined);
+        _mm256_storeu_si256((__m256i *)(res.elements), 
+                            res_combined);
     }
     for (; i < size; i++)
         res.elements[i] = shoup(v.elements[i], param.b, 
@@ -324,63 +307,33 @@ We decided to create 2 versions for implementating a high performance Shoup algo
     {
         /* 2. Load 8 elements [v7 v6 v5 v4 v3 v2 v1 v0]: */
         __m256i va_input_1 = _mm256_loadu_si256((__m256i const *)
-                            (v.elements + i));
-        __m256i va_input_2 = _mm256_loadu_si256((__m256i const *)
-                            (v.elements + i + 8));
-        __m256i va_input_3 = _mm256_loadu_si256((__m256i const *)
-                            (v.elements + i + 16));
-        __m256i va_input_4 = _mm256_loadu_si256((__m256i const *)
-                            (v.elements + i + 24));
+                                                (v.elements));
+        
         /* 3. Split into two sets of 4 : va_input and va_odd */
         // Elements [null, 7, null, 5, null , 3, null, 1]
-        __m256i va_odd_1 = _mm256_srli_epi64(va_input_1, 32); 
-        __m256i va_odd_2 = _mm256_srli_epi64(va_input_2, 32);
-        __m256i va_odd_3 = _mm256_srli_epi64(va_input_3, 32);
-        __m256i va_odd_4 = _mm256_srli_epi64(va_input_4, 32);
+        __m256i va_odd = _mm256_srli_epi64(va_input, 32); 
+        
         /* 4. Process Even Lanes: */
-        __m256i c_even_1 = _shoup_avx_mullo(va_input_1, vb, 
-                                            vb_precomp, vp);
-        __m256i c_even_2 = _shoup_avx_mullo(va_input_2, vb, 
-                                            vb_precomp, vp);
-        __m256i c_even_3 = _shoup_avx_mullo(va_input_3, vb, 
-                                            vb_precomp, vp);
-        __m256i c_even_4 = _shoup_avx_mullo(va_input_4, vb, 
-                                            vb_precomp, vp);
+        __m256i c_even = _shoup_avx_mullo(va_input, vb, 
+                                          vb_precomp, vp);
+        
         /* 5. Process Odd Lanes: */
-        __m256i c_odd_1 = _shoup_avx_mullo(va_odd_1, vb, 
-                                           vb_precomp, vp);
-        __m256i c_odd_2 = _shoup_avx_mullo(va_odd_2, vb, 
-                                           vb_precomp, vp);
-        __m256i c_odd_3 = _shoup_avx_mullo(va_odd_3, vb, 
-                                           vb_precomp, vp);
-        __m256i c_odd_4 = _shoup_avx_mullo(va_odd_4, vb, 
-                                           vb_precomp, vp);
+        __m256i c_odd = _shoup_avx_mullo(va_odd, vb, 
+                                         vb_precomp, vp);
+       
         /* 6. Shift odd by 32 bits to the left results back 
         and merge: */
         // [7, null, 5, null, 3, null, 1, null]
-        __m256i res1_odd_shifted = _mm256_slli_epi64(c_odd_1, 32); 
-        __m256i res2_odd_shifted = _mm256_slli_epi64(c_odd_2, 32);
-        __m256i res3_odd_shifted = _mm256_slli_epi64(c_odd_3, 32);
-        __m256i res4_odd_shifted = _mm256_slli_epi64(c_odd_4, 32);
+        __m256i res1_odd_shifted = _mm256_slli_epi64(c_odd, 32); 
+        
         // [7, null, 5, null, 3, null, 1, null] 
         //or null, 6, null, 4, null, 2, null, 0]
-        __m256i res1_combined = _mm256_or_si256(c_even_1, 
-                                                res1_odd_shifted); 
-        __m256i res2_combined = _mm256_or_si256(c_even_2, 
-                                                res2_odd_shifted);
-        __m256i res3_combined = _mm256_or_si256(c_even_3, 
-                                                res3_odd_shifted);
-        __m256i res4_combined = _mm256_or_si256(c_even_4, 
-                                                res4_odd_shifted);
+        __m256i res_combined = _mm256_or_si256(c_even_, 
+                                               res_odd_shifted); 
+        
         /* 7. Store: */
         _mm256_storeu_si256((__m256i *)(res.elements + i),
-                                        res1_combined);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 8), 
-                                        res2_combined);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 16), 
-                                        res3_combined);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 24), 
-                                        res4_combined);
+                                        res_combined);
     }
     for (; i < size; i++)
         res.elements[i] = shoup(v.elements[i], param.b, 
@@ -396,9 +349,186 @@ We decided to create 2 versions for implementating a high performance Shoup algo
     TODO
 \end{lstlisting}
 \subsection{Performance}
-
+\subsubsection{Equipement detail:}
+The performance measurements and benchmarks were performed with the following hardware:
+\begin{itemize}
+    \item Processor: AMD Ryzen™ 5 8600G Desktop Processor.
+    \item Architecture: Zen 4 (supporting AVX, AVX2, and AVX-512 instruction sets)
+    \item Compiler : GCC 13.3.0 with optimization flag -O3
+    \item Execution : ./pcca7 -b\_bits 31 (Option to set b to 31 bits)
+\end{itemize} 
 \subsubsection{Choice of unrolling}
-\subsubsection{Simplification when B = 1}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{report/graph2.jpeg}
+    \caption{Execution Time Comparison: Standard vs. Unrolled}
+\end{figure}
+\begin{table}[H]
+    \centering
+    \caption{Execution time of implementations with and without unrolling in milliseconds} 
+    \rowcolors{2}{green!10}{white}
+    \begin{tabular}{|l|c|c|c|c|c|}
+        \hline
+        Size & Standard & Unrolled \\ \hline
+        100  & 0.037 &0.039  \\
+        200  & 0.069 &0.071  \\
+        300  & 0.093 &0.098  \\
+        400  & 0.115 &0.118  \\
+        500  & 0.148 &0.146  \\
+        600  & 0.159 &0.166  \\
+        700  & 0.195 &0.190 \\
+        800  & 0.204 &0.212  \\
+        900  & 0.228 &0.237 \\
+        1000 & 0.255 &0.258  \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \caption{Average percentage speedup of the unrolling implementation relative to with unrolling} 
+    \rowcolors{2}{blue!10}{white}
+    \begin{tabular}{|l|c|c|c|c|c|}
+        \hline
+        Size & Standard & Unrolled & Percentage difference \\ \hline
+        100  & 100\% &$105.41\%$ & $+5.41\%$ \\
+        200  & 100\% &$102.90\%$ & $+2.90\%$ \\
+        300  & 100\% &$105.38\%$  & $+5.38\%$\\
+        400  & 100\% &$102.61\%$  & $+2.61\%$\\
+        500  & 100\% &$98.65\%$  & $-1.35\%$\\
+        600  & 100\% &$104.40\%$ &$+4.40\%$\\
+        700  & 100\% &$97.44\%$  & $-2.56\%$\\
+        800  & 100\% &$103.92\%$  & $+3.92\%$\\
+        900  & 100\% &$103.95\%$  & $+3.95\%$\\
+        1000 & 100\% &$101.18\%$  & $+1.18\%$\\
+        \hline
+    \end{tabular}
+\end{table}
+
+\textbf{Obsercation:}On average, the Unrolled implementation is 2.58\% slower on average
+thaan the standard version. 
+
+
+\subsubsection{Choice between mullo\_epi32 and mul\_epu32}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{report/graph3.jpeg}
+    \caption{Execution Time Comparison: mullo\_epi32 vs. mul\_epu32 }
+\end{figure}
+\begin{table}[H]
+    \centering
+    \caption{Execution time of mullo\_epi32 and mul\_epu32 implementation in milliseconds} 
+    \rowcolors{2}{green!10}{white}
+    \begin{tabular}{|l|c|c|c|c|c|}
+        \hline
+        Size & mul\_epu32 & mullo\_epi32 \\ \hline
+        100  & 0.037 &0.038  \\
+        200  & 0.069 &0.066  \\
+        300  & 0.093 &0.090  \\
+        400  & 0.113 &0.107  \\
+        500  & 0.138 &0.131  \\
+        600  & 0.163 &0.150  \\
+        700  & 0.184 &0.173  \\
+        800  & 0.205 &0.190  \\
+        900  & 0.232 &0.213 \\
+        1000 & 0.249 &0.232  \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \caption{Average percentage speedup of mullo\_epi32 implementation relative to mul\_epu32} 
+    \rowcolors{2}{blue!10}{white}
+    \begin{tabular}{|l|c|c|c|c|c|}
+        \hline
+        Size & mul\_epu32 & mullo\_epi32 & Percentage difference \\ \hline
+        100  & 100\% &$102.70\%$ & $+2.70\%$ \\
+        200  & 100\% &$95.65\%$  & $-4.35\%$ \\
+        300  & 100\% &$96.77\%$  & $-3.23\%$\\
+        400  & 100\% &$94.69\%$  & $-5.31\%$\\
+        500  & 100\% &$94.93\%$  & $-5.07\%$\\
+        600  & 100\% &$92.02\%$  & $-7.98\%$\\
+        700  & 100\% &$94.02\%$  & $-5.98\%$\\
+        800  & 100\% &$92.68\%$  & $-7.32\%$\\
+        900  & 100\% &$91.81\%$  & $-8.19\%$\\
+        1000 & 100\% &$93.17\%$  & $-6.83\%$\\
+        \hline
+    \end{tabular}
+\end{table}
+
+\textbf{Observation:} We can observe that at the smaller sizes (100), mullo\_epi32 is slower than the standard mul\_epu32
+implementation by around 2\%. But the effecientcy gain starts that show once the vector size hits 200 and above.
+Across all the vector sizes, the average percentage gain is 5.15\%
 \subsubsection{Overall Performance}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{report/Overall_avx.jpeg}
+    \caption{Execution Time Comparison Between Different Implementation For Modular Reduction}
+\end{figure}
+\begin{table}[H]
+    \centering
+    \caption{Execution time for different implementations in relation too the size of the vector in milliseconds} 
+    \rowcolors{2}{green!10}{white}
+    \begin{tabular}{|l|c|c|c|c|c|}
+        \hline
+        Size & Naive & Shoup ref & FLINT & Shoup AVX2 & Shoup AVX512 \\ \hline
+        100  & 0.187 &0.137 &0.098 &0.037 &0.023 \\
+        200  & 0.398 &0.283 &0.201 &0.070 &0.052 \\
+        300  & 0.596 &0.422 &0.290 &0.094 &0.072 \\
+        400  & 0.794 &0.549 &0.366 &0.116 &0.087 \\
+        500  & 0.986 &0.684 &0.455 &0.138 &0.105 \\
+        600  & 1.183 &0.816 &0.551 &0.159 &0.123 \\
+        700  & 1.383 &0.945 &0.637 &0.184 &0.183 \\
+        800  & 1.578 &1.081 &0.718 &0.204 &0.159 \\
+        900  & 1.778 &1.204 &0.801 &0.228 &0.179 \\
+        1000 & 1.979 &1.339 &0.880 &0.249 &0.193 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \rowcolors{2}{blue!10}{white}
+    \caption{Average percentage speedup of different algorithms compared to the naive solution} 
+    \begin{tabular}{|l|c|c|c|c|c|}
+        \hline
+        Size & Naive & Shoup ref & FLINT & Shoup AVX2 & Shoup AVX512\\ \hline
+        100 & 100\% &73.26\% &52.41\% &$19.79\%$ &$12.30\%$\\
+        200 & 100\% &71.11\% &$50.50\%$ &$17.59\%$&$13.07\%$ \\
+        300 & 100\% &70.81\% &$48.66\%$ &$15.77\%$ &$12.08\%$\\
+        400 & 100\% &69.14\% &$46.10\%$ &$14.61\%$ &$10.96\%$\\
+        500 & 100\% &69.37\% &$46.15\%$ &$14.00\%$ &$10.65\%$\\
+        600 & 100\% &68.98\% &$46.58\%$ &$13.44\%$ &$10.40\%$\\
+        700 & 100\% &68.33\% &$46.06\%$ &$13.30\%$ &$13.23\%$\\
+        800 & 100\% &68.50\% &$45.50\%$ &$12.93\%$ &$10.08\%$\\
+        900 & 100\% &67.72\% &$45.05\%$ &$12.82\%$ &$10.07\%$\\
+        1000 & 100\% &67.66\% &$44.47\%$ &$12.58\%$ &$9.75\%$\\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \rowcolors{2}{red!10}{white}
+    \caption{Relative Performance Summary in Percentages}
+    \begin{tabular}{|l|c|c|c|c|c|}
+        \hline
+        Algorithm & Average \% & 1x \\ \hline
+        Naive	  & 100.0\%	   & Baseline \\
+        Shoup ref & 68.7\%	   & 1.45x   \\
+        FLINT     & 45.6\%	   & 2.2x   \\
+        Shoup AVX2 & 15.4\%	   & 6.5x   \\
+        Shoup AVX512 & 11.4\%	   & 8.7x   \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\textbf{Observation:}
+From the results retrieved, we can observe that FLINT's implementation over 64 bits provides roughly 2x
+faster modular reduction on 32 bit operations. Furthermore, our Shoup AVX2 and Shoup AVX512 implementations
+taillored to 32 bits integers provides significant faster 6-8x speedup.
+
+
 
 \end{document}
