@@ -190,7 +190,8 @@ int generate_graphs(Options options, Parameters param)
         ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[6]}, 2);
 #endif
 #if AVX512
-    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[4], algorithms[7], algorithms[8]}, 4);
+    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[8]}, 2);
+    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[9]}, 2);
 #endif
     return ret;
 }

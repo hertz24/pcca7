@@ -1,6 +1,6 @@
 #include "../include/graph.h"
 
-const char *colors[9] = {"red", "dark-green", "orange", "blue", "purple", "dark-cyan", "grey", "brown", "dark-pink"};
+static const char *colors[9] = {"red", "dark-green", "orange", "blue", "purple", "dark-cyan", "grey", "brown", "dark-pink"};
 
 static int benchmark(int fd, int scale, ulong nb_points, Parameters param, Algorithm algorithms[], int nb_algo)
 {
