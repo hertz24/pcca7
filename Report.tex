@@ -51,7 +51,7 @@ The most naive way to compute $a \pmod{n}$ is to perform the operation :
     a - \left\lfloor \frac{a}{n} \right\rfloor \cdot n
 \end{equation}
 
-However, on modern processor architectures (Intel, AMD,\dots), integer division is non-pipelined and has significantly higher computational cost than other operations like additions and multiplications.
+However, on modern processor architectures (Intel, AMD,\dots), integer division has significantly higher computational cost than other operations like additions and multiplications.
 
 Since equation (1) requires a divsion and substraction operation, its considered highly inefficient from both a software and hardware perspective.
 
@@ -83,7 +83,7 @@ Shoup's algorithm is centraled around precomputation as a work around the costly
 
 
 
-\subsection{Input constraint}
+\subsection{Input Constraint:}
 To ensure the correctness of the modular reduction and prevent register overflow during SIMD operations, 
 the following conditions must be satisfied:
 \begin{itemize}
@@ -93,12 +93,35 @@ the following conditions must be satisfied:
     \item \textbf{Modulus ($p$):} A prime number defined over 31 bits ($p < 2^{31}$)
 \end{itemize}
 
-\subsection{Theorem:}
+\subsection{Theorem}
 Let $p$ be a prime number such that $p < \beta/2$ where $\beta = 2^{32}$. Given integers $A$ an integer defined over 32 bits and
 $ B \in [0, p)$, let $B'$ be the precomputed value $B' = \lfloor B\beta/p \rfloor$. 
 If the estimated quotient is defined as $Q = \lfloor AB'/\beta \rfloor$, then the intermediate remainder $R = AB - Qp$ satisfies the following condition:
 $$0 \le AB - Qp < 2p$$
-\subsection{Procomputational Logic}
+
+\subsection{Input Hypothesis:}
+\textbf{Can p be any integer over 32 bits?} \\
+No, one particularly interesting case where Shoup's algorithme will fail is for $p \ge 2^{31}$.
+Since we know that:
+$$0 \le AB - Qp < 2p$$
+
+if $p \ge 2^{31}$ thus $2p \ge 2^{32}$. Therefore, in some cases $AB - Qp$ may exceed $2^{32}$. This causes tremendous errors in the calculation because
+all bits beyond 32 bits are destroyed when we mod $\beta$
+
+\textbf{Does p have to neccesarily be a prime number?} \\
+No, the algorithm mainly uses precomputations (Barrett Reduction), optimized for caculation of $a \mod n$ without constraints on n.
+But for the sake of this project, n is a prime number (p). 
+
+\textbf{Can b be any integer over 32 bits?} \\
+No, suppose $ b > p $, we can rewrite $b$ as:
+\[b = q'\cdot p + r'\]
+Thus the caculations for the precomputed value $B'$ is:
+\[B' = \left\lfloor\frac{(q' \cdot p + f)\cdot 2^{32}}{p}\right\rfloor\]
+\[B' = q' \cdot 2^{32} + \left\lfloor\frac{ f\cdot 2^{32}}{p}\right\rfloor\]
+With a focus on 32 bits in this project, $B'$ in the case of $b>p$ cannot be stored within 32 bits and will overflow.\\
+\textbf{Can a be any integer over 32 bits?} \\
+Yes, a can be any integer defined over 32 bits
+\subsection{Procomputational Logic (Barrett Reduction)}
 The precomputed value $B'$ is defined over 32 bits as:
 \[B'= \lfloor (B \cdot 2^{32}) / p \rfloor \]
 
@@ -112,15 +135,7 @@ We can rewrite this:
   &\approx A \cdot B -  \left\lfloor \frac{A \cdot B'}{2^{32}} \right\rfloor \cdot p \\
 \end{align*}
 
-\subsection{Avantages:}
 
-Using the precomputed value B' to approxiamtely calculate $\left\lfloor \frac{A \cdot B}{p} \right\rfloor$ improves on the naive method by 2 ways:
-\begin{enumerate}
-  \item \textbf{Storing the Inverse of $B$:}
-  $B'$ is computed with 1 division and can be stored to be used in other modular reduction provided the same B provided the same $p$
-  \item \textbf{Shoup's algorithm replaces division operations (slow) with multiplications and additions (fast):}
-   $\frac{A \cdot B'}{2^{32}}$ has only 1 multiplication operation and a bit shift to the right of 32 bits. On a CPU, both multiplication and bit shift operations can be done efficiently compared to division
-\end{enumerate}
 
 \subsection{Fundamental Principal}
 Given x the quotient of 2 32 bits integers: \\
@@ -129,7 +144,6 @@ $$x - 1 < \lfloor x \rfloor \le x$$
 We can rewrite as:
 $$0 \le x - \lfloor x \rfloor < 1$$
 
-\subsection{Basic Reduction B = 1:}
 
 \subsection{Demonstration:}
 The algorithm uses the precomputation $B' = \lfloor B\beta/p \rfloor$ such that:
@@ -173,14 +187,21 @@ By constraint, $A \in [0, p[$ and $p < \beta$ thus $A < \beta$. Therefore we can
     0 \le AB - Qp &< 2p \\
     0 \le R &< 2p
 \end{align*}
-
+\textbf{Conclusion:}
 We have now prouven that $R \in [0, 2p[$ the final if statement of the helps correct the remainder. If $R > p$ the 
 modular reduction needs 1 more step $R - p$, if not $R$ is the correct result
 
+\subsection{Avantages}
 
+Using the precomputed value B' to approxiamtely calculate $\left\lfloor \frac{A \cdot B}{p} \right\rfloor$ improves on the naive method by 2 ways:
+\begin{enumerate}
+  \item \textbf{Storing the Inverse of $B$:}
+  $B'$ is computed with 1 division and can be stored to be used in other modular reduction provided the same B provided the same $p$
+  \item \textbf{Shoup's algorithm replaces division operations (slow) with multiplications and additions (fast):}
+   $\frac{A \cdot B'}{2^{32}}$ has only 1 multiplication operation and a bit shift to the right of 32 bits. On a CPU, both multiplication and bit shift operations can be done efficiently compared to division
+\end{enumerate}
 \subsection{SIMD Vectorization Implementation}
 We decided to create 2 versions for implementating a high performance Shoup algorithm
-\pagebreak
 \subsubsection{AVX}
 For the AVX version, we decided to use 2 main AVX function: 
 \_mm256\_mul\_epu32 and \_mm256\_mul\_epi32. \\
@@ -215,7 +236,6 @@ For the AVX version, we decided to use 2 main AVX function:
 }
 \end{lstlisting}
 
-   
 \begin{lstlisting}  [caption = AVX2 Implementation of Shoup's Modular Reduction ]
     static Vector _shoup_scale_avx(Parameters param, Vector v)
 {
@@ -405,8 +425,8 @@ The performance measurements and benchmarks were performed with the following ha
     \end{tabular}
 \end{table}
 
-\textbf{Obsercation:}On average, the Unrolled implementation is 2.58\% slower on average
-thaan the standard version. 
+\textbf{Observation: }On average, the Unrolled implementation is 2.58\% slower 
+than the standard version. 
 
 
 \subsubsection{Choice between mullo\_epi32 and mul\_epu32}
@@ -528,6 +548,9 @@ Across all the vector sizes, the average percentage gain is 5.15\%
 From the results retrieved, we can observe that FLINT's implementation over 64 bits provides roughly 2x
 faster modular reduction on 32 bit operations. Furthermore, our Shoup AVX2 and Shoup AVX512 implementations
 taillored to 32 bits integers provides significant faster 6-8x speedup.
+
+\subsubsection{NEON's Performance}
+TODO
 
 
 
