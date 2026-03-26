@@ -190,7 +190,7 @@ int generate_graphs(Options options, Parameters param)
         ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[6]}, 2);
 #endif
 #if AVX512
-    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[8]}, 2);
+    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[4], algorithms[7], algorithms[8]}, 4);
 #endif
     return ret;
 }
@@ -205,7 +205,7 @@ int main(int argc, char const *argv[])
         return 1;
     }
     int ret;
-    Options options = {0, 0, 0, 1, 100, 0, 0};
+    Options options = {0, 0, 0, 1, 1000, 0, 0};
     Parameters param;
     if ((ret = set_options(argc, argv, &options)))
         goto end;
