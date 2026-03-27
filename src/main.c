@@ -148,7 +148,7 @@ int init_param(Options *options, Parameters *param)
         ulong lower = (bits < 2) ? 2 : bits;
         do
         {
-            p = n_randprime(state, lower + rand() % (33 - lower), 1);
+            p = n_randprime(state, lower + rand() % (32 - lower), 1);
         } while (p <= b);
         *param = init_parameters(b, p);
         break;
