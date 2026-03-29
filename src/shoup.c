@@ -172,11 +172,11 @@ Vector shoup_scale_avx2(Parameters param, Vector v)
         __m256i c_odd = _shoup_avx2(va_odd, vb, vb_precomp, vp, mask_32);
 
         // 6. Shift odd by 32 bits to the left results back and merge:
-        __m256i res0_odd_shifted = _mm256_slli_epi64(c_odd, 32);           // [7, null, 5, null, 3, null, 1, null]
-        __m256i res0_combined = _mm256_or_si256(c_even, res0_odd_shifted); // [7, null, 5, null, 3, null, 1, null] or [null, 6, null, 4, null, 2, null, 0]
+        __m256i res_odd_shifted = _mm256_slli_epi64(c_odd, 32);          // [7, null, 5, null, 3, null, 1, null]
+        __m256i res_combined = _mm256_or_si256(c_even, res_odd_shifted); // [7, null, 5, null, 3, null, 1, null] or [null, 6, null, 4, null, 2, null, 0]
 
         // 7. Store:
-        _mm256_storeu_si256((__m256i *)(res.elements + i), res0_combined);
+        _mm256_storeu_si256((__m256i *)(res.elements + i), res_combined);
     }
     for (; i < size; i++)
         *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
@@ -215,20 +215,20 @@ Vector unrolling_shoup_scale_avx2(Parameters param, Vector v)
         __m256i c_odd_2 = _shoup_avx2(va_odd_2, vb, vb_precomp, vp, mask_32);
         __m256i c_odd_3 = _shoup_avx2(va_odd_3, vb, vb_precomp, vp, mask_32);
 
-        __m256i res0_odd_shifted = _mm256_slli_epi64(c_odd_0, 32);
-        __m256i res1_odd_shifted = _mm256_slli_epi64(c_odd_1, 32);
-        __m256i res2_odd_shifted = _mm256_slli_epi64(c_odd_2, 32);
-        __m256i res3_odd_shifted = _mm256_slli_epi64(c_odd_3, 32);
+        __m256i res_odd_shifted_0 = _mm256_slli_epi64(c_odd_0, 32);
+        __m256i res_odd_shifted_1 = _mm256_slli_epi64(c_odd_1, 32);
+        __m256i res_odd_shifted_2 = _mm256_slli_epi64(c_odd_2, 32);
+        __m256i res_odd_shifted_3 = _mm256_slli_epi64(c_odd_3, 32);
 
-        __m256i res0_combined = _mm256_or_si256(c_even_0, res0_odd_shifted);
-        __m256i res1_combined = _mm256_or_si256(c_even_1, res1_odd_shifted);
-        __m256i res2_combined = _mm256_or_si256(c_even_2, res2_odd_shifted);
-        __m256i res3_combined = _mm256_or_si256(c_even_3, res3_odd_shifted);
+        __m256i res_combined_0 = _mm256_or_si256(c_even_0, res_odd_shifted_0);
+        __m256i res_combined_1 = _mm256_or_si256(c_even_1, res_odd_shifted_1);
+        __m256i res_combined_2 = _mm256_or_si256(c_even_2, res_odd_shifted_2);
+        __m256i res_combined_3 = _mm256_or_si256(c_even_3, res_odd_shifted_3);
 
-        _mm256_storeu_si256((__m256i *)(res.elements + i), res0_combined);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 8), res1_combined);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 16), res2_combined);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 24), res3_combined);
+        _mm256_storeu_si256((__m256i *)(res.elements + i), res_combined_0);
+        _mm256_storeu_si256((__m256i *)(res.elements + i + 8), res_combined_1);
+        _mm256_storeu_si256((__m256i *)(res.elements + i + 16), res_combined_2);
+        _mm256_storeu_si256((__m256i *)(res.elements + i + 24), res_combined_3);
     }
     for (; i < size; i++)
         *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
@@ -278,20 +278,20 @@ Vector shoup_scale_mullo_avx2(Parameters param, Vector v)
         __m256i c_odd_2 = _shoup_mullo_avx2(va_odd_2, vb, vb_precomp, vp);
         __m256i c_odd_3 = _shoup_mullo_avx2(va_odd_3, vb, vb_precomp, vp);
 
-        __m256i res0_odd_shifted = _mm256_slli_epi64(c_odd_0, 32);
-        __m256i res1_odd_shifted = _mm256_slli_epi64(c_odd_1, 32);
-        __m256i res2_odd_shifted = _mm256_slli_epi64(c_odd_2, 32);
-        __m256i res3_odd_shifted = _mm256_slli_epi64(c_odd_3, 32);
+        __m256i res_odd_shifted_0 = _mm256_slli_epi64(c_odd_0, 32);
+        __m256i res_odd_shifted_1 = _mm256_slli_epi64(c_odd_1, 32);
+        __m256i res_odd_shifted_2 = _mm256_slli_epi64(c_odd_2, 32);
+        __m256i res_odd_shifted_3 = _mm256_slli_epi64(c_odd_3, 32);
 
-        __m256i res0_combined = _mm256_or_si256(c_even_0, res0_odd_shifted);
-        __m256i res1_combined = _mm256_or_si256(c_even_1, res1_odd_shifted);
-        __m256i res2_combined = _mm256_or_si256(c_even_2, res2_odd_shifted);
-        __m256i res3_combined = _mm256_or_si256(c_even_3, res3_odd_shifted);
+        __m256i res_combined_0 = _mm256_or_si256(c_even_0, res_odd_shifted_0);
+        __m256i res_combined_1 = _mm256_or_si256(c_even_1, res_odd_shifted_1);
+        __m256i res_combined_2 = _mm256_or_si256(c_even_2, res_odd_shifted_2);
+        __m256i res_combined_3 = _mm256_or_si256(c_even_3, res_odd_shifted_3);
 
-        _mm256_storeu_si256((__m256i *)(res.elements + i), res0_combined);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 8), res1_combined);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 16), res2_combined);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 24), res3_combined);
+        _mm256_storeu_si256((__m256i *)(res.elements + i), res_combined_0);
+        _mm256_storeu_si256((__m256i *)(res.elements + i + 8), res_combined_1);
+        _mm256_storeu_si256((__m256i *)(res.elements + i + 16), res_combined_2);
+        _mm256_storeu_si256((__m256i *)(res.elements + i + 24), res_combined_3);
     }
     for (; i < size; i++)
         *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
@@ -341,20 +341,20 @@ Vector shoup_b1_scale_avx2(Parameters param, Vector v)
         __m256i c_odd_2 = _shoup_b1_avx2(va_odd_2, vb_precomp, vp, mask_32);
         __m256i c_odd_3 = _shoup_b1_avx2(va_odd_3, vb_precomp, vp, mask_32);
 
-        __m256i res0_odd_shifted = _mm256_slli_epi64(c_odd_0, 32);
-        __m256i res1_odd_shifted = _mm256_slli_epi64(c_odd_1, 32);
-        __m256i res2_odd_shifted = _mm256_slli_epi64(c_odd_2, 32);
-        __m256i res3_odd_shifted = _mm256_slli_epi64(c_odd_3, 32);
+        __m256i res_odd_shifted_0 = _mm256_slli_epi64(c_odd_0, 32);
+        __m256i res_odd_shifted_1 = _mm256_slli_epi64(c_odd_1, 32);
+        __m256i res_odd_shifted_2 = _mm256_slli_epi64(c_odd_2, 32);
+        __m256i res_odd_shifted_3 = _mm256_slli_epi64(c_odd_3, 32);
 
-        __m256i res0_combined = _mm256_or_si256(c_even_0, res0_odd_shifted);
-        __m256i res1_combined = _mm256_or_si256(c_even_1, res1_odd_shifted);
-        __m256i res2_combined = _mm256_or_si256(c_even_2, res2_odd_shifted);
-        __m256i res3_combined = _mm256_or_si256(c_even_3, res3_odd_shifted);
+        __m256i res_combined_0 = _mm256_or_si256(c_even_0, res_odd_shifted_0);
+        __m256i res_combined_1 = _mm256_or_si256(c_even_1, res_odd_shifted_1);
+        __m256i res_combined_2 = _mm256_or_si256(c_even_2, res_odd_shifted_2);
+        __m256i res_combined_3 = _mm256_or_si256(c_even_3, res_odd_shifted_3);
 
-        _mm256_storeu_si256((__m256i *)(res.elements + i), res0_combined);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 8), res1_combined);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 16), res2_combined);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 24), res3_combined);
+        _mm256_storeu_si256((__m256i *)(res.elements + i), res_combined_0);
+        _mm256_storeu_si256((__m256i *)(res.elements + i + 8), res_combined_1);
+        _mm256_storeu_si256((__m256i *)(res.elements + i + 16), res_combined_2);
+        _mm256_storeu_si256((__m256i *)(res.elements + i + 24), res_combined_3);
     }
     for (; i < size; i++)
         *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
