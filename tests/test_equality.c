@@ -8,10 +8,10 @@ int main(void)
 {
     srand(time(NULL));
     Parameters (*functions[2])(ulong) = {rand_parameters_p, rand_parameters_b};
-    for (int i = 0; i <= 1; i++)
+    for (int i = 0; i <= 2; i++)
         for (ulong j = 0; j <= 31; j++)
         {
-            Parameters param = functions[i](j);
+            Parameters param = (i < 2) ? functions[i](j) : init_parameters(1, rand_prime(j));
             Vector rand_v = rand_vector(VECTOR_SIZE);
 
             // Always correct for naive algorithm
@@ -20,7 +20,7 @@ int main(void)
             int error = 0;
             for (int k = 1; k < NB_ALGO; k++)
             {
-                if (k == 6)
+                if ((k == 6 || k == NB_ALGO - 1) && i < 2)
                     continue;
                 Vector result = algorithms[k].address(param, rand_v);
                 int index = compare_vectors(ref, result);

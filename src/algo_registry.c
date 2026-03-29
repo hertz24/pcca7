@@ -17,7 +17,8 @@ const Algorithm algorithms[] = {{"Naive scale", naive_scale}, {"Shoup scale (ref
                                 ,
                                 {"Shoup scale (AVX512)", shoup_scale_avx512},
                                 {"Unrolling Shoup scale (AVX512)", unrolling_shoup_scale_avx512},
-                                {"Shoup scale with multiply low (AVX512)", shoup_scale_mullo_avx512}
+                                {"Shoup scale with multiply low (AVX512)", shoup_scale_mullo_avx512},
+                                {"Shoup scale (AVX512) for b = 1", shoup_b1_scale_avx512}
 #endif
 };
 
