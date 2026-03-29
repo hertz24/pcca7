@@ -1,7 +1,4 @@
-#include <time.h>
-
 #include "test.h"
-#include "../include/parameters.h"
 
 int main(void)
 {

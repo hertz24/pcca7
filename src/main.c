@@ -35,7 +35,7 @@ typedef struct
  * @retval 0 success
  * @retval 1 error
  */
-int set_options(int argc, char const *argv[], Options *options)
+static int set_options(int argc, char const *argv[], Options *options)
 {
     for (int i = 1; i < argc; i += 2)
         if (strcmp("-p", argv[i]) == 0)
@@ -97,7 +97,7 @@ int set_options(int argc, char const *argv[], Options *options)
  * @retval 0 success
  * @retval 1 error
  */
-int init_param(Options *options, Parameters *param)
+static int init_param(Options *options, Parameters *param)
 {
     unsigned char flags = options->flags;
     uint32_t p = options->p;
@@ -112,11 +112,10 @@ int init_param(Options *options, Parameters *param)
             fprintf(stderr, "b must be less than p.\n");
             return 1;
         }
-        else
-            *param = init_parameters(b, p);
+        *param = init_parameters(b, p);
         break;
     case (OPT_P | OPT_B_BITS):
-        if (nb_bits(p) < b_bits)
+        if (FLINT_BIT_COUNT(p) < b_bits)
         {
             fprintf(stderr, "The number of bits of p must be greater than or equal to the number of bits of b.\n");
             return 1;
@@ -131,19 +130,24 @@ int init_param(Options *options, Parameters *param)
         *param = init_parameters(n_randint(state, p), p);
         break;
     case (OPT_B | OPT_P_BITS):
-        if (nb_bits(b) > p_bits)
+        if (FLINT_BIT_COUNT(b) > p_bits)
         {
             fprintf(stderr, "The number of bits of p must be greater than or equal to the number of bits of b.\n");
             return 1;
         }
+        if (b >= max_prime_bits(p_bits))
+        {
+            fprintf(stderr, "There is no %lu-bit prime number p such that p > %u.\n", p_bits, b);
+            return 1;
+        }
         do
         {
-            p = n_randbits(state, p_bits);
+            p = n_randprime(state, p_bits, 1);
         } while (p <= b);
         *param = init_parameters(b, p);
         break;
     case OPT_B:
-        ulong bits = nb_bits(b);
+        ulong bits = FLINT_BIT_COUNT(b);
         uint32_t p;
         ulong lower = (bits < 2) ? 2 : bits;
         do
@@ -168,7 +172,7 @@ int init_param(Options *options, Parameters *param)
     return 0;
 }
 
-int generate_graphs(Options options, Parameters param)
+static int generate_graphs(Options options, Parameters param)
 {
     ulong scale = options.scale;
     ulong points = options.points;
@@ -208,7 +212,7 @@ int main(int argc, char const *argv[])
         return 1;
     }
     int ret;
-    Options options = {0, 0, 0, 1, 1000, 0, 0};
+    Options options = {0, 0, 0, 1, 100, 0, 0};
     Parameters param;
     if ((ret = set_options(argc, argv, &options)))
         goto end;

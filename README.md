@@ -1,4 +1,4 @@
-# 32-bit Modular Arithmetic and SIMD Vectorisation
+# 32-bit Modular Arithmetic and SIMD Vectorization
 
 ## Overview
 
@@ -19,7 +19,7 @@ For the documentation of this project, run
 
     doxygen && cd latex && make
 
-There will be a file named `refman.pdf` will be generated.
+A file named `refman.pdf` will be generated.
 
 ## Building from source
 
@@ -41,7 +41,7 @@ To build the project, run
 
     make
 
-## Use
+## Usage
 
 To execute the project, run
 
@@ -51,14 +51,14 @@ To execute the project, run
 
 These flags are parsed by the `set_options` function and control the generation of the modulus `p` and the multiplier `b` used in the modular arithmetic benchmarks.
 
-| Flag      | Argument  | Description                                                                    |
-| --------- | --------- | ------------------------------------------------------------------------------ |
-| `-p`      | `<prime>` | Sets the prime modulus `p` directly. Must be a prime number.                   |
-| `-b`      | `<value>` | Sets the multiplier `b` directly. Must be less than `p`.                       |
-| `-p_bits` | `<bits>`  | Generates a random prime modulus `p` with the given number of bits.            |
-| `-b_bits` | `<bits>`  | Generates a random multiplier `b` with the given number of bits.               |
-| `-scale`  | `<int>`   | Scaling factor for the number of points in the generated graphs (default = 1). |
-| `-pts`    | `<int>`   | Number of measurement points (default = 100).                                  |
+| Flag      | Argument  | Description                                                         |
+| --------- | --------- | ------------------------------------------------------------------- |
+| `-p`      | `<prime>` | Sets the prime modulus `p` directly. Must be a prime number.        |
+| `-b`      | `<value>` | Sets the multiplier `b` directly. Must be less than `p`.            |
+| `-p_bits` | `<bits>`  | Generates a random prime modulus `p` with the given number of bits. |
+| `-b_bits` | `<bits>`  | Generates a random multiplier `b` with the given number of bits.    |
+| `-scale`  | `<int>`   | Scaling factor for the number of points in the generated graphs.    |
+| `-pts`    | `<int>`   | Number of measurement points.                                       |
 
 ### Parameter Generation Rules
 
@@ -68,16 +68,18 @@ These flags are parsed by the `set_options` function and control the generation 
 - If `-b_bits` is given, `b` is generated with the specified number of bits with a random prime `p` (greater than `b`).
 - If no parameter flags are supplied, random parameters are used.
 - If an option is given several times, only the first one will be considered
-- If `-x` and `-x_bits` with `x=a` or `x=b` are given, only the first one will be considered
+- If `-x` and `-x_bits` with `x = a` or `x = b` are given, only the first one will be considered
+- If `-scale` is not given, the scale defaults to 1.
+- If `-pts` is not given, the number of points defaults to 100.
 
 For example, running
 
     ./pcca7 -p 1231 -b 2 -scale 10 -pts 100
 
-will generate a graph for `p=1231` and `b=2` with 100 points at scale 10.
+will generate a graph for `p = 1231` and `b = 2` with 100 points at scale 10.
 
 Running
 
     ./pcca7 -p 191 -p_bits 12
 
-the program will only consider `191`. Therefore, the program will generate a graph for `p=191` and a random `b`.
+the program will only consider `191` as prime number. Therefore, the program will generate a graph for `p = 191` and a random `b`.

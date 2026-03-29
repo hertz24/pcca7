@@ -26,6 +26,4 @@
  */
 double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param, Vector v);
 
-ulong nb_bits(ulong x);
-
 #endif

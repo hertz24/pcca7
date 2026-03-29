@@ -17,6 +17,26 @@ uint32_t rand_prime(ulong bits)
     return p;
 }
 
+uint32_t max_prime_bits(ulong bits)
+{
+    if (bits < 2 || bits > 32)
+    {
+        fprintf(stderr, "The number of bits must be between 2 and 32.\n");
+        return 0;
+    }
+    uint32_t x = (1 << bits) - 1;
+    while (FLINT_BIT_COUNT(x) == bits)
+    {
+        if (n_is_prime(x))
+            return x;
+        x -= 2;
+    }
+    /*
+     * NOTE: should never reach
+     */
+    return 0;
+}
+
 Parameters rand_parameters_p(ulong bits)
 {
     uint32_t p = rand_prime(bits);

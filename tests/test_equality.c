@@ -1,8 +1,4 @@
-#include <time.h>
-
 #include "test.h"
-#include "../include/algo_registry.h"
-#include "../include/utils.h"
 
 int main(void)
 {
@@ -32,7 +28,7 @@ int main(void)
                         fprintf(stderr, "\n");
                     }
                     error = 1;
-                    fprintf(stderr, "\t- When multiplying %lu bits and %lu bits for %s\n", nb_bits(*(rand_v.elements + index)), nb_bits(param.b), algorithms[k].name);
+                    fprintf(stderr, "\t- When multiplying %lu bits and %lu bits for %s\n", FLINT_BIT_COUNT(*(rand_v.elements + index)), FLINT_BIT_COUNT(param.b), algorithms[k].name);
                 }
                 free_vector(result);
             }

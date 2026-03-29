@@ -1,8 +1,4 @@
-#include <time.h>
-
 #include "test.h"
-#include "../include/shoup.h"
-#include "../include/utils.h"
 
 int main(void)
 {
@@ -20,7 +16,7 @@ int main(void)
                 if (ref != shoup)
                 {
                     ERROR("test_shoup");
-                    fprintf(stderr, "result obtained %u instead of %u for %u * %u mod %u (multipliying %lu bits and %lu bits mod %lu bits)\n", shoup, ref, a, param.b, param.p, nb_bits(a), nb_bits(param.b), nb_bits(param.p));
+                    fprintf(stderr, "result obtained %u instead of %u for %u * %u mod %u (multipliying %lu bits and %lu bits mod %lu bits)\n", shoup, ref, a, param.b, param.p, FLINT_BIT_COUNT(a), FLINT_BIT_COUNT(param.b), FLINT_BIT_COUNT(param.p));
                     return 1;
                 }
             }
