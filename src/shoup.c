@@ -96,7 +96,7 @@ static inline uint32x2_t _shoup_mullo_neon(uint32x2_t va, uint32x2_t vb, uint32x
     uint32x2_t vqp = vmul_u32(vq, vp);
     uint32x2_t vc = vsub_u32(vab, vqp);
     uint32x2_t cmp = vcge_u32(vc, vp);
-    return vsub_u32(c, vand_u32(cmp, vp));
+    return vsub_u32(vc, vand_u32(cmp, vp));
 }
 
 Vector shoup_scale_mullo_neon(Parameters param, Vector v)
@@ -118,6 +118,42 @@ Vector shoup_scale_mullo_neon(Parameters param, Vector v)
         vst1_u32(res.elements + i + 2, _shoup_mullo_neon(va_1, vb, vb_precomp, vp));
         vst1_u32(res.elements + i + 4, _shoup_mullo_neon(va_2, vb, vb_precomp, vp));
         vst1_u32(res.elements + i + 6, _shoup_mullo_neon(va_3, vb, vb_precomp, vp));
+    }
+    for (; i < size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+    return res;
+}
+
+static inline uint32x2_t _shoup_b1_neon(uint32x2_t va, uint32x2_t vb_precomp, uint32x2_t vp)
+{
+    uint64x2_t vab_precomp = vmull_u32(va, vb_precomp);
+    uint32x2_t vq = vmovn_u64(vshrq_n_u64(vab_precomp, 32));
+    uint64x2_t vqp = vmull_u32(vq, vp);
+    uint32x2_t vc = vmovn_u64(vsubq_u64(vmovl_u32(va), vqp));
+    uint32x2_t cmp = vcge_u32(vc, vp);
+    return vsub_u32(vc, vand_u32(cmp, vp));
+}
+
+Vector shoup_b1_scale_neon(Parameters param, Vector v)
+{
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    ulong n = size - (size % 4);
+    uint32x2_t vp = vdup_n_u32(param.p);
+    uint32x2_t vb_precomp = vdup_n_u32(param.b_precomp);
+    ulong i = 0;
+    for (; i + 7 < n; i += 8)
+    {
+        uint32x2_t va_0 = vld1_u32(v.elements + i);
+        uint32x2_t va_1 = vld1_u32(v.elements + i + 2);
+        uint32x2_t va_2 = vld1_u32(v.elements + i + 4);
+        uint32x2_t va_3 = vld1_u32(v.elements + i + 6);
+
+        // Stocks the value
+        vst1_u32(res.elements + i, _shoup_b1_neon(va_0, vb_precomp, vp));
+        vst1_u32(res.elements + i + 2, _shoup_b1_neon(va_1, vb_precomp, vp));
+        vst1_u32(res.elements + i + 4, _shoup_b1_neon(va_2, vb_precomp, vp));
+        vst1_u32(res.elements + i + 6, _shoup_b1_neon(va_3, vb_precomp, vp));
     }
     for (; i < size; i++)
         *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
