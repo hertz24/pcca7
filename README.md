@@ -23,7 +23,7 @@ There will be a file named `refman.pdf` will be generated.
 
 ## Building from source
 
-This project assumes that [FLINT]https://flintlib.org/ is already installed. Otherwise, you can install it following the steps on the website.
+This project assumes that [FLINT](https://flintlib.org/) is already installed. Otherwise, you can install it following the steps on the website.
 
 ### The Makefile
 
@@ -42,6 +42,10 @@ To build the project, run
     make
 
 ## Use
+
+To execute the project, run
+
+    ./pcca7
 
 ### Command line flags
 
@@ -63,3 +67,17 @@ These flags are parsed by the `set_options` function and control the generation 
 - If `-p_bits` is given, `p` is generated with the specified number of bits with a random `b` (less than `p`).
 - If `-b_bits` is given, `b` is generated with the specified number of bits with a random prime `p` (greater than `b`).
 - If no parameter flags are supplied, random parameters are used.
+- If an option is given several times, only the first one will be considered
+- If `-x` and `-x_bits` with `x=a` or `x=b` are given, only the first one will be considered
+
+For example, running
+
+    ./pcca7 -p 1231 -b 2 -scale 10 -pts 100
+
+will generate a graph for `p=1231` and `b=2` with 100 points at scale 10.
+
+Running
+
+    ./pcca7 -p 191 -p_bits 12
+
+the program will only consider `191`. Therefore, the program will generate a graph for `p=191` and a random `b`.
