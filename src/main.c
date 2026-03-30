@@ -178,7 +178,7 @@ static int generate_graphs(Options options, Parameters param)
     if (options.b == 1)
         ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[10]}, 2);
 #endif
-    return ret;
+    return ret ? ERR_GEN_GRAPHS : 0;
 }
 
 int main(int argc, char const *argv[])

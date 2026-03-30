@@ -39,6 +39,9 @@
     case ERR_NO_PRIME_FOR_BITS:                                                                                 \
         fprintf(stderr, "For the number of bits given for p, there is no prime p such that p > b.\n");          \
         break;                                                                                                  \
+    case ERR_GEN_GRAPHS:                                                                                        \
+        fprintf(stderr, "Error occurred while generating the graphs.\n");                                       \
+        break;                                                                                                  \
     }
 
 #endif
