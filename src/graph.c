@@ -27,8 +27,9 @@ static int benchmark(int fd, int scale, ulong nb_points, Parameters param, Algor
 int generate_graph(int scale, ulong nb_points, Parameters param, Algorithm algorithms[], int nb_algo)
 {
     static int count = 1;
-    char file_name[16];
-    snprintf(file_name, 15, "graph%d.gp", count);
+    mkdir("graphs", 0755);
+    char file_name[32];
+    snprintf(file_name, sizeof(file_name) - 1, "graphs/graph%d.gp", count);
     int fd = open(file_name, O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (fd == -1)
     {

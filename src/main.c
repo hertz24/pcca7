@@ -43,39 +43,27 @@ static int set_options(int argc, char const *argv[], Options *options)
     if (argc % 2 == 0)
         return ERR_INPUT;
     for (int i = 1; i < argc; i += 2)
-        if (strcmp("-p", argv[i]) == 0)
+        if (strcmp("-p", argv[i]) == 0 && !(options->flags & (OPT_P | OPT_P_BITS)))
         {
-            if (!(options->flags & (OPT_P | OPT_P_BITS)))
-            {
-                options->p = atoi(argv[i + 1]);
-                if (!n_is_prime(options->p))
-                    return ERR_PRIME;
-                options->flags |= OPT_P;
-            }
+            options->p = atoi(argv[i + 1]);
+            if (!n_is_prime(options->p))
+                return ERR_PRIME;
+            options->flags |= OPT_P;
         }
-        else if (strcmp("-b", argv[i]) == 0)
+        else if (strcmp("-b", argv[i]) == 0 && (options->flags & (OPT_B | OPT_B_BITS)) == 0)
         {
-            if ((options->flags & (OPT_B | OPT_B_BITS)) == 0)
-            {
-                options->b = atoi(argv[i + 1]);
-                options->flags |= OPT_B;
-            }
+            options->b = atoi(argv[i + 1]);
+            options->flags |= OPT_B;
         }
-        else if (strcmp("-p_bits", argv[i]) == 0)
+        else if (strcmp("-p_bits", argv[i]) == 0 && (options->flags & (OPT_P | OPT_P_BITS)) == 0)
         {
-            if ((options->flags & (OPT_P | OPT_P_BITS)) == 0)
-            {
-                options->p_bits = strtoul(argv[i + 1], NULL, 10);
-                options->flags |= OPT_P_BITS;
-            }
+            options->p_bits = strtoul(argv[i + 1], NULL, 10);
+            options->flags |= OPT_P_BITS;
         }
-        else if (strcmp("-b_bits", argv[i]) == 0)
+        else if (strcmp("-b_bits", argv[i]) == 0 && !(options->flags & (OPT_B | OPT_B_BITS)))
         {
-            if (!(options->flags & (OPT_B | OPT_B_BITS)))
-            {
-                options->b_bits = strtoul(argv[i + 1], NULL, 10);
-                options->flags |= OPT_B_BITS;
-            }
+            options->b_bits = strtoul(argv[i + 1], NULL, 10);
+            options->flags |= OPT_B_BITS;
         }
         else if (strcmp("-scale", argv[i]) == 0)
             options->scale = atoi(argv[i + 1]);
