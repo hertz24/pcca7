@@ -35,7 +35,6 @@ int generate_graph(int scale, ulong nb_points, Parameters param, Algorithm algor
         perror("generate_curve fd open");
         return 1;
     }
-    int ret = 0;
     dprintf(fd, "set terminal pngcairo size 1200,800 enhanced font 'arial,10'\n"
                 "set datafile separator ','\n"
                 "set key outside\n"
@@ -52,6 +51,7 @@ int generate_graph(int scale, ulong nb_points, Parameters param, Algorithm algor
             dprintf(fd, ", ");
     }
     dprintf(fd, "\n");
+    int ret = 0;
     if (benchmark(fd, scale, nb_points, param, algorithms, nb_algo) == 1)
     {
         perror("generate_curve benchmark");

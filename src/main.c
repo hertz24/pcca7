@@ -8,6 +8,7 @@
 #include <time.h>
 
 #include "../include/graph.h"
+#include "../include/error.h"
 
 #define OPT_P 1
 #define OPT_B 2
@@ -33,10 +34,14 @@ typedef struct
  * @param[in, out] options The pointer to the @c Options structure which will be filled based on the command line
  *
  * @retval 0 success
- * @retval 1 error
+ * @retval diffent value depending on the error
+ *
+ * @see error.h
  */
 static int set_options(int argc, char const *argv[], Options *options)
 {
+    if (argc % 2 == 0)
+        return ERR_INPUT;
     for (int i = 1; i < argc; i += 2)
         if (strcmp("-p", argv[i]) == 0)
         {
@@ -44,10 +49,7 @@ static int set_options(int argc, char const *argv[], Options *options)
             {
                 options->p = atoi(argv[i + 1]);
                 if (!n_is_prime(options->p))
-                {
-                    fprintf(stderr, "p must be a prime number.\n");
-                    return 1;
-                }
+                    return ERR_PRIME;
                 options->flags |= OPT_P;
             }
         }
@@ -80,10 +82,7 @@ static int set_options(int argc, char const *argv[], Options *options)
         else if (strcmp("-pts", argv[i]) == 0)
             options->points = strtoul(argv[i + 1], NULL, 10);
         else
-        {
-            fprintf(stderr, "Option %s unrecognized.\n", argv[i]);
-            return 1;
-        }
+            return ERR_UNRECOGNIZED;
     return 0;
 }
 
@@ -95,7 +94,9 @@ static int set_options(int argc, char const *argv[], Options *options)
  * @param[in, out] options The pointer to the @c Options structure
  *
  * @retval 0 success
- * @retval 1 error
+ * @retval diffent value depending on the error
+ *
+ * @see error.h
  */
 static int init_param(Options *options, Parameters *param)
 {
@@ -108,18 +109,12 @@ static int init_param(Options *options, Parameters *param)
     {
     case (OPT_P | OPT_B):
         if (b >= p)
-        {
-            fprintf(stderr, "b must be less than p.\n");
-            return 1;
-        }
+            return ERR_B_GE_P;
         *param = init_parameters(b, p);
         break;
     case (OPT_P | OPT_B_BITS):
         if (FLINT_BIT_COUNT(p) < b_bits)
-        {
-            fprintf(stderr, "The number of bits of p must be greater than or equal to the number of bits of b.\n");
-            return 1;
-        }
+            return ERR_BBITS_GE_PBITS;
         do
         {
             b = n_randbits(state, b_bits);
@@ -131,15 +126,9 @@ static int init_param(Options *options, Parameters *param)
         break;
     case (OPT_B | OPT_P_BITS):
         if (FLINT_BIT_COUNT(b) > p_bits)
-        {
-            fprintf(stderr, "The number of bits of p must be greater than or equal to the number of bits of b.\n");
-            return 1;
-        }
+            return ERR_BBITS_GE_PBITS;
         if (b >= max_prime_bits(p_bits))
-        {
-            fprintf(stderr, "There is no %lu-bit prime number p such that p > %u.\n", p_bits, b);
-            return 1;
-        }
+            return ERR_NO_PRIME_FOR_BITS;
         do
         {
             p = n_randprime(state, p_bits, 1);
@@ -157,6 +146,8 @@ static int init_param(Options *options, Parameters *param)
         *param = init_parameters(b, p);
         break;
     case (OPT_P_BITS | OPT_B_BITS):
+        if (p_bits < b_bits)
+            return ERR_BBITS_GE_PBITS;
         *param = rand_parameters(p_bits, b_bits);
         break;
     case OPT_P_BITS:
@@ -206,11 +197,6 @@ int main(int argc, char const *argv[])
 {
     srand(time(NULL));
     rand_init();
-    if (argc % 2 == 0)
-    {
-        fprintf(stderr, "Error input arguments.\n");
-        return 1;
-    }
     int ret;
     Options options = {0, 0, 0, 1, 100, 0, 0};
     Parameters param;
@@ -220,5 +206,7 @@ int main(int argc, char const *argv[])
         goto end;
     ret = generate_graphs(options, param);
 end:
+    if (ret)
+        PRINT_ERROR(ret);
     return ret;
 }
