@@ -12,7 +12,7 @@ void rand_init(void)
 uint32_t rand_prime(ulong bits)
 {
     if (bits < 2 || bits > 31)
-        bits = 2 + rand() % 30;
+        bits = 2 + _n_randint(state, 30);
     uint32_t p = n_randprime(state, bits, 1);
     return p;
 }
@@ -51,7 +51,7 @@ Parameters rand_parameters_b(ulong bits)
     ulong lower = (bits < 2) ? 2 : bits;
     do
     {
-        p = n_randprime(state, lower + rand() % (32 - lower), 1);
+        p = n_randprime(state, lower + _n_randint(state, 32 - lower), 1);
     } while (p <= b);
     return init_parameters(b, p);
 }

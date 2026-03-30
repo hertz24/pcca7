@@ -2,7 +2,6 @@
 
 int main(void)
 {
-    srand(time(NULL));
     Parameters (*functions[2])(ulong) = {rand_parameters_p, rand_parameters_b};
     char *names[2] = {"rand_parameters", "rand_parameters_b"};
     for (int i = 0; i <= 1; i++)

@@ -7,7 +7,6 @@
 #define TEST_H
 
 #include <stdio.h>
-#include <time.h>
 
 #include "../include/shoup.h"
 #include "../include/utils.h"

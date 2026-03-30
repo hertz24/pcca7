@@ -2,7 +2,6 @@
 
 int main(void)
 {
-    srand(time(NULL));
     Parameters (*functions[2])(ulong) = {rand_parameters_p, rand_parameters_b};
     for (int i = 0; i <= 2; i++)
         for (ulong j = 0; j <= 31; j++)

@@ -2,7 +2,6 @@
 
 int main(void)
 {
-    srand(time(NULL));
     uint32_t p;
     for (ulong i = 0; i <= 31; i++)
     {

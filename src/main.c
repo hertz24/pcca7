@@ -5,8 +5,6 @@
  * @author Duc Vinh Nguyen
  */
 
-#include <time.h>
-
 #include "../include/graph.h"
 #include "../include/error.h"
 
@@ -129,7 +127,7 @@ static int init_param(Options *options, Parameters *param)
         ulong lower = (bits < 2) ? 2 : bits;
         do
         {
-            p = n_randprime(state, lower + rand() % (32 - lower), 1);
+            p = n_randprime(state, lower + _n_randint(state, 32 - lower), 1);
         } while (p <= b);
         *param = init_parameters(b, p);
         break;
@@ -183,7 +181,6 @@ static int generate_graphs(Options options, Parameters param)
 
 int main(int argc, char const *argv[])
 {
-    srand(time(NULL));
     rand_init();
     int ret;
     Options options = {0, 0, 0, 1, 100, 0, 0};
