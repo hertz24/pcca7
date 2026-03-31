@@ -3,12 +3,9 @@
 int main(void)
 {
     int ret = 0;
-    int out = dup(STDOUT_FILENO);
-    int err = dup(STDERR_FILENO);
-    int null = open("/dev/null", O_WRONLY);
-    dup2(null, STDOUT_FILENO);
-    dup2(null, STDERR_FILENO);
-    close(null);
+    int out, err;
+    if (begin(&out, &err))
+        fprintf(stderr, "test_equality: the print statements in the functions under test are not silenced.\n");
     rand_init();
     for (ulong i = 0; i <= 32; i++)
         for (ulong j = i; j <= 32; j++)
@@ -30,9 +27,7 @@ int main(void)
                 {
                     if (!error)
                     {
-                        fflush(stderr);
-                        dup2(err, STDERR_FILENO);
-                        ERROR("test_equality");
+                        FAIL("test_equality", &err);
                         fprintf(stderr, "\n");
                     }
                     error = 1;
@@ -48,9 +43,7 @@ int main(void)
                 goto end;
             }
         }
-    fflush(stdout);
-    dup2(out, STDOUT_FILENO);
-    SUCCESS("test_equality");
+    SUCCESS("test_equality", &out);
 end:
     close(out);
     close(err);
