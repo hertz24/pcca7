@@ -43,19 +43,24 @@ uint32_t max_prime_bits(ulong bits)
 
 Parameters rand_parameters(ulong b_bits, ulong p_bits)
 {
-    if (p_bits >= 2 && p_bits <= 31 && b_bits <= 32 && p_bits < b_bits)
+    if (p_bits >= 2 && p_bits <= 31 && b_bits <= 31 && p_bits < b_bits)
     {
         fprintf(stderr, "The number of bits of p must be greater than or equal to the number of bits of b.\n");
         return (Parameters){0};
     }
     if (p_bits < 2 || p_bits > 31)
     {
-        ulong lower = (b_bits < 2 || b_bits > 32) ? 2 : b_bits;
+        ulong lower = (b_bits < 2 || b_bits > 31) ? 2 : b_bits;
         p_bits = lower + _n_randint(state, 32 - lower);
     }
-    if (b_bits > 32)
+    if (b_bits > 31)
         b_bits = _n_randint(state, p_bits + 1);
     uint32_t p = rand_prime(p_bits);
+    if (p == 2 && b_bits == 2)
+    {
+        printf("p = 2: the number of bits of b was changed by 1.\n");
+        return init_parameters(1, 2);
+    }
     uint32_t b;
     do
     {

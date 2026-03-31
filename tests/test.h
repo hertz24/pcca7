@@ -7,6 +7,8 @@
 #define TEST_H
 
 #include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "../include/shoup.h"
 #include "../include/utils.h"
