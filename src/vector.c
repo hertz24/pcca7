@@ -16,7 +16,7 @@ Vector rand_vector(ulong size)
     Vector v = init_vector(size);
     FLINT_TEST_INIT(state);
     for (ulong i = 0; i < size; i++)
-        *(v.elements + i) = n_randbits(state, rand() % 33);
+        *(v.elements + i) = n_randbits(state, _n_randint(state, 33));
     FLINT_TEST_CLEAR(state);
     return v;
 }

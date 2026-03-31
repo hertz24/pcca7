@@ -30,11 +30,3 @@ double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param,
     free(data);
     return min;
 }
-
-ulong nb_bits(ulong x)
-{
-    ulong n = 0;
-    for (; x != 0; x >>= 1)
-        n++;
-    return n;
-}

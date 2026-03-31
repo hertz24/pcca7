@@ -5,7 +5,8 @@ const Algorithm algorithms[] = {{"Naive scale", naive_scale}, {"Shoup scale (ref
                                 ,
                                 {"Shoup scale (NEON)", shoup_scale_neon},
                                 {"Unorlling Shoup scale (NEON)", unrolling_shoup_scale_neon},
-                                {"Shoup scale with multiply low (NEON)", shoup_scale_mullo_neon}
+                                {"Shoup scale with multiply low (NEON)", shoup_scale_mullo_neon},
+                                {"Shoup scale (NEON) for b = 1", shoup_b1_scale_neon}
 #elif AVX2
                                 ,
                                 {"Shoup scale (AVX2)", shoup_scale_avx2},
@@ -17,7 +18,8 @@ const Algorithm algorithms[] = {{"Naive scale", naive_scale}, {"Shoup scale (ref
                                 ,
                                 {"Shoup scale (AVX512)", shoup_scale_avx512},
                                 {"Unrolling Shoup scale (AVX512)", unrolling_shoup_scale_avx512},
-                                {"Shoup scale with multiply low (AVX512)", shoup_scale_mullo_avx512}
+                                {"Shoup scale with multiply low (AVX512)", shoup_scale_mullo_avx512},
+                                {"Shoup scale (AVX512) for b = 1", shoup_b1_scale_avx512}
 #endif
 };
 

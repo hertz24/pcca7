@@ -7,6 +7,13 @@
 #define TEST_H
 
 #include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+#include "../include/shoup.h"
+#include "../include/utils.h"
+#include "../include/parameters.h"
+#include "../include/algo_registry.h"
 
 #define VECTOR_SIZE 100
 

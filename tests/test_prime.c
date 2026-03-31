@@ -1,27 +1,29 @@
-#include <time.h>
-
 #include "test.h"
-#include "../include/parameters.h"
 
 int main(void)
 {
-    srand(time(NULL));
+    int ret = 0;
+    rand_init();
     uint32_t p;
-    for (ulong i = 0; i <= 31; i++)
+    for (ulong i = 0; i <= 32; i++)
     {
         if (!n_is_prime((p = rand_prime(i))))
         {
             ERROR("n_is_prime");
             fprintf(stderr, "%d isn't a prime number.\n", p);
-            return 1;
+            ret = 1;
+            goto end;
         }
         if (p >= (1UL << 31))
         {
             ERROR("n_is_prime");
             fprintf(stderr, "%d is greater than or equal to 2^{31}.\n", p);
-            return 1;
+            ret = 1;
+            goto end;
         }
     }
     SUCCESS("n_is_prime");
-    return 0;
+end:
+    rand_clear();
+    return ret;
 }
