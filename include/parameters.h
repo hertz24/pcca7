@@ -41,10 +41,12 @@ static inline Parameters init_parameters(uint32_t b, uint32_t p)
 
 void rand_init(void);
 
+void rand_clear(void);
+
 /**
  * @brief Returns a random prime number.
  *
- * @param bits The number of bits of the prime number. If @p bits < 2 or @p bits > 32, then the number of bits of @c p is random.
+ * @param bits The number of bits of the prime number. If @p bits < 2 or @p bits > 31, then the number of bits of @c p is random in [2, 31].
  *
  * @return The prime number
  */
@@ -63,23 +65,12 @@ uint32_t max_prime_bits(ulong bits);
 /**
  * @brief Returns a random paramaters.
  *
- * @param bits The number of bits of @c p. If @p bits < 2 or @p bits > 32, then the number of bits of @c p is random.
+ * @param b_bits The number of bits of @c b. If @p b_bits > 32, then the number of bits of @c b is random in [0, 32].
+ * @param p_bits The number of bits of @c p. If @p p_bits < 2 or @p p_bits > 31, then the number of bits of @c p is random in [2, 31].
  *
  * @return The parameters
  */
-Parameters rand_parameters_p(ulong bits);
-
-Parameters rand_parameters_b(ulong bits);
-
-/**
- * @brief Returns a random paramaters.
- *
- * @param p_bits The number of bits of @c p. If @p bits < 2 or @p bits > 32, then the number of bits of @c p is random.
- * @param b_bits The number of bits of @c b
- *
- * @return The parameters
- */
-Parameters rand_parameters(ulong p_bits, ulong b_bits);
+Parameters rand_parameters(ulong b_bits, ulong p_bits);
 
 void print_param(Parameters param);
 

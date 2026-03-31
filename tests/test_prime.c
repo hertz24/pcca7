@@ -3,7 +3,7 @@
 int main(void)
 {
     uint32_t p;
-    for (ulong i = 0; i <= 31; i++)
+    for (ulong i = 0; i <= 32; i++)
     {
         if (!n_is_prime((p = rand_prime(i))))
         {
