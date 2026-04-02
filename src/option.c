@@ -51,10 +51,10 @@ int set_options(int argc, char const *argv[], Options *options)
 int init_param(Options *options, Parameters *param)
 {
     unsigned char flags = options->flags;
-    uint32_t p = options->p;
-    uint32_t b = options->b;
-    ulong p_bits = options->p_bits;
-    ulong b_bits = options->b_bits;
+    uint32_t p = (flags & OPT_P) ? options->p : 0;
+    uint32_t b = (flags & OPT_B) ? options->b : 0;
+    ulong p_bits = (flags & OPT_P_BITS) ? options->p_bits : 0;
+    ulong b_bits = (flags & OPT_B_BITS) ? options->b_bits : 0;
     switch (flags & (OPT_P | OPT_B | OPT_P_BITS | OPT_B_BITS))
     {
     case (OPT_P | OPT_B):
@@ -111,34 +111,4 @@ int init_param(Options *options, Parameters *param)
         break;
     }
     return 0;
-}
-
-int generate_graphs(Options options, Parameters param)
-{
-    ulong scale = options.scale;
-    ulong points = options.points;
-    Algorithm graph1[] = {algorithms[0], algorithms[1], algorithms[2]
-#if NEON || AVX2
-                          ,
-                          algorithms[3]
-#endif
-#if AVX512
-                          ,
-                          algorithms[7]
-#endif
-    };
-    int ret = generate_graph(scale, points, param, graph1, TAB_SIZE(graph1));
-#if NEON || AVX2
-    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[4]}, 2);
-    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[5]}, 2);
-    if (options.b == 1)
-        ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[6]}, 2);
-#endif
-#if AVX512
-    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[8]}, 2);
-    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[9]}, 2);
-    if (options.b == 1)
-        ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[10]}, 2);
-#endif
-    return ret ? ERR_GEN_GRAPHS : 0;
 }

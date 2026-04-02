@@ -47,9 +47,9 @@ To execute the project, run
 
     ./pcca7
 
-### Command line flags
+### Command line options
 
-These flags are parsed by the `set_options` function and control the generation of the modulus `p` and the multiplier `b` used in the modular arithmetic benchmarks.
+These options are parsed by the `set_options` function and control the generation of the modulus `p` and the multiplier `b` used in the modular arithmetic benchmarks.
 
 | Flag      | Argument  | Description                                                         |
 | --------- | --------- | ------------------------------------------------------------------- |
@@ -66,9 +66,9 @@ These flags are parsed by the `set_options` function and control the generation 
 - If `-b` is given, a random prime `p` is generated (greater than `b`) if `-p` isn't given.
 - If `-p_bits` is given, `p` is generated with the specified number of bits with a random `b` (less than `p`).
 - If `-b_bits` is given, `b` is generated with the specified number of bits with a random prime `p` (greater than `b`).
-- If no parameter flags are supplied, random parameters are used.
-- If an option is given several times, only the first one will be considered
-- If `-x` and `-x_bits` with `x = a` or `x = b` are given, only the first one will be considered
+- If no options are supplied, random parameters are used.
+- If an option is given several times, only the first one will be considered.
+- If `-x` and `-x_bits` with `x = a` or `x = b` are given, only the first one will be considered.
 - If `-scale` is not given, the scale defaults to 1.
 - If `-pts` is not given, the number of points defaults to 100.
 

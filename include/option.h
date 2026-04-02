@@ -17,13 +17,19 @@
 
 typedef struct
 {
-    uint32_t p;
-    uint32_t b;
+    union
+    {
+        uint32_t p;
+        ulong p_bits;
+    };
+    union
+    {
+        uint32_t b;
+        ulong b_bits;
+    };
     unsigned char flags;
     int scale;
     ulong points;
-    ulong p_bits;
-    ulong b_bits;
 } Options;
 
 /**
@@ -53,5 +59,3 @@ int set_options(int argc, char const *argv[], Options *options);
  * @see error.h
  */
 int init_param(Options *options, Parameters *param);
-
-int generate_graphs(Options options, Parameters param);

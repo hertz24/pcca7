@@ -1,4 +1,6 @@
 /**
+ * @file test.h
+ * @brief All macros and functions for the tests.
  * @author Henry Zheng
  * @author Duc Vinh Nguyen
  */
@@ -14,8 +16,11 @@
 #include "../include/utils.h"
 #include "../include/parameters.h"
 #include "../include/algo_registry.h"
+#include "../include/option.h"
 
+#define NB_TESTS 50
 #define VECTOR_SIZE 100
+#define BUFFER_SIZE 8
 
 #define BOLD "\e[1m"
 #define RED "\033[31m"
