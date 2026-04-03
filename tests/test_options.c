@@ -60,6 +60,7 @@ int main(void)
     int out, err;
     if (begin(&out, &err))
         fprintf(stderr, "test_options: the print statements in the functions under test are not silenced.\n");
+    rand_init();
     int ret = 0;
     for (int i = 0; i < NB_TESTS; i++)
         for (uint32_t p_bits = 0; p_bits < 32; p_bits++)
@@ -76,5 +77,6 @@ int main(void)
 end:
     close(out);
     close(err);
+    rand_clear();
     return ret;
 }
