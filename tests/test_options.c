@@ -10,7 +10,7 @@ static int test_options(int argc, char const *argv[], char expected_flag, int ex
         if (ret != expected_ret)
             fprintf(stderr, "Incorrect value returned.\n");
         else
-            fprintf(stderr, "Incorrect flag returned.%d\n", options.flags);
+            fprintf(stderr, "Incorrect flag returned.\n");
         return 1;
     }
     return 0;
@@ -21,44 +21,62 @@ static void uint32_to_str(uint32_t n, char buffer[])
     snprintf(buffer, BUFFER_SIZE - 1, "%u", n);
 }
 
+static int test_set_options(uint32_t p, uint32_t p_bits, uint32_t b, uint32_t b_bits, int *err)
+{
+    char p_str[BUFFER_SIZE], b_str[BUFFER_SIZE];
+    char p_bits_str[BUFFER_SIZE], b_bits_str[BUFFER_SIZE];
+    uint32_to_str(p, p_str);
+    uint32_to_str(b, b_str);
+    uint32_to_str(p_bits, p_bits_str);
+    uint32_to_str(b_bits, b_bits_str);
+    int verify_prime = (n_is_prime(p)) ? 0 : ERR_PRIME;
+    struct
+    {
+        int argc;
+        char const *argv[10];
+        char expected_flags;
+        int expected_ret;
+    } tests[] = {
+        {1, {"./pcca7"}, 0, 0},
+        {3, {"./pcca7", "-p", p_str}, OPT_P, verify_prime},
+        {3, {"./pcca7", "-p_bits", p_bits_str}, OPT_P_BITS, 0},
+        {3, {"./pcca7", "-b", b_str}, OPT_B, 0},
+        {3, {"./pcca7", "-b_bits", b_bits_str}, OPT_B_BITS, 0},
+        {5, {"./pcca7", "-p", p_str, "-b", b_str}, OPT_P | OPT_B, verify_prime},
+        {5, {"./pcca7", "-p_bits", p_bits_str, "-b", b_str}, OPT_P_BITS | OPT_B, 0},
+        {5, {"./pcca7", "-p", p_str, "-b_bits", b_bits_str}, OPT_P | OPT_B_BITS, verify_prime},
+        {5, {"./pcca7", "-p_bits", p_bits_str, "-b_bits", b_bits_str}, OPT_P_BITS | OPT_B_BITS, 0},
+        {7, {"./pcca7", "-p_bits", p_bits_str, "-p", p_str, "-b", b_str}, OPT_P_BITS | OPT_B, 0},
+        {7, {"./pcca7", "-p_bits", p_bits_str, "-not_exist", p_str, "-b", b_str}, OPT_P_BITS | OPT_B, ERR_UNRECOGNIZED},
+    };
+    for (size_t i = 0; i < TAB_SIZE(tests); i++)
+        if (test_options(tests[i].argc, tests[i].argv, tests[i].expected_flags, tests[i].expected_ret, err))
+            return 1;
+    return 0;
+}
+
 int main(void)
 {
     int out, err;
     if (begin(&out, &err))
         fprintf(stderr, "test_options: the print statements in the functions under test are not silenced.\n");
+    rand_init();
     int ret = 0;
     for (int i = 0; i < NB_TESTS; i++)
-    {
-        char const *argv_1[] = {"./pcca7"};
-        ret = test_options(1, argv_1, 0, 0, &err);
-        if (ret == 1)
-            goto end;
-        for (ulong p_bits = 0; p_bits < 32; p_bits++)
+        for (uint32_t p_bits = 0; p_bits < 32; p_bits++)
         {
-            uint32_t p = rand_prime(i);
-            char p_str[BUFFER_SIZE];
-            uint32_to_str(p, p_str);
-            char const *argv_2[] = {"./pcca7", "-p", p_str};
-            ret = test_options(3, argv_2, OPT_P, (n_is_prime(p)) ? 0 : ERR_PRIME, &err);
-            for (ulong b_bits = 0; b_bits < 32 && !ret; b_bits++)
+            uint32_t p = n_randbits(state, p_bits);
+            for (uint32_t b_bits = 0; b_bits < 32; b_bits++)
             {
-                uint32_t b = _n_randint(state, b_bits);
-                char b_str[BUFFER_SIZE];
-                uint32_to_str(b, b_str);
-                char const *argv_3[] = {"./pcca7", "-b", b_str};
-                ret = test_options(3, argv_3, OPT_B, 0, &err);
-                if (ret == 1)
-                    break;
-                char const *argv_4[] = {"./pcca7", "-p", p_str, "-b", b_str};
-                ret = test_options(5, argv_4, OPT_P | OPT_B, (n_is_prime(p)) ? 0 : ERR_PRIME, &err);
+                uint32_t b = n_randbits(state, b_bits);
+                if ((ret = test_set_options(p, p_bits, b, b_bits, &err)) == 1)
+                    goto end;
             }
-            if (ret == 1)
-                goto end;
         }
-    }
     SUCCESS("test_options", &out);
 end:
     close(out);
     close(err);
+    rand_clear();
     return ret;
 }
