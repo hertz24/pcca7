@@ -74,12 +74,12 @@ These options are parsed by the `set_options` function and control the generatio
 
 For example, running
 
-    ./pcca7 -p 1231 -b 2 -scale 10 -pts 100
+    ./pcca7 -p 1231 -b 2 -scale 10 -pts 1000
 
-will generate a graph for `p = 1231` and `b = 2` with 100 points at scale 10.
+will generate a graph for `p = 1231` and `b = 2` with 1000 points at scale 10.
 
 Running
 
     ./pcca7 -p 191 -p_bits 12
 
-the program will only consider `191` as prime number. Therefore, the program will generate a graph for `p = 191` and a random `b`.
+the program will only consider `191` as prime number. Therefore, the program will generate a graph for `p = 191` and a random `b` with default values for the scale and the points (1 and 100, respectively).

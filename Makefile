@@ -20,7 +20,7 @@ SRCS := $(shell find $(SRCDIR) -name "*.c")
 OBJS := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SRCS))
 COREOBJS := $(filter-out $(OBJDIR)/main.o,$(OBJS))
 
-TESTSRCS := tests/test_prime.c tests/test_param.c tests/test_shoup.c tests/test_equality.c tests/test_option.c
+TESTSRCS := tests/test_prime.c tests/test_param.c tests/test_shoup.c tests/test_equality.c tests/test_options.c
 TESTOBJS := $(patsubst tests/%.c,tests/obj/%,$(TESTSRCS))
 
 .PHONY: all check clean
