@@ -1,4 +1,4 @@
-#include "../include/option.h"
+#include "../include/options.h"
 
 int set_options(int argc, char const *argv[], Options *options)
 {
@@ -17,7 +17,7 @@ int set_options(int argc, char const *argv[], Options *options)
         }
         else if (strcmp("-b", argv[i]) == 0)
         {
-            if ((options->flags & (OPT_B | OPT_B_BITS)) == 0)
+            if (!(options->flags & (OPT_B | OPT_B_BITS)))
             {
                 options->b = atoi(argv[i + 1]);
                 options->flags |= OPT_B;
@@ -25,7 +25,7 @@ int set_options(int argc, char const *argv[], Options *options)
         }
         else if (strcmp("-p_bits", argv[i]) == 0)
         {
-            if ((options->flags & (OPT_P | OPT_P_BITS)) == 0)
+            if (!(options->flags & (OPT_P | OPT_P_BITS)))
             {
                 options->p_bits = strtoul(argv[i + 1], NULL, 10);
                 options->flags |= OPT_P_BITS;

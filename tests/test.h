@@ -16,11 +16,11 @@
 #include "../include/utils.h"
 #include "../include/parameters.h"
 #include "../include/algo_registry.h"
-#include "../include/option.h"
+#include "../include/options.h"
 
 #define NB_TESTS 50
 #define VECTOR_SIZE 100
-#define BUFFER_SIZE 8
+#define BUFFER_SIZE 16
 
 #define BOLD "\e[1m"
 #define RED "\033[31m"

@@ -5,7 +5,7 @@
  * @author Duc Vinh Nguyen
  */
 
-#include "../include/option.h"
+#include "../include/options.h"
 
 static int generate_graphs(Options options, Parameters param)
 {
