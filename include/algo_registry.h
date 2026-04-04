@@ -12,6 +12,10 @@
 #include "utils.h"
 #include "shoup.h"
 
+/**
+ * @struct Algorithm
+ * @brief Contains the name and the function of the algorithm.
+ */
 typedef struct
 {
     const char *name;

@@ -14,10 +14,14 @@
 
 #include "parameters.h"
 
+/**
+ * @struct Vector
+ * @brief Vector of 32-bit integers for modular arithmetic.
+ */
 typedef struct
 {
-    uint32_t *elements;
-    ulong size;
+    uint32_t *elements; /**< Pointer to the array of elements */
+    ulong size;         /**< Length of the vector */
 } Vector;
 
 Vector init_vector(ulong size);
@@ -31,8 +35,18 @@ Vector init_vector(ulong size);
  */
 Vector rand_vector(ulong size);
 
+/**
+ * @brief Frees the pointer to the array of elements of @p v
+ *
+ * @param v The vector to free
+ */
 void free_vector(Vector v);
 
+/**
+ * @brief Prints the elements of @p v
+ *
+ * @param v The vector
+ */
 void print_vector(Vector v);
 
 /**
@@ -47,6 +61,14 @@ void print_vector(Vector v);
  */
 int compare_vectors(Vector v1, Vector v2);
 
+/**
+ * @brief Naive modular multiplication of a vector by a constant (a * b mod p) in @p param
+ *
+ * @param param The parameters
+ * @param v The vector
+ *
+ * @return A new vector after the calculation
+ */
 Vector naive_scale(Parameters param, Vector v);
 
 #endif

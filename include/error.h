@@ -1,6 +1,6 @@
 /**
  * @file error.h
- * @brief Macros for error handling in the main
+ * @brief Macros for error handling in the main.
  * @author Henry Zheng
  * @author Duc Vinh Nguyen
  */
@@ -10,14 +10,40 @@
 
 #include <stdio.h>
 
+/**
+ * @defgroup ErrorCodes Error codes returned by functions
+ * @brief Constants representing specific error conditions.
+ * @{
+ */
+
+/** Invalid command-line arguments. */
 #define ERR_INPUT 1
+
+/** The provided p is not a prime number. */
 #define ERR_PRIME 2
+
+/** Unrecognized option. */
 #define ERR_UNRECOGNIZED 3
+
+/** b must be less than p. */
 #define ERR_B_GE_P 4
+
+/** Number of bits of p must be greater than or equal to number of bits of b. */
 #define ERR_BBITS_GE_PBITS 5
+
+/** No prime p exists with the given number of bits such that p > b. */
 #define ERR_NO_PRIME_FOR_BITS 6
+
+/** Error while generating graphs */
 #define ERR_GEN_GRAPHS 7
 
+/** @} */
+
+/**
+ * @def PRINT_ERROR(ERR)
+ * @brief Prints an error message corresponding to the error code.
+ * @param ERR One of the error constants.
+ */
 #define PRINT_ERROR(ERR)                                                                                        \
     switch (ERR)                                                                                                \
     {                                                                                                           \
