@@ -22,6 +22,8 @@ int main(void)
                 int error = 0;
                 for (int l = 1; l < NB_ALGO; l++)
                 {
+                    fprintf(stderr, "%s\n", algorithms[l].name);
+
                     if ((l == 6 || l == NB_ALGO - 1))
                         continue;
                     Vector result = algorithms[l].address(param, rand_v);

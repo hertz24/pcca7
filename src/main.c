@@ -6,6 +6,7 @@
  */
 
 #include "../include/options.h"
+#include "../include/shoup.h"
 
 static int generate_graphs(Options options, Parameters param)
 {
@@ -43,11 +44,20 @@ int main(int argc, char const *argv[])
     int ret;
     Options options = {.flags = 0, .scale = 1, .points = 100};
     Parameters param;
+    Vector v = rand_vector(10);
+    print_vector(v);
     if ((ret = set_options(argc, argv, &options)))
         goto end;
     if ((ret = init_param(&options, &param)))
         goto end;
-    ret = generate_graphs(options, param);
+    Vector ref = naive_scale(param, v);
+    Vector res = shoup_scale_mullo_avx2_v2(param, v);
+    print_vector(ref);
+    print_vector(res);
+    fprintf(stdout, "%s\n", algorithms[6].name);
+
+
+
 end:
     rand_clear();
     if (ret)

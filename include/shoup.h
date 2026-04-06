@@ -92,6 +92,8 @@ Vector unrolling_shoup_scale_avx2(Parameters param, Vector v);
 
 Vector shoup_scale_mullo_avx2(Parameters param, Vector v);
 
+Vector shoup_scale_mullo_avx2_v2(Parameters param, Vector v);
+
 Vector shoup_b1_scale_avx2(Parameters param, Vector v);
 #endif
 
@@ -101,8 +103,6 @@ Vector shoup_scale_avx512(Parameters param, Vector v);
 Vector unrolling_shoup_scale_avx512(Parameters param, Vector v);
 
 Vector shoup_scale_mullo_avx512(Parameters param, Vector v);
-
-Vector shoup_scale_mullo_avx512_v2 (Parameters param, Vector v);
 
 Vector shoup_b1_scale_avx512(Parameters param, Vector v);
 #endif

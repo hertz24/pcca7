@@ -160,7 +160,7 @@ Vector shoup_b1_scale_neon(Parameters param, Vector v)
     return res;
 }
 #elif AVX2
-static inline __m256i _shoup_avx2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
+static inline __m256i 2_shoup_avx2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
 {
     // 1. q = (a * b_precomp) >> 32:
     __m256i vq = _mm256_mul_epu32(va, vb_precomp);
@@ -322,6 +322,49 @@ Vector shoup_scale_mullo_avx2(Parameters param, Vector v)
         _mm256_storeu_si256((__m256i *)(res.elements + i + 8), merge_1);
         _mm256_storeu_si256((__m256i *)(res.elements + i + 16), merge_2);
         _mm256_storeu_si256((__m256i *)(res.elements + i + 24), merge_3);
+    }
+    for (; i < size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+    return res;
+}
+
+static inline __m256i _fake_mulhi(__m256i va, __m256i vb)
+{
+    __m256i res_even = _mm256_mul_epu32(va, vb);
+    __m256i res_odd = _mm256_mul_epu32(_mm256_srli_epi64(va, 32), vb);
+
+    __m256i hi_even = _mm256_srli_epi64(res_even, 32);
+    __m256i hi_odd = _mm256_and_si256(res_odd, _mm256_set1_epi64x(0xFFFFFFFF00000000ULL));
+
+    return _mm256_or_si256(hi_even, hi_odd);
+}
+
+static inline __m256i _shoup_mullo_avx2_v2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
+{
+    __m256i vq = _fake_mulhi(va, vb_precomp);
+    __m256i vab = _mm256_mullo_epi32(va, vb);
+    __m256i vqp = _mm256_mullo_epi32(vq, vp);
+    __m256i vc = _mm256_sub_epi32(vab, vqp);
+    __m256i cmp = _mm256_cmpgt_epi64(vp, vc);
+    __m256i sub_mask = _mm256_andnot_si256(cmp, vp);
+    return _mm256_sub_epi64(vc, sub_mask);
+}
+
+Vector shoup_scale_mullo_avx2_v2(Parameters param, Vector v)
+{
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    __m256i vb = _mm256_set1_epi64x(param.b);
+    __m256i vb_precomp = _mm256_set1_epi64x(param.b_precomp);
+    __m256i vp = _mm256_set1_epi64x(param.p);
+    ulong i = 0;
+    for (; i + 31 < size; i += 32)
+    {
+        __m256i va = _mm256_loadu_si256((__m256i const *)(v.elements + i));
+
+        __m256i vc = _shoup_mullo_avx2_v2(va, vb, vb_precomp, vp);
+
+        _mm256_storeu_si256((__m256i *)(res.elements + i), vc);
     }
     for (; i < size; i++)
         *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
@@ -546,36 +589,6 @@ Vector shoup_scale_mullo_avx512(Parameters param, Vector v)
     return res;
 }
 
-static inline __m512i _shoup_mullo_avx512_v2(__m512i va, __m512i vb, __m512i vb_precomp, __m512i vp)
-{
-    __m512i vq = _mm512_mulhi_epu32(va, vb_precomp);
-    __m512i vab = _mm512_mullo_epi32(va, vb);
-    __m512i vqp = _mm512_mullo_epi32(vq, vp);
-    __m512i vc = _mm512_sub_epi32(vab, vqp);
-    __mmask8 cmp = _mm512_cmple_epu64_mask(vp, vc);
-    return _mm512_mask_sub_epi64(vc, cmp, vc, vp);
-}
-
-Vector shoup_scale_mullo_avx512_v2(Parameters param, Vector v)
-{
-    ulong size = v.size;
-    Vector res = init_vector(size);
-    __m512i vb = _mm512_set1_epi64(param.b);
-    __m512i vb_precomp = _mm512_set1_epi64(param.b_precomp);
-    __m512i vp = _mm512_set1_epi64(param.p);
-    ulong i = 0;
-    for (; i + 63 < size; i += 64)
-    {
-        __m512i even_va_0 = _mm512_loadu_si512((__m512i const *)(v.elements + i));
-
-        __m512i merge_0 = _shoup_mullo_avx512(even_va_0, vb, vb_precomp, vp);
-
-        _mm512_storeu_si512((__m512 *)(res.elements + i), merge_0);
-    }
-    for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
-    return res;
-}
 
 static inline __m512i _shoup_b1_avx512(__m512i va, __m512i vb_precomp, __m512i vp)
 {
