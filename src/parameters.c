@@ -6,7 +6,7 @@ void rand_init(void)
 {
     flint_rand_init(state);
     unsigned long seed = time(NULL);
-    flint_randseed(state, seed, seed + 1);
+    flint_rand_set_seed(state, seed, seed + 1);
 }
 
 void rand_clear(void)
