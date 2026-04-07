@@ -72,7 +72,7 @@ int init_param(Options *options, Parameters *param)
         *param = init_parameters(b, p);
         break;
     case OPT_P:
-        *param = init_parameters(_n_randint(state, p), p);
+        *param = init_parameters(n_randint(state, p), p);
         break;
     case (OPT_B | OPT_P_BITS):
         if (p_bits > 1 && FLINT_BIT_COUNT(b) > p_bits)
@@ -90,7 +90,7 @@ int init_param(Options *options, Parameters *param)
         ulong lower = (bits < 2) ? 2 : bits;
         do
         {
-            p = rand_prime(lower + _n_randint(state, 32 - lower));
+            p = rand_prime(lower + n_randint(state, 32 - lower));
         } while (p <= b);
         *param = init_parameters(b, p);
         break;
@@ -107,7 +107,7 @@ int init_param(Options *options, Parameters *param)
         break;
     default:
         p = rand_prime(0);
-        *param = init_parameters(_n_randint(state, p), p);
+        *param = init_parameters(n_randint(state, p), p);
         break;
     }
     return 0;

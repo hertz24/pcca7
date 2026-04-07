@@ -278,6 +278,19 @@ static inline __m256i _shoup_mullo_avx2(__m256i va, __m256i vb, __m256i vb_preco
     return _mm256_sub_epi64(vc, sub_mask);
 }
 
+void print_m256i(__m256i v)
+{
+    // A 256-bit register holds 8 integers of 32 bits each
+    uint32_t val[8];
+
+    // Store the 256-bit vector into the local array
+    _mm256_storeu_si256((__m256i *)val, v);
+
+    printf("Valeurs : [%u, %u, %u, %u, %u, %u, %u, %u]\n",
+           val[0], val[1], val[2], val[3],
+           val[4], val[5], val[6], val[7]);
+}
+
 Vector shoup_scale_mullo_avx2(Parameters param, Vector v)
 {
     ulong size = v.size;
@@ -317,6 +330,10 @@ Vector shoup_scale_mullo_avx2(Parameters param, Vector v)
         __m256i merge_1 = _mm256_or_si256(even_vc_1, odd_shifted_1);
         __m256i merge_2 = _mm256_or_si256(even_vc_2, odd_shifted_2);
         __m256i merge_3 = _mm256_or_si256(even_vc_3, odd_shifted_3);
+        print_m256i(merge_0);
+        print_m256i(merge_1);
+        print_m256i(merge_2);
+        print_m256i(merge_3);
 
         _mm256_storeu_si256((__m256i *)(res.elements + i), merge_0);
         _mm256_storeu_si256((__m256i *)(res.elements + i + 8), merge_1);
@@ -339,26 +356,13 @@ static inline __m256i _fake_mulhi(__m256i va, __m256i vb)
     return _mm256_or_si256(hi_even, hi_odd);
 }
 
-void print_m256i(__m256i v)
-{
-    // A 256-bit register holds 8 integers of 32 bits each
-    int32_t val[8];
-
-    // Store the 256-bit vector into the local array
-    _mm256_storeu_si256((__m256i *)val, v);
-
-    printf("Valeurs : [%d, %d, %d, %d, %d, %d, %d, %d]\n",
-           val[0], val[1], val[2], val[3],
-           val[4], val[5], val[6], val[7]);
-}
-
 static inline __m256i _shoup_mullo_avx2_v2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
 {
     __m256i vq = _fake_mulhi(va, vb_precomp);
     __m256i vab = _mm256_mullo_epi32(va, vb);
     __m256i vqp = _mm256_mullo_epi32(vq, vp);
     __m256i vc = _mm256_sub_epi32(vab, vqp);
-    __m256i cmp = _mm256_cmpgt_epi64(vp, vc);
+    __m256i cmp = _mm256_cmpgt_epi32(vp, vc);
     __m256i sub_mask = _mm256_andnot_si256(cmp, vp);
     return _mm256_sub_epi64(vc, sub_mask);
 }
