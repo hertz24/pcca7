@@ -24,15 +24,15 @@ static int generate_graphs(Options options, Parameters param)
     };
     int ret = 0;
 #if NEON || AVX2
-    //ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[4]}, 2);
-    //ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[5]}, 2);
+    // ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[4]}, 2);
+    // ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[5]}, 2);
     ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[5], algorithms[6]}, 2);
     if (options.b == 1)
         ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[6]}, 2);
 #endif
 #if AVX512
-    //ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[8]}, 2);
-    //ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[9]}, 2);
+    // ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[8]}, 2);
+    // ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[9]}, 2);
     if (options.b == 1)
         ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[10]}, 2);
 #endif
@@ -45,7 +45,7 @@ int main(int argc, char const *argv[])
     int ret;
     Options options = {.flags = 0, .scale = 1, .points = 10000};
     Parameters param;
-    Vector v = rand_vector(10);
+    Vector v = rand_vector(100);
     print_vector(v);
     if ((ret = set_options(argc, argv, &options)))
         goto end;
@@ -56,10 +56,7 @@ int main(int argc, char const *argv[])
     print_vector(ref);
     print_vector(res);
     fprintf(stdout, "%s\n", algorithms[6].name);
-    ret = generate_graphs(options, param);
-
-
-
+    // ret = generate_graphs(options, param);
 
 end:
     rand_clear();

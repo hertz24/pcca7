@@ -24,7 +24,7 @@ int main(void)
                 {
                     fprintf(stderr, "%s\n", algorithms[l].name);
 
-                    if ((l == 6 || l == NB_ALGO - 1))
+                    if ((l == 7 || l == NB_ALGO - 1))
                         continue;
                     Vector result = algorithms[l].address(param, rand_v);
                     int index = compare_vectors(ref, result);

@@ -339,6 +339,19 @@ static inline __m256i _fake_mulhi(__m256i va, __m256i vb)
     return _mm256_or_si256(hi_even, hi_odd);
 }
 
+void print_m256i(__m256i v)
+{
+    // A 256-bit register holds 8 integers of 32 bits each
+    int32_t val[8];
+
+    // Store the 256-bit vector into the local array
+    _mm256_storeu_si256((__m256i *)val, v);
+
+    printf("Valeurs : [%d, %d, %d, %d, %d, %d, %d, %d]\n",
+           val[0], val[1], val[2], val[3],
+           val[4], val[5], val[6], val[7]);
+}
+
 static inline __m256i _shoup_mullo_avx2_v2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
 {
     __m256i vq = _fake_mulhi(va, vb_precomp);
@@ -354,16 +367,16 @@ Vector shoup_scale_mullo_avx2_v2(Parameters param, Vector v)
 {
     ulong size = v.size;
     Vector res = init_vector(size);
-    __m256i vb = _mm256_set1_epi64x(param.b);
-    __m256i vb_precomp = _mm256_set1_epi64x(param.b_precomp);
-    __m256i vp = _mm256_set1_epi64x(param.p);
+    __m256i vb = _mm256_set1_epi32(param.b);
+    __m256i vb_precomp = _mm256_set1_epi32(param.b_precomp);
+    __m256i vp = _mm256_set1_epi32(param.p);
     ulong i = 0;
-    for (; i + 31 < size; i += 32)
+    for (; i + 7 < size; i += 8)
     {
         __m256i va = _mm256_loadu_si256((__m256i const *)(v.elements + i));
 
         __m256i vc = _shoup_mullo_avx2_v2(va, vb, vb_precomp, vp);
-
+        print_m256i(vc);
         _mm256_storeu_si256((__m256i *)(res.elements + i), vc);
     }
     for (; i < size; i++)
@@ -588,7 +601,6 @@ Vector shoup_scale_mullo_avx512(Parameters param, Vector v)
         *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
-
 
 static inline __m512i _shoup_b1_avx512(__m512i va, __m512i vb_precomp, __m512i vp)
 {
