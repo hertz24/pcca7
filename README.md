@@ -27,7 +27,7 @@ This project assumes that [FLINT](https://flintlib.org/) is already installed. O
 
 ### The Makefile
 
-The Makefile automatically detects the host architecture and enables appropriate SIMD instructions (AVX2/AVX512) for optimal performance on x86_64 or ARM-based systems (NEON).
+The Makefile automatically detects the host architecture and enables appropriate SIMD instructions for optimal performance on x86_64 (AVX2/AVX512) or ARM-based systems (NEON).
 
 The project includes unit tests located in the `tests/` directory. To build and run all tests, run:
 

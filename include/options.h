@@ -27,8 +27,8 @@ typedef struct
      */
     union
     {
-        uint32_t p;   /**< @brief Direct value of the prime modulus p */
-        ulong p_bits; /**< @brief Number of bits for generating a random prime p */
+        uint32_t p;   /**< Direct value of the prime modulus p */
+        ulong p_bits; /**< Number of bits for generating a random prime p */
     };
 
     /**

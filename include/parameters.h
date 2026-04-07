@@ -10,7 +10,6 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <time.h>
 #include "flint/ulong_extras.h"
