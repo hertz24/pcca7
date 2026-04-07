@@ -160,7 +160,7 @@ Vector shoup_b1_scale_neon(Parameters param, Vector v)
     return res;
 }
 #elif AVX2
-static inline __m256i 2_shoup_avx2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
+static inline __m256i _shoup_avx2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
 {
     // 1. q = (a * b_precomp) >> 32:
     __m256i vq = _mm256_mul_epu32(va, vb_precomp);
