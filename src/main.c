@@ -45,8 +45,8 @@ int main(int argc, char const *argv[])
     int ret;
     Options options = {.flags = 0, .scale = 1, .points = 10000};
     Parameters param;
-    Vector v = rand_vector(100000);
-    print_vector(v);
+    Vector v = rand_vector(100);
+    print_vector(stdout, v);
     if ((ret = set_options(argc, argv, &options)))
         goto end;
     if ((ret = init_param(&options, &param)))
@@ -54,10 +54,10 @@ int main(int argc, char const *argv[])
     Vector ref = naive_scale(param, v);
     Vector res = shoup_scale_mullo_avx2_v2(param, v);
     printf("----V2---\n");
-    shoup_scale_mullo_avx2(param,v);
-    print_vector(ref);
-    print_vector(res);
-    fprintf(stdout, "%s\n", algorithms[6].name);
+    shoup_scale_mullo_avx2(param, v);
+    print_vector(stdout, ref);
+    print_vector(stdout, res);
+    fprintf(stdout, "%d %s\n", compare_vectors(ref, res), algorithms[6].name);
     // ret = generate_graphs(options, param);
 
 end:

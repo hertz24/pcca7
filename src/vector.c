@@ -26,12 +26,12 @@ void free_vector(Vector v)
     free(v.elements);
 }
 
-void print_vector(Vector v)
+void print_vector(FILE *out, Vector v)
 {
-    printf("[");
+    fprintf(out, "[");
     for (ulong i = 0; i < v.size - 1; i++)
-        printf("%u, ", *(v.elements + i));
-    printf("%u]\n", *(v.elements + v.size - 1));
+        fprintf(out, "%u, ", *(v.elements + i));
+    fprintf(out, "%u]\n", *(v.elements + v.size - 1));
 }
 
 int compare_vectors(Vector v1, Vector v2)

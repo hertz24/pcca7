@@ -69,7 +69,7 @@ Parameters rand_parameters(ulong b_bits, ulong p_bits)
     return init_parameters(b, p);
 }
 
-void print_param(Parameters param)
+void print_param(FILE *out, Parameters param)
 {
-    printf("b = %u\nb_precomp = %u\np = %u\n", param.b, param.b_precomp, param.p);
+    fprintf(out, "b = %u, b_precomp = %u, p = %u\n", param.b, param.b_precomp, param.p);
 }

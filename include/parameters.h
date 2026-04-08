@@ -72,6 +72,12 @@ uint32_t max_prime_bits(ulong bits);
  */
 Parameters rand_parameters(ulong b_bits, ulong p_bits);
 
-void print_param(Parameters param);
+/**
+ * @brief Prints the data of the parameters.
+ *
+ * @param out The output
+ * @param param The parameters to print
+ */
+void print_param(FILE *out, Parameters param);
 
 #endif
