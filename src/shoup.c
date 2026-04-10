@@ -162,23 +162,29 @@ Vector shoup_b1_scale_neon(Parameters param, Vector v)
 #elif AVX2
 static inline __m256i _shoup_avx2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
 {
-    // 1. q = (a * b_precomp) >> 32:
+    // vq = [ a_6 * b_precomp_6 | a_4 * b_precomp_4 | a_2 * b_precomp_2, | a_0 * b_precomp_0 ]
     __m256i vq = _mm256_mul_epu32(va, vb_precomp);
+
+    // vq = [ 0, q_6 | 0, q_4 | 0, q_2 | 0, q_0 ]
     vq = _mm256_srli_epi64(vq, 32);
 
-    // 2. ab:
+    // vab = [ a_6 * b_6 | a_4 * b_4 | a_2 * b_2 | a_0 * b_0 ]
     __m256i vab = _mm256_mul_epu32(va, vb);
 
-    // 3. qp:
+    // vqp = [ q_6 * p_6 | q_4 * p_4 | q_2 * p_2 | q_0 * p_0 ]
     __m256i vqp = _mm256_mul_epu32(vq, vp);
 
-    // 4. c = (ab - qp):
+    // vc = [ ab_6 - qp_6 | ab_4 - qp_4 | ab_2 - qp_2 | ab_0 - qp_0 ]
     __m256i vc = _mm256_sub_epi64(vab, vqp);
 
-    // 5. if (c >= p) c -= p
+    /* if (c >= p) c -= p */
+    // cmp = [ vp_6 > vc_6 ? -1 : 0 | vp_4 > vc_4 ? -1 : 0 | vp_2 > vc_2 ? -1 : 0 | vp_0 > vc_0 ? -1 : 0 ]
     __m256i cmp = _mm256_cmpgt_epi64(vp, vc);
+
+    // sub_mask = [ ~cmp_6 & vp_6 | ~cmp_4 & vp_4 | ~cmp_2 & vp_2 | ~cmp_0 & vp_0 ]
     __m256i sub_mask = _mm256_andnot_si256(cmp, vp);
 
+    // [ c_6 - sub_mask_6 | c_4 - sub_mask_4 | c_2 - sub_mask_2 | c_0 - sub_mask_0 ]
     return _mm256_sub_epi64(vc, sub_mask);
 }
 
@@ -192,23 +198,24 @@ Vector shoup_scale_avx2(Parameters param, Vector v)
     ulong i = 0;
     for (; i + 7 < size; i += 8)
     {
-        // 2. Load 8 elements [v7 v6 v5 v4 v3 v2 v1 v0]:
+        // Load [ a_7, a_6, a_5, a_4, a_3, a_2, a_1, a_0 ] but only even index will be directly handled
         __m256i even_va = _mm256_loadu_si256((__m256i const *)(v.elements + i));
 
-        // 3. Split 8 elements into two sets of 4 : even_va and odd_va
-        __m256i odd_va = _mm256_srli_epi64(even_va, 32); // Elements [null, 7, null, 5, null , 3, null, 1]
+        // Need to move odd index to even index to be handled: [ 0, a_7 | 0, a_5 | 0, a_3 | 0, a_1 ]
+        __m256i odd_va = _mm256_srli_epi64(even_va, 32);
 
-        // 4. Process Even Lanes:
+        // Process Even Lanes
         __m256i even_vc = _shoup_avx2(even_va, vb, vb_precomp, vp);
 
-        // 5. Process Odd Lanes:
+        // Process Odd Lanes:
         __m256i odd_vc = _shoup_avx2(odd_va, vb, vb_precomp, vp);
 
-        // 6. Shift odd by 32 bits to the left results back and merge:
-        __m256i odd_shifted = _mm256_slli_epi64(odd_vc, 32);   // [7, null, 5, null, 3, null, 1, null]
-        __m256i merge = _mm256_or_si256(even_vc, odd_shifted); // [7, null, 5, null, 3, null, 1, null] or [null, 6, null, 4, null, 2, null, 0]
+        // Shift odd by 32 bits to the left results back and merge: [ c_7, 0 | c_5, 0 | c_3, 0 | c_1, 0 ]
+        __m256i odd_shifted = _mm256_slli_epi64(odd_vc, 32);
 
-        // 7. Store:
+        // Merge even and odd: [ c_7, 0 | c_5, 0 | c_3, 0 | c_1, 0] | [0, c_6 | 0, c_4 | 0, c_2 | 0, c_0 ]
+        __m256i merge = _mm256_or_si256(even_vc, odd_shifted);
+
         _mm256_storeu_si256((__m256i *)(res.elements + i), merge);
     }
     for (; i < size; i++)
@@ -268,13 +275,29 @@ Vector unrolling_shoup_scale_avx2(Parameters param, Vector v)
 
 static inline __m256i _shoup_mullo_avx2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
 {
+    // vq = [ a_6 * b_precomp_6 | a_4 * b_precomp_4 | a_2 * b_precomp_2, | a_0 * b_precomp_0 ]
     __m256i vq = _mm256_mul_epu32(va, vb_precomp);
+
+    // vq = [ 0, q_6 | 0, q_4 | 0, q_2 | 0, q_0 ]
     vq = _mm256_srli_epi64(vq, 32);
+
+    // Preserves only the least significant bit: vab = [ a_6 * b_6 mod 2^32 | a_4 * b_4 mod 2^32 | a_2 * b_2 mod 2^32 | a_0 * b_0 mod 2^32]
     __m256i vab = _mm256_mullo_epi32(va, vb);
+
+    // vqp = [ q_6 * p_6 mod 2^32 | q_4 * p_4 mod 2^32 | q_2 * p_2 mod 2^32 | q_0 * p_0]
     __m256i vqp = _mm256_mullo_epi32(vq, vp);
+
+    // vc = [ 0 - 0, ab_6 - qp_6 | 0 - 0, ab_4 - qp_4 | 0 - 0, ab_2 - qp_2 | 0 - 0, ab_0 - qp_0 ]
     __m256i vc = _mm256_sub_epi32(vab, vqp);
+
+    /* if (c >= p) c -= p */
+    // cmp = [ vp_6 > vc_6 ? -1 : 0 | vp_4 > vc_4 ? -1 : 0 | vp_2 > vc_2 ? -1 : 0 | vp_0 > vc_0 ? -1 : 0 ]
     __m256i cmp = _mm256_cmpgt_epi64(vp, vc);
+
+    // sub_mask = [ ~cmp_6 & vp_6 | ~cmp_4 & vp_4 | ~cmp_2 & vp_2 | ~cmp_0 & vp_0 ]
     __m256i sub_mask = _mm256_andnot_si256(cmp, vp);
+
+    // [ c_6 - sub_mask_6 | c_4 - sub_mask_4 | c_2 - sub_mask_2 | c_0 - sub_mask_0 ]
     return _mm256_sub_epi64(vc, sub_mask);
 }
 
