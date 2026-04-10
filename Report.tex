@@ -42,7 +42,7 @@
 \section{Introduction}
 This project explores and optimize modular reductions for prime numbers  $p < 2^{32}$ using SIMD Vectorisation (AVX2, AVX512, NEON) along with various different techniques and algorithmes.
 
-\textbf{Objective: } The aim of this study is to be able to realize an optimized implementation with minimal performance cost for modular reductions.
+\textbf{Objective: } The aim of this study is to be able to realize an optimized implementation with minimal performance cost for modular reductions over 32 bits.
 
 \section{Fundamental Cost of Modular Reduction}
 The most naive way to compute $a \pmod{n}$ is to perform the operation :
@@ -314,7 +314,7 @@ This function treats the input as signed 32-bit integers. It multiplies all 8 pa
     return _mm256_sub_epi64(c, sub_mask);
 }
 \end{lstlisting}
-\begin{lstlisting} [caption = VX2 Implementation of Shoup’s Modular Reduction (Version mullo)]
+\begin{lstlisting} [caption = AVX2 Implementation of Shoup’s Modular Reduction (Version mullo)]
     static Vector _shoup_scale_avx_mullo(Parameters param, Vector v)
 {
     /*1. Preloading b, b_precomp, p and 32 bit mask*/
@@ -363,6 +363,97 @@ This function treats the input as signed 32-bit integers. It multiplies all 8 pa
     return res;
 }
 \end{lstlisting}
+
+\textbf{Intel \_mm256\_mullo\_epi32 version 2:}\\
+Derived from the previous version, this version aims to regroup the vector registers immediately after the
+multiplication step 
+\[q = \lfloor (a \cdot b_{precomp}) / 2^{32} \rfloor\]
+By restoring the standard 8-lane 32-bit layout early, the function eliminates the need to perform parrallel logic paths.
+This in theory should reduce the work load.
+
+In order to implement this version, we create an auxilary function \textbf{\_fake\_mulhi} which emulates a native 'multiply-high' 
+instruction for unsigned 32-bit integers. It computes the full 64-bit products of two packed vectors, 
+extracts the most significant 32 bits from each result, and repacks them into a single 256-bit 
+destination register.
+
+\begin{lstlisting} [caption = Auxilary Function \_fake\_mulhi]
+    static inline __m256i _fake_mulhi(__m256i va, __m256i vb)
+{
+    /* 1. Multiply even lanes (0, 2, 4, 6) */
+    __m256i res_even = _mm256_mul_epu32(va, vb);
+
+    /* 1. Multiply odd lanes (1, 3, 5, 7) */
+    __m256i res_odd = _mm256_mul_epu32(_mm256_srli_epi64(va, 32), vb);
+
+    /* 3. Extract high 32 bits of even-lane products*/
+    __m256i hi_even = _mm256_srli_epi64(res_even, 32);
+
+    /* 4. Extract high 32 bits of odd-lane products */
+    __m256i mask = _mm256_set1_epi64x(0xFFFFFFFF00000000ULL);
+    __m256i hi_odd = _mm256_and_si256(res_odd, mask);
+
+    /*5. Regroup*/
+    return _mm256_or_si256(hi_even, hi_odd);
+}
+\end{lstlisting}
+\begin{lstlisting} [caption = Auxilary Function of Shoup’s Modular Reduction (Version 2 mullo)]
+    static inline __m256i _shoup_mullo_avx2_v2(__m256i va, 
+                                               __m256i vb, 
+                                               __m256i vb_precomp, 
+                                               __m256i vp)
+{
+    // 1. q = (a * b_precomp) >> 32:
+    __m256i vq = _fake_mulhi(va, vb_precomp);
+
+    // 2. ab:
+    __m256i vab = _mm256_mullo_epi32(va, vb);
+
+    // 3. qp:
+    __m256i vqp = _mm256_mullo_epi32(vq, vp);
+
+    // 4. c = (ab - qp):
+    __m256i vc = _mm256_sub_epi32(vab, vqp);
+
+    //Unsigned Comparison using min
+    // 5. if (c >= p) c -= p
+    __m256i v_min = _mm256_min_epu32(vc, vp);
+    __m256i is_ge = _mm256_cmpeq_epi32(v_min, vp);
+    __m256i sub_mask = _mm256_and_si256(is_ge, vp);
+    return _mm256_sub_epi64(vc, sub_mask);
+}
+\end{lstlisting}
+
+\begin{lstlisting} [caption = AVX2 Implementation of Shoup’s Modular Reduction (Version 2 mullo)]
+    Vector shoup_scale_mullo_avx2_v2(Parameters param, Vector v)
+{
+    /* 1. Preloading b , b_precomp , p */
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    __m256i vb = _mm256_set1_epi32(param.b);
+    __m256i vb_precomp = _mm256_set1_epi32(param.b_precomp);
+    __m256i vp = _mm256_set1_epi32(param.p);
+    ulong i = 0;
+    for (; i + 7 < size; i += 8)
+    {
+        /* 2. Load 8 elements [ v7 v6 v5 v4 v3 v2 v1 v0 ]: */
+        __m256i va = _mm256_loadu_si256((__m256i const *)(v.elements + i));
+
+        /* 3. Apply Shoup */
+        __m256i vc = _shoup_mullo_avx2_v2(va, vb, vb_precomp, vp);
+
+        /* 4. Store : */
+        _mm256_storeu_si256((__m256i *)(res.elements + i), vc);
+    }
+
+    /*5. Apply Shoup to the remaning elements*/
+    for (; i < size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+    return res;
+}
+
+\end{lstlisting}
+
+
 \subsubsection{NEON}
 \begin{lstlisting} [caption = Auxilary Function of Shoup’s Modular Reduction (Version Neon)]
     TODO
@@ -495,11 +586,24 @@ The results below are obtained by measuring the execution time between the 2 var
 \end{table}
 
 \textbf{Observation:} We can observe that at the smaller sizes (100), mullo\_epi32 is slower than the standard mul\_epu32
-implementation by around 2\%. But the effecientcy gain starts that show once the vector size hits 200 and above.
+implementation by around 2\%. But the effecientcy gain starts to show once the vector size hits 200 and above.
 Across all the vector sizes, the average percentage gain is 5.15\%
 
 \textbf{Conclusion:} The mullo\_epi32 version is effectively faster than the mul\_epu32 version by about 5\%, this speedup is especially seen for bigger vectors sizes.
 The mullo\_epi32 version is the better implementation 
+
+\subsubsection{Versions of mullo:}
+Both versions use mullo as the main multiplication operation, the key difference between these 2 versions
+is when the regrouping happens for the vector registers.
+
+The results bellow are obtained by measuring the execution time between 2 implementations using \_mm256\_mullo\_epi32 described in Section 3.8.1
+
+\textbf{Hypothesis:} The second version implementation should perform better, it carries out les redundant code by
+regrouping early the vector registers
+
+\textbf{Observations:}
+
+\textbf{Conclusion}
 \subsubsection{Overall Performance}
 The results below are obtained by measuring the execution time of different implementations of modular reduction:
 
@@ -584,6 +688,8 @@ Our Shoup's Modular Multiplication with AVX2 and AVX512 optimization adapted to 
 \subsubsection{NEON's Performance}
 TODO
 
+\subsection{Overall Conclusion:}
 
+\subsection{Other Improvements:}
 
 \end{document}
