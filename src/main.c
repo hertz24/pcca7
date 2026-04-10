@@ -43,7 +43,7 @@ int main(int argc, char const *argv[])
 {
     rand_init();
     int ret;
-    Options options = {.flags = 0, .scale = 1, .points = 10000};
+    Options options = {.flags = 0, .scale = 1, .points = 1000};
     Parameters param;
     Vector v = rand_vector(100);
     print_vector(stdout, v);
@@ -58,7 +58,7 @@ int main(int argc, char const *argv[])
     print_vector(stdout, ref);
     print_vector(stdout, res);
     fprintf(stdout, "%d %s\n", compare_vectors(ref, res), algorithms[6].name);
-    // ret = generate_graphs(options, param);
+    ret = generate_graphs(options, param);
 
 end:
     rand_clear();

@@ -330,10 +330,6 @@ Vector shoup_scale_mullo_avx2(Parameters param, Vector v)
         __m256i merge_1 = _mm256_or_si256(even_vc_1, odd_shifted_1);
         __m256i merge_2 = _mm256_or_si256(even_vc_2, odd_shifted_2);
         __m256i merge_3 = _mm256_or_si256(even_vc_3, odd_shifted_3);
-        print_m256i(merge_0);
-        print_m256i(merge_1);
-        print_m256i(merge_2);
-        print_m256i(merge_3);
 
         _mm256_storeu_si256((__m256i *)(res.elements + i), merge_0);
         _mm256_storeu_si256((__m256i *)(res.elements + i + 8), merge_1);
@@ -358,12 +354,23 @@ static inline __m256i _fake_mulhi(__m256i va, __m256i vb)
 
 static inline __m256i _shoup_mullo_avx2_v2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
 {
+    // 1. q = (a * b_precomp) >> 32:
     __m256i vq = _fake_mulhi(va, vb_precomp);
+
+    // 2. ab:
     __m256i vab = _mm256_mullo_epi32(va, vb);
+
+    // 3. qp:
     __m256i vqp = _mm256_mullo_epi32(vq, vp);
+
+    // 4. c = (ab - qp):
     __m256i vc = _mm256_sub_epi32(vab, vqp);
-    __m256i cmp = _mm256_cmpgt_epi32(vp, vc);
-    __m256i sub_mask = _mm256_andnot_si256(cmp, vp);
+
+    //Unsigned Comparison using min
+    // 5. if (c >= p) c -= p
+    __m256i v_min = _mm256_min_epu32(vc, vp);
+    __m256i is_ge = _mm256_cmpeq_epi32(v_min, vp);
+    __m256i sub_mask = _mm256_and_si256(is_ge, vp);
     return _mm256_sub_epi64(vc, sub_mask);
 }
 
@@ -380,7 +387,6 @@ Vector shoup_scale_mullo_avx2_v2(Parameters param, Vector v)
         __m256i va = _mm256_loadu_si256((__m256i const *)(v.elements + i));
 
         __m256i vc = _shoup_mullo_avx2_v2(va, vb, vb_precomp, vp);
-        print_m256i(vc);
         _mm256_storeu_si256((__m256i *)(res.elements + i), vc);
     }
     for (; i < size; i++)

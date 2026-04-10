@@ -34,6 +34,8 @@ int main(void)
                             fprintf(stderr, "\n");
                         }
                         error = 1;
+                        print_vector(stderr, rand_v);
+                        fprintf(stderr, "\tFailed for %s\n", algorithms[l].name);
                         fprintf(stderr, "\tFor ");
                         print_param(stderr, param);
                         fprintf(stderr, "\t\texpected: ");
