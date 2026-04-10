@@ -278,19 +278,6 @@ static inline __m256i _shoup_mullo_avx2(__m256i va, __m256i vb, __m256i vb_preco
     return _mm256_sub_epi64(vc, sub_mask);
 }
 
-void print_m256i(__m256i v)
-{
-    // A 256-bit register holds 8 integers of 32 bits each
-    uint32_t val[8];
-
-    // Store the 256-bit vector into the local array
-    _mm256_storeu_si256((__m256i *)val, v);
-
-    printf("Valeurs : [%u, %u, %u, %u, %u, %u, %u, %u]\n",
-           val[0], val[1], val[2], val[3],
-           val[4], val[5], val[6], val[7]);
-}
-
 Vector shoup_scale_mullo_avx2(Parameters param, Vector v)
 {
     ulong size = v.size;

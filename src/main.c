@@ -19,22 +19,22 @@ static int generate_graphs(Options options, Parameters param)
 #endif
 #if AVX512
                           ,
-                          algorithms[7]
+                          algorithms[8]
 #endif
     };
-    int ret = 0;
+    int ret = generate_graph(scale, points, param, graph1, TAB_SIZE(graph1));
 #if NEON || AVX2
-    // ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[4]}, 2);
-    // ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[5]}, 2);
+    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[4]}, 2);
+    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[5]}, 2);
     ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[5], algorithms[6]}, 2);
     if (options.b == 1)
-        ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[6]}, 2);
+        ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[7]}, 2);
 #endif
 #if AVX512
-    // ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[8]}, 2);
-    // ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[9]}, 2);
+    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[8], algorithms[9]}, 2);
+    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[8], algorithms[10]}, 2);
     if (options.b == 1)
-        ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[10]}, 2);
+        ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[11]}, 2);
 #endif
     return ret ? ERR_GEN_GRAPHS : 0;
 }
@@ -43,21 +43,12 @@ int main(int argc, char const *argv[])
 {
     rand_init();
     int ret;
-    Options options = {.flags = 0, .scale = 1, .points = 1000};
+    Options options = {.flags = 0, .scale = 10, .points = 10};
     Parameters param;
-    Vector v = rand_vector(100);
-    print_vector(stdout, v);
     if ((ret = set_options(argc, argv, &options)))
         goto end;
     if ((ret = init_param(&options, &param)))
         goto end;
-    Vector ref = naive_scale(param, v);
-    Vector res = shoup_scale_mullo_avx2_v2(param, v);
-    printf("----V2---\n");
-    shoup_scale_mullo_avx2(param, v);
-    print_vector(stdout, ref);
-    print_vector(stdout, res);
-    fprintf(stdout, "%d %s\n", compare_vectors(ref, res), algorithms[6].name);
     ret = generate_graphs(options, param);
 
 end:
