@@ -18,21 +18,22 @@ static int generate_graphs(Options options, Parameters param)
 #endif
 #if AVX512
                           ,
-                          algorithms[7]
+                          algorithms[8]
 #endif
     };
     int ret = generate_graph(scale, points, param, graph1, TAB_SIZE(graph1));
 #if NEON || AVX2
     ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[4]}, 2);
     ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[5]}, 2);
+    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[5], algorithms[6]}, 2);
     if (options.b == 1)
-        ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[6]}, 2);
+        ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[3], algorithms[7]}, 2);
 #endif
 #if AVX512
-    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[8]}, 2);
-    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[9]}, 2);
+    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[8], algorithms[9]}, 2);
+    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[8], algorithms[10]}, 2);
     if (options.b == 1)
-        ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[10]}, 2);
+        ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[11]}, 2);
 #endif
     return ret ? ERR_GEN_GRAPHS : 0;
 }

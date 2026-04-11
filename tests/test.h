@@ -19,7 +19,7 @@
 #include "../include/options.h"
 
 #define NB_TESTS 50
-#define VECTOR_SIZE 100
+#define VECTOR_SIZE 500
 #define BUFFER_SIZE 16
 
 #define BOLD "\e[1m"

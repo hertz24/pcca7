@@ -16,7 +16,7 @@ Vector rand_vector(ulong size)
     Vector v = init_vector(size);
     FLINT_TEST_INIT(state);
     for (ulong i = 0; i < size; i++)
-        *(v.elements + i) = n_randbits(state, _n_randint(state, 33));
+        *(v.elements + i) = n_randbits(state, n_randint(state, 33));
     FLINT_TEST_CLEAR(state);
     return v;
 }
@@ -26,12 +26,12 @@ void free_vector(Vector v)
     free(v.elements);
 }
 
-void print_vector(Vector v)
+void print_vector(FILE *out, Vector v)
 {
-    printf("[");
+    fprintf(out, "[");
     for (ulong i = 0; i < v.size - 1; i++)
-        printf("%u, ", *(v.elements + i));
-    printf("%u]\n", *(v.elements + v.size - 1));
+        fprintf(out, "%u, ", *(v.elements + i));
+    fprintf(out, "%u]\n", *(v.elements + v.size - 1));
 }
 
 int compare_vectors(Vector v1, Vector v2)

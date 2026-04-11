@@ -22,7 +22,7 @@ int main(void)
                 int error = 0;
                 for (int l = 1; l < NB_ALGO; l++)
                 {
-                    if ((l == 6 || l == NB_ALGO - 1))
+                    if ((l == 7 || l == NB_ALGO - 1))
                         continue;
                     Vector result = algorithms[l].address(param, rand_v);
                     int index = compare_vectors(ref, result);
@@ -34,7 +34,14 @@ int main(void)
                             fprintf(stderr, "\n");
                         }
                         error = 1;
-                        fprintf(stderr, "\t- When multiplying %lu bits and %lu bits for %s\n", FLINT_BIT_COUNT(*(rand_v.elements + index)), FLINT_BIT_COUNT(param.b), algorithms[l].name);
+                        print_vector(stderr, rand_v);
+                        fprintf(stderr, "\tFailed for %s\n", algorithms[l].name);
+                        fprintf(stderr, "\tFor ");
+                        print_param(stderr, param);
+                        fprintf(stderr, "\t\texpected: ");
+                        print_vector(stderr, ref);
+                        fprintf(stderr, "\t\tobtained: ");
+                        print_vector(stderr, result);
                     }
                     free_vector(result);
                 }

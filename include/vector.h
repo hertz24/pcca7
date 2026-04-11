@@ -43,11 +43,12 @@ Vector rand_vector(ulong size);
 void free_vector(Vector v);
 
 /**
- * @brief Prints the elements of @p v
+ * @brief Prints the elements of the vector.
  *
- * @param v The vector
+ * @param out The output
+ * @param v The vector to print
  */
-void print_vector(Vector v);
+void print_vector(FILE *out, Vector v);
 
 /**
  * @brief Compare the elements of two vectors.

@@ -1,5 +1,5 @@
 CC := /usr/bin/gcc
-CFLAGS := -Wall -Wextra -O3
+CFLAGS := -Wall -Wextra -O3 -I/usr/local/include
 LDFLAGS := -lflint
 
 ARCH := $(shell uname -m)
