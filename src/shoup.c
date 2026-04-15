@@ -162,30 +162,23 @@ Vector shoup_b1_scale_neon(Parameters param, Vector v)
 #elif AVX2
 static inline __m256i _shoup_avx2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
 {
-    // vq = [ a_6 * b_precomp_6 | a_4 * b_precomp_4 | a_2 * b_precomp_2, | a_0 * b_precomp_0 ]
+    // vq = [ (a_0 * b_precomp_0 = q_0q_1), (a_2 * b_precomp_2 = q_2q_3), (a_4 * b_precomp_4 = q_4q_5), (a_6 * b_precomp_6 = q_6q_7) ]
     __m256i vq = _mm256_mul_epu32(va, vb_precomp);
 
-    // vq = [ 0, q_6 | 0, q_4 | 0, q_2 | 0, q_0 ]
+    // vq = [ (0, q_0), (0, q_2), (0, q_4), (0, q_6) ]
     vq = _mm256_srli_epi64(vq, 32);
 
-    // vab = [ a_6 * b_6 | a_4 * b_4 | a_2 * b_2 | a_0 * b_0 ]
+    // vab = [ (a_0 * b_0 = ab_0ab_1), (a_2 * b_2 = ab_2ab_3), (a_4 * b_4 = ab_4ab_5), (a_6 * b_6 = ab_6ab_7) ]
     __m256i vab = _mm256_mul_epu32(va, vb);
 
-    // vqp = [ q_6 * p_6 | q_4 * p_4 | q_2 * p_2 | q_0 * p_0 ]
+    // vqp = [ (q_0 * p_0 = qp_0qp_1), (q_2 * p_2 = qp_2qp_3), (q_4 * p_4 = qp_4qp_5), (q_6 * p_6 = qp_6qp_7) ]
     __m256i vqp = _mm256_mul_epu32(vq, vp);
 
-    // vc = [ ab_6 - qp_6 | ab_4 - qp_4 | ab_2 - qp_2 | ab_0 - qp_0 ]
+    // vc = [ (ab_0 - qp_0 = c_0c_1), (ab_2 - qp_2 = c_2c_3), (ab_4 - qp_4 = c_4c_5), (ab_6 - qp_6 = c_6c_7) ]
     __m256i vc = _mm256_sub_epi64(vab, vqp);
 
-    /* if (c >= p) c -= p */
-    // cmp = [ vp_6 > vc_6 ? -1 : 0 | vp_4 > vc_4 ? -1 : 0 | vp_2 > vc_2 ? -1 : 0 | vp_0 > vc_0 ? -1 : 0 ]
-    __m256i cmp = _mm256_cmpgt_epi64(vp, vc);
-
-    // sub_mask = [ ~cmp_6 & vp_6 | ~cmp_4 & vp_4 | ~cmp_2 & vp_2 | ~cmp_0 & vp_0 ]
-    __m256i sub_mask = _mm256_andnot_si256(cmp, vp);
-
-    // [ c_6 - sub_mask_6 | c_4 - sub_mask_4 | c_2 - sub_mask_2 | c_0 - sub_mask_0 ]
-    return _mm256_sub_epi64(vc, sub_mask);
+    // if (c >= p) c -= p
+    return _mm256_min_epu32(vc, _mm256_sub_epi32(vc, vp));
 }
 
 Vector shoup_scale_avx2(Parameters param, Vector v)
@@ -198,10 +191,10 @@ Vector shoup_scale_avx2(Parameters param, Vector v)
     ulong i = 0;
     for (; i + 7 < size; i += 8)
     {
-        // Load [ a_7, a_6, a_5, a_4, a_3, a_2, a_1, a_0 ] but only even index will be directly handled
+        // Load [ a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7 ] = [ (a_1, a_0), (a_3, a_2), (a_5, a_4), (a_7, a_6) ] but only even index will be directly handled
         __m256i even_va = _mm256_loadu_si256((__m256i const *)(v.elements + i));
 
-        // Need to move odd index to even index to be handled: [ 0, a_7 | 0, a_5 | 0, a_3 | 0, a_1 ]
+        // Need to move odd index to even index to be handled: [ (0, a_1), (0, a_3), (0, a_5), (0, a_7) ]
         __m256i odd_va = _mm256_srli_epi64(even_va, 32);
 
         // Process Even Lanes
@@ -210,10 +203,10 @@ Vector shoup_scale_avx2(Parameters param, Vector v)
         // Process Odd Lanes:
         __m256i odd_vc = _shoup_avx2(odd_va, vb, vb_precomp, vp);
 
-        // Shift odd by 32 bits to the left results back and merge: [ c_7, 0 | c_5, 0 | c_3, 0 | c_1, 0 ]
+        // Shift odd by 32 bits to the left results back and merge: [ (c_1, 0), (c_3, 0), (c_5, 0), (c_7, 0) ]
         __m256i odd_shifted = _mm256_slli_epi64(odd_vc, 32);
 
-        // Merge even and odd: [ c_7, 0 | c_5, 0 | c_3, 0 | c_1, 0] | [0, c_6 | 0, c_4 | 0, c_2 | 0, c_0 ]
+        // Merge even and odd: [ c_0, c_1, c_2, c_3, c_4, c_5, c_6, c_7 ]
         __m256i merge = _mm256_or_si256(even_vc, odd_shifted);
 
         _mm256_storeu_si256((__m256i *)(res.elements + i), merge);
@@ -275,30 +268,23 @@ Vector unrolling_shoup_scale_avx2(Parameters param, Vector v)
 
 static inline __m256i _shoup_mullo_avx2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
 {
-    // vq = [ a_6 * b_precomp_6 | a_4 * b_precomp_4 | a_2 * b_precomp_2, | a_0 * b_precomp_0 ]
+    // vq = [ (a_0 * b_precomp_0 = q_0q_1), (a_2 * b_precomp_2 = q_2q_3), (a_4 * b_precomp_4 = q_4q_5), (a_6 * b_precomp_6 = q_6q_7) ]
     __m256i vq = _mm256_mul_epu32(va, vb_precomp);
 
-    // vq = [ 0, q_6 | 0, q_4 | 0, q_2 | 0, q_0 ]
+    // vq = [ (0, q_0), (0, q_2), (0, q_4), (0, q_6) ]
     vq = _mm256_srli_epi64(vq, 32);
 
-    // Preserves only the least significant bit: vab = [ a_6 * b_6 mod 2^32 | a_4 * b_4 mod 2^32 | a_2 * b_2 mod 2^32 | a_0 * b_0 mod 2^32]
+    // Preserves only the least significant bit: vab = [ (a_0 * b_0 mod 2^32 = ab_0), (a_2 * b_2 mod 2^32 = ab_2), (a_4 * b_4 mod 2^32 = ab_4), (a_6 * b_6 mod 2^32 = ab_6) ]
     __m256i vab = _mm256_mullo_epi32(va, vb);
 
-    // vqp = [ q_6 * p_6 mod 2^32 | q_4 * p_4 mod 2^32 | q_2 * p_2 mod 2^32 | q_0 * p_0]
+    // vqp = [ [q_0 * p_0 mod 2^32 = qp_0], [q_2 * p_2 mod 2^32 = qp_2], [q_4 * p_4 mod 2^32 = qp_4], [q_6 * p_6 mod 2^32 = qp_6] ]
     __m256i vqp = _mm256_mullo_epi32(vq, vp);
 
-    // vc = [ 0 - 0, ab_6 - qp_6 | 0 - 0, ab_4 - qp_4 | 0 - 0, ab_2 - qp_2 | 0 - 0, ab_0 - qp_0 ]
+    // vc = [ (0, ab_0 - qp_0), (0, ab_2 - qp_2), (0, ab_4 - qp_4), (0, ab_6 - qp_6) ]
     __m256i vc = _mm256_sub_epi32(vab, vqp);
 
-    /* if (c >= p) c -= p */
-    // cmp = [ vp_6 > vc_6 ? -1 : 0 | vp_4 > vc_4 ? -1 : 0 | vp_2 > vc_2 ? -1 : 0 | vp_0 > vc_0 ? -1 : 0 ]
-    __m256i cmp = _mm256_cmpgt_epi64(vp, vc);
-
-    // sub_mask = [ ~cmp_6 & vp_6 | ~cmp_4 & vp_4 | ~cmp_2 & vp_2 | ~cmp_0 & vp_0 ]
-    __m256i sub_mask = _mm256_andnot_si256(cmp, vp);
-
-    // [ c_6 - sub_mask_6 | c_4 - sub_mask_4 | c_2 - sub_mask_2 | c_0 - sub_mask_0 ]
-    return _mm256_sub_epi64(vc, sub_mask);
+    // if (c >= p) c -= p
+    return _mm256_min_epu32(vc, _mm256_sub_epi32(vc, vp));
 }
 
 Vector shoup_scale_mullo_avx2(Parameters param, Vector v)
@@ -351,37 +337,31 @@ Vector shoup_scale_mullo_avx2(Parameters param, Vector v)
     return res;
 }
 
-static inline __m256i _fake_mulhi(__m256i va, __m256i vb)
+static inline __m256i _mulhi_emul(__m256i va, __m256i vb)
 {
+    // res_even = [ (a_0 * b_0), (a_2 * b_2), (a_4 * b_4), (a_6 * b_6) ]
     __m256i res_even = _mm256_mul_epu32(va, vb);
+
+    // res_odd = [ (a_1 * b_0), (a_3 * b_2), (a_5 * b_4), (a_7 * b_6) ]
     __m256i res_odd = _mm256_mul_epu32(_mm256_srli_epi64(va, 32), vb);
 
+    // hi_even = [ (0, hi(a_0 * b_0)), (0, hi(a_2 * b_2)), (0, hi(a_4 * b_4)), (0, hi(a_6*b_6)) ]
     __m256i hi_even = _mm256_srli_epi64(res_even, 32);
+
+    // Removes the least significant bits: hi_odd = [ (hi(a_1 * b_0), 0), (hi(a_3 * b_2), 0), (hi(a_5 * b_4), 0), (hi(a_7 * b_6), 0) ]
     __m256i hi_odd = _mm256_and_si256(res_odd, _mm256_set1_epi64x(0xFFFFFFFF00000000ULL));
 
+    // [ (hi(a_1 * b_0), hi(a_0 * b_0)), (hi(a_3 * b_2), hi(a_2 * b_2)), (hi(a_5 * b_4), hi(a_4 * b_4)), (hi(a_7 * b_6), hi(a_6 * b_6)) ]
     return _mm256_or_si256(hi_even, hi_odd);
 }
 
 static inline __m256i _shoup_mullo_v2_avx2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
 {
-    // 1. q = (a * b_precomp) >> 32:
-    __m256i vq = _fake_mulhi(va, vb_precomp);
-
-    // 2. ab:
+    __m256i vq = _mulhi_emul(va, vb_precomp);
     __m256i vab = _mm256_mullo_epi32(va, vb);
-
-    // 3. qp:
     __m256i vqp = _mm256_mullo_epi32(vq, vp);
-
-    // 4. c = (ab - qp):
     __m256i vc = _mm256_sub_epi32(vab, vqp);
-
-    // Unsigned Comparison using min
-    //  5. if (c >= p) c -= p
-    __m256i v_min = _mm256_min_epu32(vc, vp);
-    __m256i is_ge = _mm256_cmpeq_epi32(v_min, vp);
-    __m256i sub_mask = _mm256_and_si256(is_ge, vp);
-    return _mm256_sub_epi64(vc, sub_mask);
+    return _mm256_min_epu32(vc, _mm256_sub_epi32(vc, vp));
 }
 
 Vector shoup_scale_mullo_v2_avx2(Parameters param, Vector v)
@@ -406,18 +386,23 @@ Vector shoup_scale_mullo_v2_avx2(Parameters param, Vector v)
 
 static inline __m256i _shoup_b1_avx2(__m256i va, __m256i vb_precomp, __m256i vp)
 {
-    /*
-     * NOTE: doesn't work without mask
-     */
-    __m256i mask_32 = _mm256_set1_epi64x(0xFFFFFFFF);
+    // Clears the most significant bits
+    va = _mm256_and_si256(va, _mm256_set1_epi64x(0xFFFFFFFF));
+
+    // vq = [ (a_0 * b_precomp_0 = q_0q_1), (a_2 * b_precomp_2 = q_2q_3), (a_4 * b_precomp_4 = q_4q_5), (a_6 * b_precomp_6 = q_6q_7) ]
     __m256i vq = _mm256_mul_epu32(va, vb_precomp);
+
+    // vq = [ (0, q_0), (0, q_2), (0, q_4), (0, q_6) ]
     vq = _mm256_srli_epi64(vq, 32);
+
+    // vqp = [ (q_0 * p_0 = qp_0qp_1), (q_2 * p_2 = qp_2qp_3), (q_4 * p_4 = qp_4qp_5), (q_6 * p_6 = qp_6qp_7) ]
     __m256i vqp = _mm256_mul_epu32(vq, vp);
+
+    // vc = [ (ab_0 - qp_0 = c_0c_1), (ab_2 - qp_2 = c_2c_3), (ab_4 - qp_4 = c_4c_5), (ab_6 - qp_6 = c_6c_7) ]
     __m256i vc = _mm256_sub_epi64(va, vqp);
-    vc = _mm256_and_si256(vc, mask_32);
-    __m256i cmp = _mm256_cmpgt_epi64(vp, vc);
-    __m256i sub_mask = _mm256_andnot_si256(cmp, vp);
-    return _mm256_sub_epi64(vc, sub_mask);
+
+    // if (c >= p) c -= p
+    return _mm256_min_epu32(vc, _mm256_sub_epi32(vc, vp));
 }
 
 Vector shoup_b1_scale_avx2(Parameters param, Vector v)
@@ -478,8 +463,7 @@ static inline __m512i _shoup_avx512(__m512i va, __m512i vb, __m512i vb_precomp, 
     __m512i vab = _mm512_mul_epu32(va, vb);
     __m512i vqp = _mm512_mul_epu32(vq, vp);
     __m512i vc = _mm512_sub_epi64(vab, vqp);
-    __mmask8 cmp = _mm512_cmple_epu64_mask(vp, vc);
-    return _mm512_mask_sub_epi64(vc, cmp, vc, vp);
+    return _mm512_min_epu32(vc, _mm512_sub_epi32(vc, vp));
 }
 
 Vector shoup_scale_avx512(Parameters param, Vector v)
@@ -568,8 +552,7 @@ static inline __m512i _shoup_mullo_avx512(__m512i va, __m512i vb, __m512i vb_pre
     __m512i vab = _mm512_mullo_epi32(va, vb);
     __m512i vqp = _mm512_mullo_epi32(vq, vp);
     __m512i vc = _mm512_sub_epi32(vab, vqp);
-    __mmask8 cmp = _mm512_cmple_epu64_mask(vp, vc);
-    return _mm512_mask_sub_epi64(vc, cmp, vc, vp);
+    return _mm512_min_epu32(vc, _mm512_sub_epi32(vc, vp));
 }
 
 Vector shoup_scale_mullo_avx512(Parameters param, Vector v)
@@ -624,17 +607,12 @@ Vector shoup_scale_mullo_avx512(Parameters param, Vector v)
 
 static inline __m512i _shoup_b1_avx512(__m512i va, __m512i vb_precomp, __m512i vp)
 {
-    /*
-     * NOTE: doesn't work without mask
-     */
-    __m512i mask_32 = _mm512_set1_epi64(0xFFFFFFFF);
+    va = _mm512_and_si512(va, _mm512_set1_epi64(0xFFFFFFFF));
     __m512i vq = _mm512_mul_epu32(va, vb_precomp);
     vq = _mm512_srli_epi64(vq, 32);
     __m512i vqp = _mm512_mul_epu32(vq, vp);
     __m512i vc = _mm512_sub_epi64(va, vqp);
-    vc = _mm512_and_si512(vc, mask_32);
-    __mmask8 cmp = _mm512_cmple_epu64_mask(vp, vc);
-    return _mm512_mask_sub_epi64(vc, cmp, vc, vp);
+    return _mm512_min_epu32(vc, _mm512_sub_epi32(vc, vp));
 }
 
 Vector shoup_b1_scale_avx512(Parameters param, Vector v)

@@ -22,7 +22,7 @@ int main(void)
                 int error = 0;
                 for (int l = 1; l < NB_ALGO; l++)
                 {
-                    if ((l == 7 || l == NB_ALGO - 1))
+                    if ((l == 7 || l == NB_ALGO - 1) && param.b != 1)
                         continue;
                     Vector result = algorithms[l].address(param, rand_v);
                     int index = compare_vectors(ref, result);

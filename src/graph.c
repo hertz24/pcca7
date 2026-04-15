@@ -40,7 +40,7 @@ int generate_graph(int scale, ulong nb_points, Parameters param, Algorithm algor
                 "set datafile separator ','\n"
                 "set key outside\n"
                 "set title 'Execution time for b = %u and p = %u'\n"
-                "set output 'graph%d.png'\n"
+                "set output 'graphs/graph%d.png'\n"
                 "set xlabel 'Size of the vector'\n"
                 "set ylabel 'Time in milliseconds'\n"
                 "plot ",

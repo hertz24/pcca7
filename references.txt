@@ -1,8 +1,0 @@
-Benchmark / estimer les temps:
-https://uops.info/table.html
-
-
-Modular Shoup:
-https://flintlib.org/doc/ulong_extras.html#modular-arithmetic-with-fixed-operand
-https://shoup.net/papers/akl-chapter.pdf
-
