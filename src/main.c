@@ -32,8 +32,9 @@ static int generate_graphs(Options options, Parameters param)
 #if AVX512
     ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[8], algorithms[9]}, 2);
     ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[8], algorithms[10]}, 2);
+    ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[10], algorithms[11]}, 2);
     if (options.b == 1)
-        ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[7], algorithms[11]}, 2);
+        ret |= generate_graph(scale, points, param, (Algorithm[]){algorithms[8], algorithms[12]}, 2);
 #endif
     return ret ? ERR_GEN_GRAPHS : 0;
 }
