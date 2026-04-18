@@ -26,8 +26,8 @@ static inline uint32x2_t _shoup_neon(uint32x2_t va, uint32x2_t vb, uint32x2_t vb
     // vab_precomp = [ a_0 * b_precomp_0 = ab_precomp_0, a_1 * b_precomp_1 = ab_precomp_1 ]
     uint64x2_t vab_precomp = vmull_u32(va, vb_precomp);
 
-    // vmovn_u64 converts uint64x2_t to uint32x2_t: vq = [ q_0, q_1 ]
-    uint32x2_t vq = vmovn_u64(vshrq_n_u64(vab_precomp, 32));
+    // vq = [ q_0, q_1 ]
+    uint32x2_t vq = vshrn_n_u64(vab_precomp, 32);
 
     // vab = [ a_0 * b_0 = ab_0, a_1 * b_1 = ab_1 ]
     uint64x2_t vab = vmull_u32(va, vb);
@@ -97,7 +97,7 @@ static inline uint32x2_t _shoup_mullo_neon(uint32x2_t va, uint32x2_t vb, uint32x
     uint64x2_t vab_precomp = vmull_u32(va, vb_precomp);
 
     // vq = [ q_0, q_1 ]
-    uint32x2_t vq = vmovn_u64(vshrq_n_u64(vab_precomp, 32));
+    uint32x2_t vq = vshrn_n_u64(vab_precomp, 32);
 
     // vab = [ a_0 * b_0 mod 2^32 = ab_0, a_1 * b_1 mod 2^32 = ab_1 ]
     uint32x2_t vab = vmul_u32(va, vb);
@@ -139,7 +139,7 @@ Vector shoup_scale_mullo_neon(Parameters param, Vector v)
 static inline uint32x2_t _shoup_b1_neon(uint32x2_t va, uint32x2_t vb_precomp, uint32x2_t vp)
 {
     uint64x2_t vab_precomp = vmull_u32(va, vb_precomp);
-    uint32x2_t vq = vmovn_u64(vshrq_n_u64(vab_precomp, 32));
+    uint32x2_t vq = vshrn_n_u64(vab_precomp, 32);
     uint64x2_t vqp = vmull_u32(vq, vp);
     uint32x2_t vc = vmovn_u64(vsubq_u64(vmovl_u32(va), vqp));
     return vmin_u32(vc, vsub_u32(vc, vp));
