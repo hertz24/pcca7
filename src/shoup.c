@@ -23,21 +23,23 @@ Vector shoup_scale_flint(Parameters param, Vector v)
 #if NEON
 static inline uint32x2_t _shoup_neon(uint32x2_t va, uint32x2_t vb, uint32x2_t vb_precomp, uint32x2_t vp)
 {
-    // Calculates a * b_precomp
+    // vab_precomp = [ a_0 * b_precomp_0 = ab_precomp_0, a_1 * b_precomp_1 = ab_precomp_1 ]
     uint64x2_t vab_precomp = vmull_u32(va, vb_precomp);
 
-    // q = (a * b_precomp) >> 32
-    // vmovn_u64 converts into 32 bits
+    // vmovn_u64 converts uint64x2_t to uint32x2_t: vq = [ q_0, q_1 ]
     uint32x2_t vq = vmovn_u64(vshrq_n_u64(vab_precomp, 32));
 
-    // c = a * b - q * p
+    // vab = [ a_0 * b_0 = ab_0, a_1 * b_1 = ab_1 ]
     uint64x2_t vab = vmull_u32(va, vb);
+
+    // vqp = [ q_0 * p_0 = qp_0, q_1 * p_1 = qp_1 ]
     uint64x2_t vqp = vmull_u32(vq, vp);
+
+    // vc = [ ab_0 - qp_0 = c_0, ab_1 - qp_1 = c_1 ]
     uint32x2_t vc = vmovn_u64(vsubq_u64(vab, vqp));
 
-    // Compare c >= p
-    uint32x2_t cmp = vcge_u32(vc, vp);
-    return vsub_u32(vc, vand_u32(cmp, vp));
+    // if (c >= p) c -= p
+    return vmin_u32(vc, vsub_u32(vc, vp));
 }
 
 Vector shoup_scale_neon(Parameters param, Vector v)
@@ -51,6 +53,7 @@ Vector shoup_scale_neon(Parameters param, Vector v)
     ulong i = 0;
     for (; i + 1 < n; i += 2)
     {
+        // Load [ a_0, a_1 ]
         uint32x2_t va = vld1_u32(v.elements + i);
 
         // Stocks the value
@@ -90,13 +93,21 @@ Vector unrolling_shoup_scale_neon(Parameters param, Vector v)
 
 static inline uint32x2_t _shoup_mullo_neon(uint32x2_t va, uint32x2_t vb, uint32x2_t vb_precomp, uint32x2_t vp)
 {
+    // vab_precomp = [ a_0 * b_precomp_0 = ab_precomp_0, a_1 * b_precomp_1 = ab_precomp_1 ]
     uint64x2_t vab_precomp = vmull_u32(va, vb_precomp);
+
+    // vq = [ q_0, q_1 ]
     uint32x2_t vq = vmovn_u64(vshrq_n_u64(vab_precomp, 32));
+
+    // vab = [ a_0 * b_0 mod 2^32 = ab_0, a_1 * b_1 mod 2^32 = ab_1 ]
     uint32x2_t vab = vmul_u32(va, vb);
+
+    // vqp = [ q_0 * p_0 mod 2^32 = qp_0, q_1 * p_1 mod 2^32 = qp_1 ]
     uint32x2_t vqp = vmul_u32(vq, vp);
+
+    // vc = [ ab_0 - qp_0 = c_0, ab_1 - qp_1 = c_1]
     uint32x2_t vc = vsub_u32(vab, vqp);
-    uint32x2_t cmp = vcge_u32(vc, vp);
-    return vsub_u32(vc, vand_u32(cmp, vp));
+    return vmin_u32(vc, vsub_u32(vc, vp));
 }
 
 Vector shoup_scale_mullo_neon(Parameters param, Vector v)
@@ -114,6 +125,7 @@ Vector shoup_scale_mullo_neon(Parameters param, Vector v)
         uint32x2_t va_1 = vld1_u32(v.elements + i + 2);
         uint32x2_t va_2 = vld1_u32(v.elements + i + 4);
         uint32x2_t va_3 = vld1_u32(v.elements + i + 6);
+
         vst1_u32(res.elements + i, _shoup_mullo_neon(va_0, vb, vb_precomp, vp));
         vst1_u32(res.elements + i + 2, _shoup_mullo_neon(va_1, vb, vb_precomp, vp));
         vst1_u32(res.elements + i + 4, _shoup_mullo_neon(va_2, vb, vb_precomp, vp));
@@ -130,8 +142,7 @@ static inline uint32x2_t _shoup_b1_neon(uint32x2_t va, uint32x2_t vb_precomp, ui
     uint32x2_t vq = vmovn_u64(vshrq_n_u64(vab_precomp, 32));
     uint64x2_t vqp = vmull_u32(vq, vp);
     uint32x2_t vc = vmovn_u64(vsubq_u64(vmovl_u32(va), vqp));
-    uint32x2_t cmp = vcge_u32(vc, vp);
-    return vsub_u32(vc, vand_u32(cmp, vp));
+    return vmin_u32(vc, vsub_u32(vc, vp));
 }
 
 Vector shoup_b1_scale_neon(Parameters param, Vector v)
@@ -149,7 +160,6 @@ Vector shoup_b1_scale_neon(Parameters param, Vector v)
         uint32x2_t va_2 = vld1_u32(v.elements + i + 4);
         uint32x2_t va_3 = vld1_u32(v.elements + i + 6);
 
-        // Stocks the value
         vst1_u32(res.elements + i, _shoup_b1_neon(va_0, vb_precomp, vp));
         vst1_u32(res.elements + i + 2, _shoup_b1_neon(va_1, vb_precomp, vp));
         vst1_u32(res.elements + i + 4, _shoup_b1_neon(va_2, vb_precomp, vp));
