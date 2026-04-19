@@ -19,6 +19,9 @@
     (sizeof(tab) / sizeof(tab[0]))
 
 #if NEON
+/*
+ * NOTE: This function corresponds to that of the library but is adapted for ARM architecture because it is very slow.
+ */
 void prof_repeat(double *min, double *max, profile_target_t target, void *arg);
 #endif
 
