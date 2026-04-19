@@ -9,11 +9,18 @@
 #define UTILS_H
 
 #include <flint/profiler.h>
+#include <float.h>
+#include <math.h>
 
+#include "instruction.h"
 #include "vector.h"
 
 #define TAB_SIZE(tab) \
     (sizeof(tab) / sizeof(tab[0]))
+
+#if NEON
+void prof_repeat(double *min, double *max, profile_target_t target, void *arg);
+#endif
 
 /**
  * @brief Measure the time of an algorithm in milliseconds.
