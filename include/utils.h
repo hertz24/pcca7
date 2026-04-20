@@ -20,7 +20,7 @@
 
 #if NEON
 /*
- * NOTE: This function corresponds to that of the library but is adapted for ARM architecture because it is very slow.
+ * NOTE: This function corresponds to that of the library but is adapted for ARM architecture because it is very slow. It is  less accurate than the basic function.
  */
 void prof_repeat(double *min, double *max, profile_target_t target, void *arg);
 #endif

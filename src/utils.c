@@ -22,22 +22,17 @@ void prof_repeat(double *min, double *max, profile_target_t target, void *arg)
 {
     const ulong FIXED_TRIALS = 1000000;
     double min_time = DBL_MAX, max_time = DBL_MIN;
+    init_clock(0);
 
-    // Runs the timer five times
-    for (int i = 0; i < 5; i++)
-    {
-        init_clock(0);
+    // Executes the algorithm 1,000,000 times
+    target(arg, FIXED_TRIALS);
 
-        // Executes the algorithm 1,000,000 times
-        target(arg, FIXED_TRIALS);
-
-        double total = get_clock(0);
-        double per_trial = total / FIXED_TRIALS;
-        if (per_trial > max_time)
-            max_time = per_trial;
-        if (per_trial < min_time)
-            min_time = per_trial;
-    }
+    double total = get_clock(0);
+    double per_trial = total / FIXED_TRIALS;
+    if (per_trial > max_time)
+        max_time = per_trial;
+    if (per_trial < min_time)
+        min_time = per_trial;
     if (min)
         *min = min_time;
     if (max)
