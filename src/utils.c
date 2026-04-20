@@ -20,11 +20,11 @@ static void test_algorithm(void *arg, ulong count)
 #if NEON
 void prof_repeat(double *min, double *max, profile_target_t target, void *arg)
 {
-    const ulong FIXED_TRIALS = 500000;
+    const ulong FIXED_TRIALS = 100000;
     double min_time = DBL_MAX, max_time = DBL_MIN;
     init_clock(0);
 
-    // Executes the algorithm 500,000 times
+    // Executes the algorithm 100,000 times
     target(arg, FIXED_TRIALS);
 
     double total = get_clock(0);

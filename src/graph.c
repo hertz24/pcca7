@@ -18,7 +18,7 @@ int init_data_tab(void)
     return 0;
 }
 
-void free_data_tab()
+void free_data_tab(void)
 {
     for (int i = 0; i < NB_ALGO; i++)
         free(*(data_tab + i));
