@@ -33,7 +33,7 @@ The project includes unit tests located in the `tests/` directory. To build and 
 
     make check
 
-To remove all generated files (object files, the main executable, and test binaries), run
+To remove all generated files (object files, the main executable, and test binaries, documentation and generated graphs), run
 
     make clean
 

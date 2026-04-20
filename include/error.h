@@ -12,30 +12,30 @@
 
 /**
  * @defgroup ErrorCodes Error codes returned by functions
- * @brief Constants representing specific error conditions.
+ * @brief Constants representing specific error conditions. Error 1 corresponds to an initialization issue with @c data_tab
  * @{
  */
 
 /** Invalid command-line arguments. */
-#define ERR_INPUT 1
+#define ERR_INPUT 2
 
 /** The provided p is not a prime number. */
-#define ERR_PRIME 2
+#define ERR_PRIME 3
 
 /** Unrecognized option. */
-#define ERR_UNRECOGNIZED 3
+#define ERR_UNRECOGNIZED 4
 
 /** b must be less than p. */
-#define ERR_B_GE_P 4
+#define ERR_B_GE_P 5
 
 /** Number of bits of p must be greater than or equal to number of bits of b. */
-#define ERR_BBITS_GE_PBITS 5
+#define ERR_BBITS_GE_PBITS 6
 
 /** No prime p exists with the given number of bits such that p > b. */
-#define ERR_NO_PRIME_FOR_BITS 6
+#define ERR_NO_PRIME_FOR_BITS 7
 
 /** Error while generating graphs */
-#define ERR_GEN_GRAPHS 7
+#define ERR_GEN_GRAPHS 8
 
 /** @} */
 

@@ -1,6 +1,8 @@
 #include "../include/algo_registry.h"
 
-const Algorithm algorithms[] = {{"Naive scale", naive_scale}, {"Shoup scale (reference)", shoup_scale_ref}, {"Shoup scale (FLINT)", shoup_scale_flint}
+const Algorithm algorithms[] = {{"Naive scale", naive_scale},
+                                {"Shoup scale (reference)", shoup_scale_ref},
+                                {"Shoup scale (FLINT)", shoup_scale_flint}
 #if NEON
                                 ,
                                 {"Shoup scale (NEON)", shoup_scale_neon},

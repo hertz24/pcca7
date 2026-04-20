@@ -50,3 +50,4 @@ clean:
 	rm -f $(TARGET)
 	rm -rf tests/obj
 	rm -rf latex
+	rm -rf graphs

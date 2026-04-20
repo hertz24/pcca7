@@ -17,18 +17,24 @@
 #include "algo_registry.h"
 #include "utils.h"
 
+extern double **data_tab;
+
+int init_data_tab(void);
+
+void free_data_tab(void);
+
 /**
  * @brief Generates graphs for given algorithms using given parameters.
  *
  * @param scale Scaling factor for the number of points in graphs
  * @param nb_points Number of measurement points
  * @param param The parameters
- * @param algorithms The list of algorithms to test
+ * @param algorithm_ids The list of algorithm IDs to test
  * @param nb_algo The number of algorithms
  *
  * @retval 0 on success
  * @retval 1 on fail
  */
-int generate_graph(int scale, ulong nb_points, Parameters param, Algorithm algorithms[], int nb_algo);
+int generate_graph(int scale, ulong nb_points, Parameters param, AlgorithmID algorithm_ids[], int nb_algo);
 
 #endif

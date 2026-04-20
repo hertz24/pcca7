@@ -477,7 +477,7 @@ Vector shoup_scale_mullo_v2_avx2(Parameters param, Vector v)
 
 \subsubsection{AVX-512}
 \begin{lstlisting}[caption = Auxiliary Function of Shoup's Modular Reduction]
-static inline __m512i _shoup_AVX-512(__m512i va,
+static inline __m512i _shoup_avx512(__m512i va,
                                     __m512i vb,
                                     __m512i vb_precomp,
                                     __m512i vp)
@@ -492,7 +492,7 @@ static inline __m512i _shoup_AVX-512(__m512i va,
 \end{lstlisting}
 
 \begin{lstlisting}[caption = AVX-512 Implementation of Shoup's Modular Reduction]
-Vector shoup_scale_AVX-512(Parameters param, Vector v)
+Vector shoup_scale_avx512(Parameters param, Vector v)
 {
     ulong size = v.size;
     Vector res = init_vector(size);
@@ -507,9 +507,9 @@ Vector shoup_scale_AVX-512(Parameters param, Vector v)
 
         __m512i odd_va = _mm512_srli_epi64(even_va, 32);
 
-        __m512i even_vc = _shoup_AVX-512(even_va, vb, vb_precomp, vp);
+        __m512i even_vc = _shoup_avx512(even_va, vb, vb_precomp, vp);
 
-        __m512i odd_vc = _shoup_AVX-512(odd_va, vb, vb_precomp, vp);
+        __m512i odd_vc = _shoup_avx512(odd_va, vb, vb_precomp, vp);
 
         __m512i odd_shifted = _mm512_slli_epi64(odd_vc, 32);
 
@@ -527,7 +527,7 @@ Vector shoup_scale_AVX-512(Parameters param, Vector v)
 \end{lstlisting}
 
 \begin{lstlisting}[caption = Auxiliary Function of Shoup’s Modular Reduction (Version with multiply-low)]
-static inline __m512i _shoup_mullo_AVX-512(__m512i va,
+static inline __m512i _shoup_mullo_avx512(__m512i va,
                                           __m512i vb,
                                           __m512i vb_precomp,
                                           __m512i vp)
@@ -542,7 +542,7 @@ static inline __m512i _shoup_mullo_AVX-512(__m512i va,
 \end{lstlisting}
 
 \begin{lstlisting}[caption = AVX-512 Implementation of Shoup’s Modular Reduction (Version with multiply-low)]
-Vector shoup_scale_mullo_AVX-512(Parameters param, Vector v)
+Vector shoup_scale_mullo_avx512(Parameters param, Vector v)
 {
     ulong size = v.size;
     Vector res = init_vector(size);
@@ -566,27 +566,27 @@ Vector shoup_scale_mullo_AVX-512(Parameters param, Vector v)
         __m512i odd_va_2 = _mm512_srli_epi64(even_va_2, 32);
         __m512i odd_va_3 = _mm512_srli_epi64(even_va_3, 32);
 
-        __m512i even_vc_0 = _shoup_mullo_AVX-512(even_va_0,
+        __m512i even_vc_0 = _shoup_mullo_avx512(even_va_0,
                                                 vb,
                                                 vb_precomp,
                                                 vp);
-        __m512i even_vc_1 = _shoup_mullo_AVX-512(even_va_1,
+        __m512i even_vc_1 = _shoup_mullo_avx512(even_va_1,
                                                 vb,
                                                 vb_precomp,
                                                 vp);
-        __m512i even_vc_2 = _shoup_mullo_AVX-512(even_va_2,
+        __m512i even_vc_2 = _shoup_mullo_avx512(even_va_2,
                                                 vb,
                                                 vb_precomp,
                                                 vp);
-        __m512i even_vc_3 = _shoup_mullo_AVX-512(even_va_3,
+        __m512i even_vc_3 = _shoup_mullo_avx512(even_va_3,
                                                 vb,
                                                 vb_precomp,
                                                 vp);
 
-        __m512i odd_vc_0 = _shoup_mullo_AVX-512(odd_va_0, vb, vb_precomp, vp);
-        __m512i odd_vc_1 = _shoup_mullo_AVX-512(odd_va_1, vb, vb_precomp, vp);
-        __m512i odd_vc_2 = _shoup_mullo_AVX-512(odd_va_2, vb, vb_precomp, vp);
-        __m512i odd_vc_3 = _shoup_mullo_AVX-512(odd_va_3, vb, vb_precomp, vp);
+        __m512i odd_vc_0 = _shoup_mullo_avx512(odd_va_0, vb, vb_precomp, vp);
+        __m512i odd_vc_1 = _shoup_mullo_avx512(odd_va_1, vb, vb_precomp, vp);
+        __m512i odd_vc_2 = _shoup_mullo_avx512(odd_va_2, vb, vb_precomp, vp);
+        __m512i odd_vc_3 = _shoup_mullo_avx512(odd_va_3, vb, vb_precomp, vp);
 
         __m512i odd_shifted_0 = _mm512_slli_epi64(odd_vc_0, 32);
         __m512i odd_shifted_1 = _mm512_slli_epi64(odd_vc_1, 32);
@@ -612,8 +612,8 @@ Vector shoup_scale_mullo_AVX-512(Parameters param, Vector v)
 } 
 \end{lstlisting}
 
-\begin{lstlisting}[caption = Listing 5: Auxiliary Function mulhi emul AVX-512]
-static inline __m512i _mulhi_emul_AVX-512(__m512i va, __m512i vb)
+\begin{lstlisting}[caption = Listing 5: Auxiliary Function \_mulhi\_emul\_avx512]
+static inline __m512i _mulhi_emul_avx512(__m512i va, __m512i vb)
 {
     __m512i res_even = _mm512_mul_epu32(va, vb);
     __m512i res_odd = _mm512_mul_epu32(_mm512_srli_epi64(va, 32), vb);
@@ -626,12 +626,12 @@ static inline __m512i _mulhi_emul_AVX-512(__m512i va, __m512i vb)
 \end{lstlisting}
 
 \begin{lstlisting}[caption = Auxiliary Function of Shoup’s Modular Reduction (Version 2 of multiply-low)]
-static inline __m512i _shoup_mullo_v2_AVX-512(__m512i va,
+static inline __m512i _shoup_mullo_v2_avx512(__m512i va,
                                              __m512i vb,
                                              __m512i vb_precomp,
                                              __m512i vp)
 {
-    __m512i vq = _mulhi_emul_AVX-512(va, vb_precomp);
+    __m512i vq = _mulhi_emul_avx512(va, vb_precomp);
     __m512i vab = _mm512_mullo_epi32(va, vb);
     __m512i vqp = _mm512_mullo_epi32(vq, vp);
     __m512i vc = _mm512_sub_epi32(vab, vqp);
@@ -640,7 +640,7 @@ static inline __m512i _shoup_mullo_v2_AVX-512(__m512i va,
 \end{lstlisting}
 
 \begin{lstlisting}[caption = AVX-512 Implementation of Shoup’s Modular Reduction (Version 2 of multiply-low)]
-Vector shoup_scale_mullo_v2_AVX-512(Parameters param, Vector v)
+Vector shoup_scale_mullo_v2_avx512(Parameters param, Vector v)
 {
     ulong size = v.size;
     Vector res = init_vector(size);
@@ -652,7 +652,7 @@ Vector shoup_scale_mullo_v2_AVX-512(Parameters param, Vector v)
     {
         __m512i va = _mm512_loadu_si512((__m512i const *)(v.elements + i));
 
-        __m512i vc = _shoup_mullo_v2_AVX-512(va, vb, vb_precomp, vp);
+        __m512i vc = _shoup_mullo_v2_avx512(va, vb, vb_precomp, vp);
         _mm512_storeu_si512((__m512i *)(res.elements + i), vc);
     }
     for (; i < size; i++)
@@ -769,7 +769,7 @@ This technique consists of expanding the body of a loop to process multiple iter
 
 The results below were obtained by measuring the execution time between a standard version and unrolled version of Listing 2: AVX2 Implementation of Shoup’s Modular Reduction
 
-\textbf{Hypothesis: } The unrolled version should perform better than the standard version
+\textbf{Hypothesis:} The unrolled version should perform better than the standard version
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\linewidth]{graphs/graph2.jpeg}
