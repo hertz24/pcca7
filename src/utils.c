@@ -20,11 +20,11 @@ static void test_algorithm(void *arg, ulong count)
 #if NEON
 void prof_repeat(double *min, double *max, profile_target_t target, void *arg)
 {
-    const ulong FIXED_TRIALS = 100000;
+    const ulong FIXED_TRIALS = 300000;
     double min_time = DBL_MAX, max_time = DBL_MIN;
     init_clock(0);
 
-    // Executes the algorithm 100,000 times
+    // Executes the algorithm 300,000 times
     target(arg, FIXED_TRIALS);
 
     double total = get_clock(0);
@@ -43,16 +43,6 @@ void prof_repeat(double *min, double *max, profile_target_t target, void *arg)
 double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param, Vector v)
 {
     double min, max;
-    void **data = malloc(3 * sizeof(void *));
-    if (data == NULL)
-    {
-        perror("time_algorithm data malloc");
-        return -1;
-    }
-    *data = algorithm;
-    *(data + 1) = &param;
-    *(data + 2) = &v;
-    prof_repeat(&min, &max, test_algorithm, data);
-    free(data);
+    prof_repeat(&min, &max, test_algorithm, (void *[]){algorithm, &param, &v});
     return min;
 }

@@ -14,7 +14,7 @@
 
 /**
  * @enum AlgorithmID
- * @brief Each enum value corresponds to an algorithm.
+ * @brief Each enum value corresponds to an algorithm: the value corresponds to the index of the algorithm in the @c algorithms array.
  */
 typedef enum
 {

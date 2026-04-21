@@ -37,14 +37,11 @@ void print_vector(FILE *out, Vector v)
 int compare_vectors(Vector v1, Vector v2)
 {
     if (v1.size != v2.size)
-    {
-        fprintf(stderr, "The size of vectors isn't the same.\n");
-        return -1;
-    }
+        return 0;
     for (ulong i = 0; i < v1.size; i++)
         if (*(v1.elements + i) != *(v2.elements + i))
-            return i;
-    return v1.size;
+            return 0;
+    return 1;
 }
 
 __attribute__((optimize("no-tree-vectorize"))) Vector naive_scale(Parameters param, Vector v)

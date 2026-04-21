@@ -25,8 +25,7 @@ int main(void)
                     if (strstr(algorithms[l].name, "b = 1") != NULL && param.b != 1)
                         continue;
                     Vector result = algorithms[l].address(param, rand_v);
-                    int index = compare_vectors(ref, result);
-                    if (index != VECTOR_SIZE)
+                    if (!compare_vectors(ref, result))
                     {
                         if (!error)
                         {

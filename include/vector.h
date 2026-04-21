@@ -56,9 +56,8 @@ void print_vector(FILE *out, Vector v);
  * @param v1 The first vector
  * @param v2 The second vector
  *
- * @retval -1 if the two vectors haven't the same size
- * @retval The size of the vectors if there isn't error
- * @retval The index of the error
+ * @retval 1 if the two vectors are the same
+ * @retval 0 otherwise
  */
 int compare_vectors(Vector v1, Vector v2);
 

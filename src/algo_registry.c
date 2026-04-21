@@ -19,11 +19,11 @@ const Algorithm algorithms[] = {{"Naive scale", naive_scale},
 #endif
 #if AVX512
                                 ,
-                                {"Shoup scale (AVX512)", shoup_scale_avx512},
-                                {"Unrolling Shoup scale (AVX512)", unrolling_shoup_scale_avx512},
-                                {"Shoup scale with multiply low (AVX512)", shoup_scale_mullo_avx512},
-                                {"Shoup scale with multiply low version 2 (AVX512)", shoup_scale_mullo_v2_avx512},
-                                {"Shoup scale (AVX512) for b = 1", shoup_b1_scale_avx512}
+                                {"Shoup scale (AVX-512)", shoup_scale_avx512},
+                                {"Unrolling Shoup scale (AVX-512)", unrolling_shoup_scale_avx512},
+                                {"Shoup scale with multiply low (AVX-512)", shoup_scale_mullo_avx512},
+                                {"Shoup scale with multiply low version 2 (AVX-512)", shoup_scale_mullo_v2_avx512},
+                                {"Shoup scale (AVX-512) for b = 1", shoup_b1_scale_avx512}
 #endif
 };
 

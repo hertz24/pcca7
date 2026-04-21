@@ -38,7 +38,7 @@ static int benchmark(int fd, int scale, ulong nb_points, Parameters param, Algor
         *(vectors + i) = rand_vector((i + 1) * scale);
     for (int i = 0; i < nb_algo; i++)
     {
-        int id = algorithm_ids[i];
+        AlgorithmID id = algorithm_ids[i];
         if (*(data_tab + id) == NULL)
         {
             *(data_tab + id) = malloc(nb_points * sizeof(double));
@@ -91,7 +91,7 @@ int generate_graph(int scale, ulong nb_points, Parameters param, AlgorithmID alg
     }
     dprintf(fd, "\n");
     int ret = 0;
-    if (benchmark(fd, scale, nb_points, param, algorithm_ids, nb_algo) == 1)
+    if (benchmark(fd, scale, nb_points, param, algorithm_ids, nb_algo))
     {
         perror("generate_curve benchmark");
         ret = 1;
