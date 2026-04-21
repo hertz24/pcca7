@@ -144,7 +144,7 @@ With a focus on 32 bits in this project, $B'$ in the case of $b>p$ cannot be sto
 \textbf{Can $a$ be any integer over 32 bits ?} \\
 Yes, $a$ can be any integer defined over 32 bits.
 
-
+\newpage
 \subsection{Precomputational Logic (Barrett Reduction)}
 The precomputed value $B'$ is defined over 32 bits as:
 \[B'= \lfloor (B \cdot 2^{32}) / p \rfloor \]
@@ -232,7 +232,7 @@ We decided to create three versions for implementing a high-performance Shoup al
 For the AVX2 version, we decided to use two main AVX2 functions:
 \texttt{\_mm256\_mul\_epu32} and \texttt{\_mm256\_mullo\_epi32}. \\
 
-\textbf{Intel \texttt{\_mm256\_mul\_epu32}}\\
+\textbf{Intel \texttt{\_mm256\_mul\_epu32}: (Listings 1-2)} \\
 This function treats the input as unsigned 32-bit integers. However, it only multiplies the even-indexed slots (0, 2, 4, 6) of the vector to make room for the full 64-bit results.
 
 This implementation uses purely \texttt{\_mm256\_mul\_epu32} at all stages of calulations thus we must data shuffle the registers to their correct position. The following are the steps per loop:
@@ -245,11 +245,11 @@ This implementation uses purely \texttt{\_mm256\_mul\_epu32} at all stages of ca
     \item Compute the leftover elements
 \end{itemize}
 
-\textbf{Intel \texttt{\_mm256\_mullo\_epi32}}\\
+\textbf{Intel \texttt{\_mm256\_mullo\_epi32}: (Listings 3-4)} \\
 This function treats the input as signed 32-bit integers. It multiplies all 8 pairs of numbers but only stores the bottom half of the result.
 
 This implementation uses \texttt{\_mm256\_mul\_epu32} to compute the quotient:
-\[q = \lfloor (a \cdot b_{precomp}) / 2^{32} \rfloor\]
+\[Q = \lfloor (A \cdot B') / 2^{32} \rfloor\]
 but \texttt{\_mm256\_mullo\_epi32} to compute all other steps per loop. The following are the steps per loop:
 \begin{itemize}
     \item Load 8 32 bit integers into the register
@@ -260,10 +260,10 @@ but \texttt{\_mm256\_mullo\_epi32} to compute all other steps per loop. The foll
 \end{itemize}
 
 
-\textbf{Intel \texttt{\_mm256\_mullo\_epi32} version 2:}\\
+\textbf{Intel \texttt{\_mm256\_mullo\_epi32} version 2: (Listings 5-7)} \\
 Derived from the previous version, this version aims to regroup the vector registers immediately after the
 multiplication step:
-\[q = \lfloor (a \cdot b_{precomp}) / 2^{32} \rfloor\]
+\[Q = \lfloor (A \cdot B') / 2^{32} \rfloor\]
 By restoring the standard 8-lane 32-bit layout early, the function eliminates the need to perform parallel logic paths.
 This, in theory, should reduce the workload.
 
@@ -284,7 +284,7 @@ The performance benchmarks were run on AMD and ARM architectures, by executing \
 \subsubsection{Overall Hypothesis}
 Using SIMD operations should provide us with a max acceleration of 8x-16x since the registers can hold and operate on 8 32 bit unsigned integers (for AVX2) and 16 32 bit unsigned integers (for AVX512) simultanously.
 
-One caveate that must be considered is that all implementation uses \texttt{\_mm256\_mul\_epu32} to calculate the quotient defined as $Q = \lfloor AB'/\beta \rfloor$. This operation requires a data shuffle to correctly align the vectors into 64 bit lanes then recombining them at later stages. This reduces the acceleration factor of SIMD implementations at worst by half (4x-8x depending on AVX2 or AVX512)
+One caveate that must be considered is that all implementation uses \texttt{\_mm256\_mul\_epu32} to calculate the quotient defined as $Q = \lfloor A \cdot B'/\beta \rfloor$. This operation requires a data shuffle to correctly align the vectors into 64 bit lanes then recombining them at later stages. This reduces the acceleration factor of SIMD implementations at worst by half (4x-8x depending on AVX2 or AVX512)
 
 \subsubsection{Equipment details for AMD architecture}
 \begin{itemize}
@@ -416,40 +416,43 @@ regrouping early the vector registers
 \end{table}
 
 \textbf{Observations:}
+From the results, we can observe that version 2 is overall faster than version 1. On average, the percentage of accleration is 
+around 22.108\% giving us a factor of acceleration is $\approx$ 1.2x
 
 \textbf{Conclusion:}
+Version 2 is the better implementation of version 1 running around 20\% faster.
 \subsubsection{Overall Performance}
-It is worth noting that AVX2 uses 256-bit registers to process up to eight 32-bit integers, while AVX-512 uses 512-bit registers for up to sixteen. Furthermore, AVX-512 uses the same functions and operations as AVX2.
+It is worth noting that AVX2 uses 256-bit registers to process up to eight 32-bit integers, while AVX-512 uses 512-bit registers for up to sixteen. Furthermore, the AVX-512 version uses the same functions and operations as the AVX2 version.
 
 The results below were obtained by measuring the execution time of different implementations of modular reduction:
 \begin{itemize}
     \item \textbf{Naive scale:} The base operation (\%)
     \item \textbf{Shoup scale (reference) :} Shoup's Modular Multiplication without optimization
-    \item \textbf{Shoup scale (FLINT) :} the library FLINT's modular reduction implementation
-    \item \textbf{Shoup scale (AVX2) :} Shoup's Modular Multiplication with AVX2 optimization
-    \item \textbf{Shoup scale (AVX-512) :} Shoup's Modular Multiplication with AVX-512 optimization
+    \item \textbf{Shoup scale (FLINT) :} FLINT's modular reduction implementation
+    \item \textbf{Shoup scale (AVX2) :} Shoup's Modular Multiplication with AVX2 optimization (mullo version 2)
+    \item \textbf{Shoup scale (AVX-512) :} Shoup's Modular Multiplication with AVX-512 optimization (mullo version 2)
 \end{itemize}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1\linewidth]{graphs/Overall_avx.jpeg}
+    \includegraphics[width=1\linewidth]{graphs/Overall_Performance.jpeg}
     \caption{Execution Time Comparison Between Different Implementation For Modular Reduction}
 \end{figure}
 \begin{table}[H]
     \centering
     \rowcolors{2}{green!10}{white}
-    \begin{tabular}{|l|c|c|c|c|c|}
+    \begin{tabular}{|c|c|c|c|c|c|}
         \hline
         Size & Naive & Shoup ref & FLINT & Shoup AVX2 & Shoup AVX-512 \\ \hline
-        100  & 0.187 & 0.137     & 0.098 & 0.037      & 0.023         \\
-        200  & 0.398 & 0.283     & 0.201 & 0.070      & 0.052         \\
-        300  & 0.596 & 0.422     & 0.290 & 0.094      & 0.072         \\
-        400  & 0.794 & 0.549     & 0.366 & 0.116      & 0.087         \\
-        500  & 0.986 & 0.684     & 0.455 & 0.138      & 0.105         \\
-        600  & 1.183 & 0.816     & 0.551 & 0.159      & 0.123         \\
-        700  & 1.383 & 0.945     & 0.637 & 0.184      & 0.183         \\
-        800  & 1.578 & 1.081     & 0.718 & 0.204      & 0.159         \\
-        900  & 1.778 & 1.204     & 0.801 & 0.228      & 0.179         \\
-        1000 & 1.979 & 1.339     & 0.880 & 0.249      & 0.193         \\
+        100  & 0.186 & 0.137   & 0.096 & 0.029      & 0.020        \\
+        200  & 0.385 & 0.285   & 0.196 & 0.045      & 0.035        \\
+        300  & 0.593 & 0.418   & 0.287 & 0.060      & 0.045        \\
+        400  & 0.809 & 0.545   & 0.367 & 0.075      & 0.052        \\
+        500  & 0.989 & 0.679   & 0.455 & 0.090      & 0.064        \\
+        600  & 1.180 & 0.812   & 0.541 & 0.098      & 0.074        \\
+        700  & 1.391 & 0.944   & 0.647 & 0.116      & 0.087        \\
+        800  & 1.577 & 1.071   & 0.736 & 0.126      & 0.098        \\
+        900  & 1.790 & 1.210   & 0.798 & 0.137      & 0.101        \\
+        1000 & 1.972 & 1.340   & 0.891 & 0.142      & 0.110       \\
         \hline
     \end{tabular}
     \caption{Execution time for different implementations in relation to the size of the vector in milliseconds}
@@ -458,30 +461,29 @@ The results below were obtained by measuring the execution time of different imp
 \begin{table}[H]
     \centering
     \rowcolors{2}{red!10}{white}
-    \caption{Relative Performance Summary in Percentages}
     \begin{tabular}{|l|c|c|c|c|c|}
         \hline
-        Algorithm     & Average \% & 1x       \\ \hline
-        Naive         & 100.0\%    & Baseline \\
-        Shoup ref     & 68.7\%     & 1.45x    \\
-        FLINT         & 45.6\%     & 2.2x     \\
-        Shoup AVX2    & 15.4\%     & 6.5x     \\
-        Shoup AVX-512 & 11.4\%     & 8.7x     \\
+        Algorithm     & Average \% & Factor of acceleration       \\ \hline
+        FLINT         & 100\%      &  1x   \\
+        Shoup (AVX2)    & 18.3\%     &  5.5x   \\
+        Shoup (AVX-512) & 13.6\%     &  7.4x   \\
         \hline
     \end{tabular}
+    \caption{Average Performance Summary of FLINT in relation to Shoup AVX2 and Shoup AVX512 Implementations in Percentages}
+
 \end{table}
 
 \textbf{Observation:}
-From the results retrieved, we can observe that FLINT's implementation over 64 bits provides roughly two times faster modular reduction on 32-bit operations. Furthermore, our Shoup AVX2 and Shoup AVX-512 implementations tailored to 32-bit integers provide significantly faster 6-8 times speedup.
+From the results retrieved, we want to primarily study the facctor of acceleration of Shoup's Modular Multiplication using AVX2 and AVX512 compared to FLINT's implementation. Shoup (AVX2) is roughly 5.5x times faster than FLINT and Shoup (AVX512) is 7.4x faster.
 
 \textbf{Conclusion:}
-Our Shoup's Modular Multiplication with AVX2 and AVX-512 optimization adapted to 32 bits is 2-3 times faster than FLINT.
+Our Shoup's Modular Multiplication with AVX2 and AVX-512 optimization adapted to 32 bits is 5-7 times faster than FLINT. These results are expected from our Overall Hypothesis.
 
 \subsubsection{NEON's Performance}
 TODO
 
 \section{Overall Conclusion:}
-For AVX architectures, we have researched and implemented many versions of Shoup's Modular Reduction. The best performance by far is the implementation \textit{Intel \texttt{\_mm256\_mullo\_epi32} version 2:} with acceleration of a factor of TODO for AVX2 and a factor of TODO for AVX512.
+For AVX architectures, we have researched and implemented many versions of Shoup's Modular Reduction. The best performance by far is the implementation \textit{Intel \texttt{\_mm256\_mullo\_epi32} version 2:} with acceleration of a factor of 5.5x for AVX2 and a factor of 7.4x for AVX512.
 
 \section{Other Improvements:}
 
@@ -492,82 +494,6 @@ For AVX architectures, we have researched and implemented many versions of Shoup
 
 
 \subsection{AVX2}
-\begin{lstlisting}[caption = Auxiliary Function of Shoup's Modular Reduction]
-static inline __m256i _shoup_avx2(__m256i va,
-                                  __m256i vb,
-                                  __m256i vb_precomp,
-                                  __m256i vp)
-{
-    // vq = [ (a_0 * b_precomp_0 = q_0q_1), (a_2 * b_precomp_2 = q_2q_3),
-    // (a_4 * b_precomp_4 = q_4q_5), (a_6 * b_precomp_6 = q_6q_7) ]
-    __m256i vq = _mm256_mul_epu32(va, vb_precomp);
-
-    // vq = [ (0, q_0), (0, q_2), (0, q_4), (0, q_6) ]
-    vq = _mm256_srli_epi64(vq, 32);
-
-    // vab = [ (a_0 * b_0 = ab_0ab_1), (a_2 * b_2 = ab_2ab_3),
-    // (a_4 * b_4 = ab_4ab_5), (a_6 * b_6 = ab_6ab_7) ]
-    __m256i vab = _mm256_mul_epu32(va, vb);
-
-    // vqp = [ (q_0 * p_0 = qp_0qp_1), (q_2 * p_2 = qp_2qp_3),
-    // (q_4 * p_4 = qp_4qp_5), (q_6 * p_6 = qp_6qp_7) ]
-    __m256i vqp = _mm256_mul_epu32(vq, vp);
-
-    // vc = [ (ab_0 - qp_0 = c_0c_1), (ab_2 - qp_2 = c_2c_3),
-    // (ab_4 - qp_4 = c_4c_5), (ab_6 - qp_6 = c_6c_7) ]
-    __m256i vc = _mm256_sub_epi64(vab, vqp);
-
-    // if (c >= p) c -= p
-    return _mm256_min_epu32(vc, _mm256_sub_epi32(vc, vp));
-}
-\end{lstlisting}
-
-\begin{lstlisting}  [caption = AVX2 Implementation of Shoup's Modular Reduction]
-Vector shoup_scale_avx2(Parameters param, Vector v)
-{
-    ulong size = v.size;
-    Vector res = init_vector(size);
-    __m256i vb = _mm256_set1_epi64x(param.b);
-    __m256i vb_precomp = _mm256_set1_epi64x(param.b_precomp);
-    __m256i vp = _mm256_set1_epi64x(param.p);
-    ulong i = 0;
-    for (; i + 7 < size; i += 8)
-    {
-        // Load [ a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7 ]
-        //    = [ (a_1, a_0), (a_3, a_2), (a_5, a_4), (a_7, a_6) ]
-        // but only even index will be directly handled
-        __m256i even_va = _mm256_loadu_si256(
-            (__m256i const *)(v.elements + i)
-        );
-
-        // Need to move odd index to even index to be handled:
-        // [ (0, a_1), (0, a_3), (0, a_5), (0, a_7) ]
-        __m256i odd_va = _mm256_srli_epi64(even_va, 32);
-
-        // Process Even Lanes
-        __m256i even_vc = _shoup_avx2(even_va, vb, vb_precomp, vp);
-
-        // Process Odd Lanes:
-        __m256i odd_vc = _shoup_avx2(odd_va, vb, vb_precomp, vp);
-
-        // Shift odd by 32 bits to the left results back and merge:
-        // [ (c_1, 0), (c_3, 0), (c_5, 0), (c_7, 0) ]
-        __m256i odd_shifted = _mm256_slli_epi64(odd_vc, 32);
-
-        // Merge even and odd: [ c_0, c_1, c_2, c_3, c_4, c_5, c_6, c_7 ]
-        __m256i merge = _mm256_or_si256(even_vc, odd_shifted);
-
-        _mm256_storeu_si256((__m256i *)(res.elements + i), merge);
-    }
-    for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i),
-                                    param.b,
-                                    param.b_precomp,
-                                    param.p);
-    return res;
-}
-\end{lstlisting}
-
 \begin{lstlisting}[caption = Auxiliary Function of Shoup's Modular Reduction]
 static inline __m256i _shoup_avx2(__m256i va,
                                   __m256i vb,
@@ -688,45 +614,85 @@ Vector shoup_scale_mullo_avx2(Parameters param, Vector v)
     {
         __m256i even_va_0 = _mm256_loadu_si256(
             (__m256i const *)(v.elements + i));
-        __m256i even_va_1 = _mm256_loadu_si256(
-            (__m256i const *)(v.elements + i + 8));
-        __m256i even_va_2 = _mm256_loadu_si256(
-            (__m256i const *)(v.elements + i + 16));
-        __m256i even_va_3 = _mm256_loadu_si256(
-            (__m256i const *)(v.elements + i + 24));
+
 
         __m256i odd_va_0 = _mm256_srli_epi64(even_va_0, 32);
-        __m256i odd_va_1 = _mm256_srli_epi64(even_va_1, 32);
-        __m256i odd_va_2 = _mm256_srli_epi64(even_va_2, 32);
-        __m256i odd_va_3 = _mm256_srli_epi64(even_va_3, 32);
 
         __m256i even_vc_0 = _shoup_mullo_avx2(even_va_0, vb, vb_precomp, vp);
-        __m256i even_vc_1 = _shoup_mullo_avx2(even_va_1, vb, vb_precomp, vp);
-        __m256i even_vc_2 = _shoup_mullo_avx2(even_va_2, vb, vb_precomp, vp);
-        __m256i even_vc_3 = _shoup_mullo_avx2(even_va_3, vb, vb_precomp, vp);
 
         __m256i odd_vc_0 = _shoup_mullo_avx2(odd_va_0, vb, vb_precomp, vp);
-        __m256i odd_vc_1 = _shoup_mullo_avx2(odd_va_1, vb, vb_precomp, vp);
-        __m256i odd_vc_2 = _shoup_mullo_avx2(odd_va_2, vb, vb_precomp, vp);
-        __m256i odd_vc_3 = _shoup_mullo_avx2(odd_va_3, vb, vb_precomp, vp);
 
         __m256i odd_shifted_0 = _mm256_slli_epi64(odd_vc_0, 32);
-        __m256i odd_shifted_1 = _mm256_slli_epi64(odd_vc_1, 32);
-        __m256i odd_shifted_2 = _mm256_slli_epi64(odd_vc_2, 32);
-        __m256i odd_shifted_3 = _mm256_slli_epi64(odd_vc_3, 32);
 
         __m256i merge_0 = _mm256_or_si256(even_vc_0, odd_shifted_0);
-        __m256i merge_1 = _mm256_or_si256(even_vc_1, odd_shifted_1);
-        __m256i merge_2 = _mm256_or_si256(even_vc_2, odd_shifted_2);
-        __m256i merge_3 = _mm256_or_si256(even_vc_3, odd_shifted_3);
 
         _mm256_storeu_si256((__m256i *)(res.elements + i), merge_0);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 8), merge_1);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 16), merge_2);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 24), merge_3);
     }
     for (; i < size; i++)
         *(res.elements + i) = shoup(*(v.elements + i),
+                                    param.b,
+                                    param.b_precomp,
+                                    param.p);
+    return res;
+}
+\end{lstlisting}
+
+\begin{lstlisting} [caption = Auxiliary Function \texttt{\_mulhi\_emul\_avx2}]
+static inline m256i _mulhi_emul_avx2(m256i va, m256i vb)
+{
+    // res_even = [ (a_0 * b_0), (a_2 * b_2), (a_4 * b_4), (a_6 * b_6) ]
+    m256i res_even = _mm256_mul_epu32(va, vb);
+
+    // res_odd = [ (a_1 * b_0), (a_3 * b_2), (a_5 * b_4), (a_7 * b_6) ]
+    m256i res_odd = _mm256_mul_epu32(_mm256_srli_epi64(va, 32), vb);
+
+    // hi_even = [ (0, hi(a_0 * b_0)), (0, hi(a_2 * b_2)), (0, hi(a_4 * b_4)),
+    // (0, hi(a_6*b_6)) ]
+    m256i hi_even = _mm256_srli_epi64(res_even, 32);
+
+    // Removes the least significant bits: hi_odd = [ (hi(a_1 * b_0), 0),
+    // (hi(a_3 * b_2), 0), (hi(a_5 * b_4), 0), (hi(a_7 * b_6), 0) ]
+    __m256i hi_odd = _mm256_and_si256(res_odd, _mm256_set1_epi64x(
+        0xFFFFFFFF00000000ULL));
+
+    // [ (hi(a_1 * b_0), hi(a_0 * b_0)), (hi(a_3 * b_2), hi(a_2 * b_2)),
+    // (hi(a_5 * b_4), hi(a_4 * b_4)), (hi(a_7 * b_6), hi(a_6 * b_6)) ]
+    return _mm256_or_si256(hi_even, hi_odd);
+}
+\end{lstlisting}
+
+\begin{lstlisting} [caption = Auxiliary Function of Shoup’s Modular Reduction (Version 2 of multiply-low)]
+static inline m256i _shoup_mullo_v2_avx2(m256i va,
+                                           m256i vb,
+                                           m256i vb_precomp,
+                                           m256i vp)
+{
+    m256i vq = _mulhi_emul_avx2(va, vb_precomp);
+    m256i vab = _mm256_mullo_epi32(va, vb);
+    m256i vqp = _mm256_mullo_epi32(vq, vp);
+    __m256i vc = _mm256_sub_epi32(vab, vqp);
+    return _mm256_min_epu32(vc, _mm256_sub_epi32(vc, vp));
+}
+\end{lstlisting}
+
+\begin{lstlisting} [caption = AVX2 Implementation of Shoup’s Modular Reduction (Version 2 of multiply-low)]
+Vector shoup_scale_mullo_v2_avx2(Parameters param, Vector v)
+{
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    m256i vb = _mm256_set1_epi32(param.b);
+    m256i vb_precomp = _mm256_set1_epi32(param.b_precomp);
+    m256i vp = _mm256_set1_epi32(param.p);
+    ulong i = 0;
+    for (; i + 7 < size; i += 8)
+    {
+        m256i va = _mm256_loadu_si256((m256i const *)(v.elements + i));
+
+        m256i vc = _shoup_mullo_v2_avx2(va, vb, vb_precomp, vp);
+        _mm256_storeu_si256((__m256i *)(res.elements + i), vc);
+    }
+    for (; i < size; i++)
+        (res.elements + i) = shoup((v.elements + i),
                                     param.b,
                                     param.b_precomp,
                                     param.p);
