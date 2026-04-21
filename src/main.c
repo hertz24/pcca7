@@ -17,11 +17,11 @@ static int generate_graphs(Options options, Parameters param)
                              SHOUP_SCALE_NEON
 #elif AVX2
                              ,
-                             SHOUP_SCALE_AVX2
+                             SHOUP_SCALE_MULLO_V2_AVX2
 #endif
 #if AVX512
                              ,
-                             SHOUP_SCALE_AVX512
+                             SHOUP_SCALE_MULLO_V2_AVX512
 #endif
     };
 

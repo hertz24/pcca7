@@ -777,44 +777,23 @@ The results below were obtained by measuring the execution time between a standa
 \end{figure}
 \begin{table}[H]
     \centering
-    \caption{Execution time of implementations with and without unrolling in milliseconds}
     \rowcolors{2}{green!10}{white}
     \begin{tabular}{|l|c|c|c|c|c|}
         \hline
-        Size & Standard & Unrolled \\ \hline
-        100  & 0.037    & 0.039    \\
-        200  & 0.069    & 0.071    \\
-        300  & 0.093    & 0.098    \\
-        400  & 0.115    & 0.118    \\
-        500  & 0.148    & 0.146    \\
-        600  & 0.159    & 0.166    \\
-        700  & 0.195    & 0.190    \\
-        800  & 0.204    & 0.212    \\
-        900  & 0.228    & 0.237    \\
-        1000 & 0.255    & 0.258    \\
+        Size & Standard & Unrolled & Percentage difference \\ \hline
+        100  & 0.037    & 0.039    & $+5.41\%$             \\
+        200  & 0.069    & 0.071    & $+2.90\%$             \\
+        300  & 0.093    & 0.098    & $+5.38\%$             \\
+        400  & 0.115    & 0.118    & $+2.61\%$             \\
+        500  & 0.148    & 0.146    & $-1.35\%$             \\
+        600  & 0.159    & 0.166    & $+4.40\%$             \\
+        700  & 0.195    & 0.190    & $-2.56\%$             \\
+        800  & 0.204    & 0.212    & $+3.92\%$             \\
+        900  & 0.228    & 0.237    & $+3.95\%$             \\
+        1000 & 0.255    & 0.258    & $+1.18\%$             \\
         \hline
     \end{tabular}
-\end{table}
-
-\begin{table}[H]
-    \centering
-    \caption{Average percentage speedup of the unrolling implementation relative to with unrolling}
-    \rowcolors{2}{blue!10}{white}
-    \begin{tabular}{|l|c|c|c|c|c|}
-        \hline
-        Size & Standard & Unrolled   & Percentage difference \\ \hline
-        100  & 100\%    & $105.41\%$ & $+5.41\%$             \\
-        200  & 100\%    & $102.90\%$ & $+2.90\%$             \\
-        300  & 100\%    & $105.38\%$ & $+5.38\%$             \\
-        400  & 100\%    & $102.61\%$ & $+2.61\%$             \\
-        500  & 100\%    & $98.65\%$  & $-1.35\%$             \\
-        600  & 100\%    & $104.40\%$ & $+4.40\%$             \\
-        700  & 100\%    & $97.44\%$  & $-2.56\%$             \\
-        800  & 100\%    & $103.92\%$ & $+3.92\%$             \\
-        900  & 100\%    & $103.95\%$ & $+3.95\%$             \\
-        1000 & 100\%    & $101.18\%$ & $+1.18\%$             \\
-        \hline
-    \end{tabular}
+    \caption{Execution time of implementations with and without unrolling in milliseconds}
 \end{table}
 
 \textbf{Observation: }On average, the Unrolled implementation is 2.58\% slower
@@ -829,52 +808,31 @@ mullo\_epi32 and mul\_epu32 both produce at max 64-bit results, the key differen
 
 The results below were obtained by measuring the execution time between the two variations described in Section 3.8.1
 
-\textbf{Hypothesis: } The variant mullo\_epi32 should perform better than the variant mul\_epu32 as it uses fewer operations overall
+\textbf{Hypothesis:} The variant mullo\_epi32 should perform better than the variant mul\_epu32 as it uses fewer operations overall.
 \begin{figure}[H]
     \centering
     \includegraphics[width=1\linewidth]{graphs/graph3.jpeg}
-    \caption{Execution Time Comparison: mullo\_epi32 vs. mul\_epu32 }
+    \caption{Execution Time Comparison: mullo\_epi32 vs. mul\_epu32}
 \end{figure}
 \begin{table}[H]
     \centering
-    \caption{Execution time of mullo\_epi32 and mul\_epu32 implementation in milliseconds}
     \rowcolors{2}{green!10}{white}
     \begin{tabular}{|l|c|c|c|c|c|}
         \hline
-        Size & mul\_epu32 & mullo\_epi32 \\ \hline
-        100  & 0.037      & 0.038        \\
-        200  & 0.069      & 0.066        \\
-        300  & 0.093      & 0.090        \\
-        400  & 0.113      & 0.107        \\
-        500  & 0.138      & 0.131        \\
-        600  & 0.163      & 0.150        \\
-        700  & 0.184      & 0.173        \\
-        800  & 0.205      & 0.190        \\
-        900  & 0.232      & 0.213        \\
-        1000 & 0.249      & 0.232        \\
-        \hline
-    \end{tabular}
-\end{table}
-
-\begin{table}[H]
-    \centering
-    \caption{Average percentage speedup of mullo\_epi32 implementation relative to mul\_epu32}
-    \rowcolors{2}{blue!10}{white}
-    \begin{tabular}{|l|c|c|c|c|c|}
-        \hline
         Size & mul\_epu32 & mullo\_epi32 & Percentage difference \\ \hline
-        100  & 100\%      & $102.70\%$   & $+2.70\%$             \\
-        200  & 100\%      & $95.65\%$    & $-4.35\%$             \\
-        300  & 100\%      & $96.77\%$    & $-3.23\%$             \\
-        400  & 100\%      & $94.69\%$    & $-5.31\%$             \\
-        500  & 100\%      & $94.93\%$    & $-5.07\%$             \\
-        600  & 100\%      & $92.02\%$    & $-7.98\%$             \\
-        700  & 100\%      & $94.02\%$    & $-5.98\%$             \\
-        800  & 100\%      & $92.68\%$    & $-7.32\%$             \\
-        900  & 100\%      & $91.81\%$    & $-8.19\%$             \\
-        1000 & 100\%      & $93.17\%$    & $-6.83\%$             \\
+        100  & 0.037      & 0.038        & $+2.70\%$             \\
+        200  & 0.069      & 0.066        & $-4.35\%$             \\
+        300  & 0.093      & 0.090        & $-3.23\%$             \\
+        400  & 0.113      & 0.107        & $-5.31\%$             \\
+        500  & 0.138      & 0.131        & $-5.07\%$             \\
+        600  & 0.163      & 0.150        & $-7.98\%$             \\
+        700  & 0.184      & 0.173        & $-5.98\%$             \\
+        800  & 0.205      & 0.190        & $-7.32\%$             \\
+        900  & 0.232      & 0.213        & $-8.19\%$             \\
+        1000 & 0.249      & 0.232        & $-6.83\%$             \\
         \hline
     \end{tabular}
+    \caption{Execution time of mullo\_epi32 and mul\_epu32 implementation in milliseconds}
 \end{table}
 
 \textbf{Observation:} We can observe that at the smaller sizes (100), mullo\_epi32 is slower than the standard mul\_epu32
@@ -885,20 +843,46 @@ Across all the vector sizes, the average percentage gain is 5.15\%
 The mullo\_epi32 version is the better implementation
 
 \subsubsection{Versions of mullo:}
-Both versions use mullo as the main multiplication operation, the key difference between these two versions
-is when the regrouping happens for the vector registers.
+Both versions use mullo as the main multiplication operation, the key difference between these two versions is when the regrouping happens for the vector registers.
 
-The results below are obtained by measuring the execution time between two implementations using \_mm256\_mullo\_epi32 described in Section 3.8.1
+The results below are obtained by measuring the execution time between two implementations using \texttt{\_mm256\_mullo\_epi32} described in Section 3.8.1
 
 \textbf{Hypothesis:} The second version implementation should perform better, it carries out less redundant code by
 regrouping early the vector registers
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{graphs/graph5.png}
+    \caption{Execution Time Comparison between the two versions of multiply low}
+\end{figure}
+\begin{table}[H]
+    \centering
+    \rowcolors{2}{green!10}{white}
+    \begin{tabular}{|l|c|c|c|c|c|}
+        \hline
+        Size & Version 1 & Version 2 & Percentage difference \\ \hline
+        100  & 0.037     & 0.029     & $-21.62\%$            \\
+        200  & 0.056     & 0.045     & $-19.64\%$            \\
+        300  & 0.076     & 0.060     & $-21.05\%$            \\
+        400  & 0.091     & 0.068     & $-25.27\%$            \\
+        500  & 0.109     & 0.089     & $-18.34\%$            \\
+        600  & 0.125     & 0.096     & $-23.2\%$             \\
+        700  & 0.145     & 0.110     & $-24.13\%$            \\
+        800  & 0.156     & 0.126     & $-19.23\%$            \\
+        900  & 0.176     & 0.137     & $-22.15\%$            \\
+        1000 & 0.193     & 0.142     & $-26.42\%$            \\
+        \hline
+    \end{tabular}
+    \caption{Execution time of the two versions of multiply low implementation in milliseconds}
+\end{table}
+
 \textbf{Observations:}
 
-\textbf{Conclusion}
+\textbf{Conclusion:}
 \subsubsection{Overall Performance}
-The results below were obtained by measuring the execution time of different implementations of modular reduction:
+It is worth noting that AVX2 uses 256-bit registers to process up to eight 32-bit integers, while AVX-512 uses 512-bit registers for up to sixteen. Furthermore, AVX-512 uses the same functions and operations as AVX2.
 
+The results below were obtained by measuring the execution time of different implementations of modular reduction:
 \begin{itemize}
     \item \textbf{Naive scale:} The base operation (\%)
     \item \textbf{Shoup scale (reference) :} Shoup's Modular Multiplication without optimization
@@ -913,7 +897,6 @@ The results below were obtained by measuring the execution time of different imp
 \end{figure}
 \begin{table}[H]
     \centering
-    \caption{Execution time for different implementations in relation to the size of the vector in milliseconds}
     \rowcolors{2}{green!10}{white}
     \begin{tabular}{|l|c|c|c|c|c|}
         \hline
@@ -930,27 +913,7 @@ The results below were obtained by measuring the execution time of different imp
         1000 & 1.979 & 1.339     & 0.880 & 0.249      & 0.193         \\
         \hline
     \end{tabular}
-\end{table}
-
-\begin{table}[H]
-    \centering
-    \rowcolors{2}{blue!10}{white}
-    \caption{Average percentage speedup of different algorithms compared to the naive solution}
-    \begin{tabular}{|l|c|c|c|c|c|}
-        \hline
-        Size & Naive & Shoup ref & FLINT     & Shoup AVX2 & Shoup AVX-512 \\ \hline
-        100  & 100\% & 73.26\%   & 52.41\%   & $19.79\%$  & $12.30\%$     \\
-        200  & 100\% & 71.11\%   & $50.50\%$ & $17.59\%$  & $13.07\%$     \\
-        300  & 100\% & 70.81\%   & $48.66\%$ & $15.77\%$  & $12.08\%$     \\
-        400  & 100\% & 69.14\%   & $46.10\%$ & $14.61\%$  & $10.96\%$     \\
-        500  & 100\% & 69.37\%   & $46.15\%$ & $14.00\%$  & $10.65\%$     \\
-        600  & 100\% & 68.98\%   & $46.58\%$ & $13.44\%$  & $10.40\%$     \\
-        700  & 100\% & 68.33\%   & $46.06\%$ & $13.30\%$  & $13.23\%$     \\
-        800  & 100\% & 68.50\%   & $45.50\%$ & $12.93\%$  & $10.08\%$     \\
-        900  & 100\% & 67.72\%   & $45.05\%$ & $12.82\%$  & $10.07\%$     \\
-        1000 & 100\% & 67.66\%   & $44.47\%$ & $12.58\%$  & $9.75\%$      \\
-        \hline
-    \end{tabular}
+    \caption{Execution time for different implementations in relation to the size of the vector in milliseconds}
 \end{table}
 
 \begin{table}[H]
