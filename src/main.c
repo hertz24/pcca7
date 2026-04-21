@@ -25,7 +25,7 @@ static int generate_graphs(Options options, Parameters param)
 #endif
     };
 
-    // Continues to generate graphs even if there is error
+    // Continues to generate graphs even if there is an error
     int ret = generate_graph(scale, points, param, graph_1, TAB_SIZE(graph_1));
 #if NEON
     ret |= generate_graph(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_NEON, UNROLLING_SHOUP_SCALE_NEON}, 2);
