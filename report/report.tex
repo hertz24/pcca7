@@ -234,6 +234,17 @@ For the AVX2 version, we decided to use two main AVX2 functions:
 
 \textbf{Intel \texttt{\_mm256\_mul\_epu32}}\\
 This function treats the input as unsigned 32-bit integers. However, it only multiplies the even-indexed slots (0, 2, 4, 6) of the vector to make room for the full 64-bit results.
+
+This implementation uses purely \texttt{\_mm256\_mul\_epu32} at all stages of calulations thus we must data shuffle the registers to their correct position. The following are the steps per loop:
+
+\begin{itemize}
+    \item Load 8 32 bit integers into the register
+    \item Split the loaded register into even-indexed slots (0, 2, 4, 6) and odd-indexed slots (1, 3, 5, 7) into 64 bit registers
+    \item Compute Shoup's Modular Reduction (\texttt{\_shoup\_avx2(...)}) over these registers
+    \item Recombine the even and odd indexed slots and store
+    \item Compute the leftover elements
+\end{itemize}
+
 \begin{lstlisting}[caption = Auxiliary Function of Shoup's Modular Reduction]
 static inline __m256i _shoup_avx2(__m256i va,
                                   __m256i vb,
@@ -313,6 +324,17 @@ Vector shoup_scale_avx2(Parameters param, Vector v)
 \pagebreak
 \textbf{Intel \texttt{\_mm256\_mullo\_epi32}}\\
 This function treats the input as signed 32-bit integers. It multiplies all 8 pairs of numbers but only stores the bottom half of the result.
+
+This implementation uses \texttt{\_mm256\_mul\_epu32} to compute the quotient:  
+\[q = \lfloor (a \cdot b_{precomp}) / 2^{32} \rfloor\]
+but \texttt{\_mm256\_mullo\_epi32} to compute all other steps per loop. The following are the steps per loop:
+\begin{itemize}
+    \item Load 8 32 bit integers into the register
+    \item Split the loaded register into even-indexed slots (0, 2, 4, 6) and odd-indexed slots (1, 3, 5, 7) into 64 bit registers
+    \item Compute Shoup's Modular Reduction (\texttt{\_shoup\_mullo\_avx2(...)}) over these registers
+    \item Recombine the even and odd indexed slots and store
+    \item Compute the leftover elements
+\end{itemize}
 \begin{lstlisting} [caption = Auxiliary Function of Shoup’s Modular Reduction (Version with multiply-low)]
 static inline __m256i _shoup_mullo_avx2(__m256i va,
                                         __m256i vb,
@@ -411,6 +433,15 @@ By restoring the standard 8-lane 32-bit layout early, the function eliminates th
 This, in theory, should reduce the workload.
 
 In order to implement this version, we create an Auxiliary function \textbf{\_mulhi\_emul\_avx2} which emulates a native 'multiply-high' instruction for unsigned 32-bit integers. It computes the full 64-bit products of two packed vectors, extracts the most significant 32 bits from each result, and repacks them into a single 256-bit destination register.
+
+The following are the steps per loop:
+\begin{itemize}
+    \item Load 8 32 bit integers into the register
+    \item Split the loaded register into even-indexed slots (0, 2, 4, 6) and odd-indexed slots (1, 3, 5, 7) into 64 bit registers to compute the quotient
+    \item Recombine the even and odd indexed slots
+    \item Continue with Shoup's Modular Reduction (\texttt{\_shoup\_mullo\_v2\_avx2(...)})
+    \item Compute the leftover elements
+\end{itemize}
 
 \begin{lstlisting} [caption = Auxiliary Function \texttt{\_mulhi\_emul\_avx2}]
 static inline __m256i _mulhi_emul_avx2(__m256i va, __m256i vb)
@@ -749,7 +780,7 @@ The performance benchmarks were run on AMD and ARM architectures, by executing \
 \subsubsection{Overall Hypothesis}
 Using SIMD operations should provide us with a max acceleration of 8x-16x since the registers can hold and operate on 8 32 bit unsigned integers (for AVX2) and 16 32 bit unsigned integers (for AVX512) simultanously.
 
-One caveate that must be considered is that our function
+One caveate that must be considered is that all implementation uses \texttt{\_mm256\_mul\_epu32} to calculate the quotient defined as $Q = \lfloor AB'/\beta \rfloor$. This operation requires a data shuffle to correctly align the vectors into 64 bit lanes then recombining them at later stages. This reduces the acceleration factor of SIMD implementations at worst by half (4x-8x depending on AVX2 or AVX512)
 
 \subsubsection{Equipment details for AMD architecture}
 \begin{itemize}
