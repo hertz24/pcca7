@@ -745,7 +745,11 @@ static inline uint32x2_t _shoup_mullo_neon(uint32x2_t va,
 \end{lstlisting}
 
 \subsection{Performance}
-The performance benchmarks were run on AMD and ARM architectures, by executing \texttt{./pcca7 -b\_bits 31}.
+The performance benchmarks were run on AMD and ARM architectures, by executing \texttt{./pcca7 -b\_bits 31}.  
+\subsubsection{Overall Hypothesis}
+Using SIMD operations should provide us with a max acceleration of 8x-16x since the registers can hold and operate on 8 32 bit unsigned integers (for AVX2) and 16 32 bit unsigned integers (for AVX512) simultanously.
+
+One caveate that must be considered is that our function
 
 \subsubsection{Equipment details for AMD architecture}
 \begin{itemize}
@@ -763,7 +767,7 @@ The performance benchmarks were run on AMD and ARM architectures, by executing \
 \textbf{Note:} The benchmarks were run in a virtual machine.
 
 
-\subsubsection{Choice of unrolling}
+    \subsubsection{Choice of unrolling}
 One way to optimize for faster functions through vectorization is Loop Unrolling.
 This technique consists of expanding the body of a loop to process multiple iterations at once.
 
@@ -941,8 +945,9 @@ Our Shoup's Modular Multiplication with AVX2 and AVX-512 optimization adapted to
 \subsubsection{NEON's Performance}
 TODO
 
-\subsection{Overall Conclusion:}
+\section{Overall Conclusion:}
+For AVX architectures, we have researched and implemented many versions of Shoup's Modular Reduction. The best performance by far is the implementation \textit{Intel \texttt{\_mm256\_mullo\_epi32} version 2:} with acceleration of a factor of TODO for AVX2 and a factor of TODO for AVX512.
 
-\subsection{Other Improvements:}
+\section{Other Improvements:}
 
 \end{document}
