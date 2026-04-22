@@ -478,10 +478,11 @@ From the results retrieved, we can observe that FLINT's implementation over 64 b
 Our Shoup's Modular Multiplication with AVX2 and AVX-512 optimization adapted to 32 bits is 2-3 times faster than FLINT.
 
 \subsubsection{NEON's Performance}
-TODO
+Unlike AVX2 and AVX-512 which use opaque data type, that means we can't directly access to the vectors contained without specifical functions, NEON uses explicit vector types: the name of NEON's types defined the type, the number of bits and the number of elements.
+\includegraphics[width=1\linewidth]{graphs/neon1.png}
 
 \section{Overall Conclusion:}
-For AVX architectures, we have researched and implemented many versions of Shoup's Modular Reduction. The best performance by far is the implementation \textit{Intel \texttt{\_mm256\_mullo\_epi32} version 2:} with acceleration of a factor of TODO for AVX2 and a factor of TODO for AVX512.
+For AVX architectures, we have researched and implemented many versions of Shoup's Modular Reduction. The best performance by far is the implementation Intel \texttt{\_mm256\_mullo\_epi32} version 2: with acceleration of a factor of TODO for AVX2 and a factor of TODO for AVX-512.
 
 \section{Other Improvements:}
 
