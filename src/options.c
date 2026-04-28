@@ -5,6 +5,8 @@ int set_options(int argc, char const *argv[], Options *options)
     if (argc % 2 == 0)
         return ERR_INPUT;
     for (int i = 1; i < argc; i += 2)
+
+        // Initializes each field based on the command-line
         if (strcmp("-p", argv[i]) == 0)
         {
             if (!(options->flags & (OPT_P | OPT_P_BITS)))
@@ -51,10 +53,13 @@ int set_options(int argc, char const *argv[], Options *options)
 int init_param(Options *options, Parameters *param)
 {
     unsigned char flags = options->flags;
+
+    // If the option is passed as parameter
     uint32_t p = (flags & OPT_P) ? options->p : 0;
     uint32_t b = (flags & OPT_B) ? options->b : 0;
     ulong p_bits = (flags & OPT_P_BITS) ? options->p_bits : 0;
     ulong b_bits = (flags & OPT_B_BITS) ? options->b_bits : 0;
+
     switch (flags & (OPT_P | OPT_B | OPT_P_BITS | OPT_B_BITS))
     {
     case (OPT_P | OPT_B):
@@ -65,6 +70,8 @@ int init_param(Options *options, Parameters *param)
     case (OPT_P | OPT_B_BITS):
         if (FLINT_BIT_COUNT(p) < b_bits)
             return ERR_BBITS_GE_PBITS;
+
+        // Choose new b while b >= p
         do
         {
             b = n_randbits(state, b_bits);
@@ -77,6 +84,8 @@ int init_param(Options *options, Parameters *param)
     case (OPT_B | OPT_P_BITS):
         if (p_bits > 1 && FLINT_BIT_COUNT(b) > p_bits)
             return ERR_BBITS_GE_PBITS;
+
+        // If there not exists a prime of p_bits bits such that p > b
         if (p_bits > 1 && p_bits < 32 && b >= max_prime_bits(p_bits))
             return ERR_NO_PRIME_FOR_BITS;
         do
