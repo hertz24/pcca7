@@ -26,13 +26,13 @@ void prof_repeat(double *min, double *max, profile_target_t target, void *arg);
 #endif
 
 /**
- * @brief Measure the time of an algorithm in milliseconds.
+ * @brief Measure the time of an algorithm in microseconds.
  *
  * @param algorithm The algorithm to measure
  * @param param The parameters containing the data
  * @param v The vector to calculate
  *
- * @return The time taken by the algorithm in milliseconds
+ * @return The time taken by the algorithm in microseconds
  */
 double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param, Vector v);
 
