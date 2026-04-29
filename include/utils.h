@@ -25,15 +25,19 @@
 void prof_repeat(double *min, double *max, profile_target_t target, void *arg);
 #endif
 
-/**
- * @brief Measure the time of an algorithm in microseconds.
- *
- * @param algorithm The algorithm to measure
- * @param param The parameters containing the data
- * @param v The vector to calculate
- *
- * @return The time taken by the algorithm in microseconds
- */
-double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param, Vector v);
+#define DECLARE_UTILS(BIT)                                      \
+    /**                                                         \
+     * @brief Measure the time of an algorithm in microseconds. \
+     *                                                          \
+     * @param algorithm The algorithm to measure                \
+     * @param param The parameters containing the data          \
+     * @param v The vector to calculate                         \
+     *                                                          \
+     * @return The time taken by the algorithm in microseconds  \
+     */                                                         \
+    double time_algorithm##BIT(vector##BIT##_t (*algorithm)(param##BIT##_t, vector##BIT##_t), param##BIT##_t param, vector##BIT##_t v);
+
+DECLARE_UTILS(16)
+DECLARE_UTILS(32)
 
 #endif

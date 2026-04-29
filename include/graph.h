@@ -21,18 +21,22 @@ int init_data_tab(void);
 
 void free_data_tab(void);
 
-/**
- * @brief Generates graphs for given algorithms using given parameters.
- *
- * @param scale Scaling factor for the number of points in graphs
- * @param nb_points Number of measurement points
- * @param param The parameters
- * @param algorithm_ids The list of algorithm IDs to test
- * @param nb_algo The number of algorithms
- *
- * @retval 0 on success
- * @retval 1 on fail
- */
-int generate_graph(int scale, ulong nb_points, Parameters param, const AlgorithmID algorithm_ids[], int nb_algo);
+#define DECLARE_GRAPH(BIT)                                                  \
+    /**                                                                     \
+     * @brief Generates graphs for given algorithms using given parameters. \
+     *                                                                      \
+     * @param scale Scaling factor for the number of points in graphs       \
+     * @param nb_points Number of measurement points                        \
+     * @param param The parameters                                          \
+     * @param algorithm_ids The list of algorithm IDs to test               \
+     * @param nb_algo The number of algorithms                              \
+     *                                                                      \
+     * @retval 0 on success                                                 \
+     * @retval 1 on fail                                                    \
+     */                                                                     \
+    int generate_graph##BIT(int scale, ulong nb_points, param##BIT##_t param, const AlgorithmID algorithm_ids[], int nb_algo);
+
+DECLARE_GRAPH(16)
+DECLARE_GRAPH(32)
 
 #endif

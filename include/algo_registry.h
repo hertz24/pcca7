@@ -45,18 +45,21 @@ typedef enum
 #endif
 } AlgorithmID;
 
-/**
- * @struct Algorithm
- * @brief Contains the name and the function of the algorithm.
- */
-typedef struct
-{
-    const char *name;
-    Vector (*const address)(Parameters, Vector);
-} Algorithm;
-
-extern const Algorithm algorithms[];
-
 extern const int NB_ALGO;
+
+#define DECLARE_ALGO_REGISTRY(BIT)                                         \
+    /**                                                                    \
+     * @brief Contains the name and the function of the algorithm.         \
+     */                                                                    \
+    typedef struct                                                         \
+    {                                                                      \
+        const char *name;                                                  \
+        vector##BIT##_t (*const address)(param##BIT##_t, vector##BIT##_t); \
+    } algorithm##BIT##_t;                                                  \
+                                                                           \
+    extern const algorithm##BIT##_t algorithms##BIT[];
+
+DECLARE_ALGO_REGISTRY(16)
+DECLARE_ALGO_REGISTRY(32)
 
 #endif
