@@ -98,7 +98,7 @@ static int count = 1;
         /* Creation of the directory */                                                                                                            \
         mkdir("graphs", 0755);                                                                                                                     \
         char file_name[32];                                                                                                                        \
-        snprintf(file_name, sizeof(file_name) - 1, "graphs/graph%d.gp", count);                                                                    \
+        snprintf(file_name, sizeof(file_name) - 1, "graphs/graph_%d_%d.gp", BIT, count);                                                           \
         int fd = open(file_name, O_CREAT | O_WRONLY | O_TRUNC, 0644);                                                                              \
         if (fd == -1)                                                                                                                              \
         {                                                                                                                                          \

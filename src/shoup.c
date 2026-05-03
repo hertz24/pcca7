@@ -46,10 +46,10 @@ static inline uint32x2_t _shoup_neon(uint32x2_t va, uint32x2_t vb, uint32x2_t vb
     return vmin_u32(vc, vsub_u32(vc, vp));
 }
 
-vector##BIT##_t shoup_scale_neon(param##BIT##_t param, vector##BIT##_t v)
+vector32_t shoup_scale_neon_32(param32_t param, vector32_t v)
 {
     ulong size = v.size;
-    vector##BIT##_t res = init_vector(size);
+    vector32_t res = init_vector_32(size);
     ulong n = size - (size % 4);
     uint32x2_t vb = vdup_n_u32(param.b);
     uint32x2_t vp = vdup_n_u32(param.p);
@@ -64,14 +64,14 @@ vector##BIT##_t shoup_scale_neon(param##BIT##_t param, vector##BIT##_t v)
         vst1_u32(res.elements + i, _shoup_neon(va, vb, vb_precomp, vp));
     }
     for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+        *(res.elements + i) = shoup_32(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
 
-vector##BIT##_t unrolling_shoup_scale_neon(param##BIT##_t param, vector##BIT##_t v)
+vector32_t unrolling_shoup_scale_neon_32(param32_t param, vector32_t v)
 {
     ulong size = v.size;
-    vector##BIT##_t res = init_vector(size);
+    vector32_t res = init_vector_32(size);
     ulong n = size - (size % 4);
     uint32x2_t vb = vdup_n_u32(param.b);
     uint32x2_t vp = vdup_n_u32(param.p);
@@ -91,7 +91,7 @@ vector##BIT##_t unrolling_shoup_scale_neon(param##BIT##_t param, vector##BIT##_t
         vst1_u32(res.elements + i + 6, _shoup_neon(va_3, vb, vb_precomp, vp));
     }
     for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+        *(res.elements + i) = shoup_32(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
 
@@ -114,10 +114,10 @@ static inline uint32x2_t _shoup_mullo_neon(uint32x2_t va, uint32x2_t vb, uint32x
     return vmin_u32(vc, vsub_u32(vc, vp));
 }
 
-vector##BIT##_t shoup_scale_mullo_neon(param##BIT##_t param, vector##BIT##_t v)
+vector32_t shoup_scale_mullo_neon_32(param32_t param, vector32_t v)
 {
     ulong size = v.size;
-    vector##BIT##_t res = init_vector(size);
+    vector32_t res = init_vector_32(size);
     ulong n = size - (size % 4);
     uint32x2_t vb = vdup_n_u32(param.b);
     uint32x2_t vp = vdup_n_u32(param.p);
@@ -136,7 +136,7 @@ vector##BIT##_t shoup_scale_mullo_neon(param##BIT##_t param, vector##BIT##_t v)
         vst1_u32(res.elements + i + 6, _shoup_mullo_neon(va_3, vb, vb_precomp, vp));
     }
     for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+        *(res.elements + i) = shoup_32(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
 
@@ -149,10 +149,10 @@ static inline uint32x2_t _shoup_b1_neon(uint32x2_t va, uint32x2_t vb_precomp, ui
     return vmin_u32(vc, vsub_u32(vc, vp));
 }
 
-vector##BIT##_t shoup_b1_scale_neon(param##BIT##_t param, vector##BIT##_t v)
+vector32_t shoup_b1_scale_neon_32(param32_t param, vector32_t v)
 {
     ulong size = v.size;
-    vector##BIT##_t res = init_vector(size);
+    vector32_t res = init_vector_32(size);
     ulong n = size - (size % 4);
     uint32x2_t vp = vdup_n_u32(param.p);
     uint32x2_t vb_precomp = vdup_n_u32(param.b_precomp);
@@ -170,7 +170,7 @@ vector##BIT##_t shoup_b1_scale_neon(param##BIT##_t param, vector##BIT##_t v)
         vst1_u32(res.elements + i + 6, _shoup_b1_neon(va_3, vb_precomp, vp));
     }
     for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+        *(res.elements + i) = shoup_32(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
 #elif AVX2
