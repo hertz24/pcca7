@@ -1,24 +1,28 @@
 #include "../include/shoup.h"
 
-__attribute__((optimize("no-tree-vectorize"))) Vector shoup_scale_ref(Parameters param, Vector v)
-{
-    Vector res = init_vector(v.size);
-    for (ulong i = 0; i < v.size; i++)
-        *(res.elements + i) = shoup_ref(*(v.elements + i), param.b, param.b_precomp, param.p);
-    return res;
-}
+#define DEFINE_SHOUP(BIT)                                                                                                         \
+    __attribute__((optimize("no-tree-vectorize"))) vector##BIT##_t shoup_scale_ref_##BIT(param##BIT##_t param, vector##BIT##_t v) \
+    {                                                                                                                             \
+        vector##BIT##_t res = init_vector_##BIT(v.size);                                                                          \
+        for (ulong i = 0; i < v.size; i++)                                                                                        \
+            *(res.elements + i) = shoup_ref_##BIT(*(v.elements + i), param.b, param.b_precomp, param.p);                          \
+        return res;                                                                                                               \
+    }                                                                                                                             \
+                                                                                                                                  \
+    vector##BIT##_t shoup_scale_flint_##BIT(param##BIT##_t param, vector##BIT##_t v)                                              \
+    {                                                                                                                             \
+        vector##BIT##_t res = init_vector_##BIT(v.size);                                                                          \
+        /*                                                                                                                        \
+         * NOTE: double precomputation                                                                                            \
+         */                                                                                                                       \
+        ulong b_precomp = n_mulmod_precomp_shoup(param.b, param.p);                                                               \
+        for (ulong i = 0; i < v.size; i++)                                                                                        \
+            *(res.elements + i) = n_mulmod_shoup(param.b, *(v.elements + i), b_precomp, param.p);                                 \
+        return res;                                                                                                               \
+    }
 
-Vector shoup_scale_flint(Parameters param, Vector v)
-{
-    Vector res = init_vector(v.size);
-    /*
-     * NOTE: double precomputation
-     */
-    ulong b_precomp = n_mulmod_precomp_shoup(param.b, param.p);
-    for (ulong i = 0; i < v.size; i++)
-        *(res.elements + i) = n_mulmod_shoup(param.b, *(v.elements + i), b_precomp, param.p);
-    return res;
-}
+DEFINE_SHOUP(16)
+DEFINE_SHOUP(32)
 
 #if NEON
 static inline uint32x2_t _shoup_neon(uint32x2_t va, uint32x2_t vb, uint32x2_t vb_precomp, uint32x2_t vp)
@@ -42,10 +46,10 @@ static inline uint32x2_t _shoup_neon(uint32x2_t va, uint32x2_t vb, uint32x2_t vb
     return vmin_u32(vc, vsub_u32(vc, vp));
 }
 
-Vector shoup_scale_neon(Parameters param, Vector v)
+vector##BIT##_t shoup_scale_neon(param##BIT##_t param, vector##BIT##_t v)
 {
     ulong size = v.size;
-    Vector res = init_vector(size);
+    vector##BIT##_t res = init_vector(size);
     ulong n = size - (size % 4);
     uint32x2_t vb = vdup_n_u32(param.b);
     uint32x2_t vp = vdup_n_u32(param.p);
@@ -64,10 +68,10 @@ Vector shoup_scale_neon(Parameters param, Vector v)
     return res;
 }
 
-Vector unrolling_shoup_scale_neon(Parameters param, Vector v)
+vector##BIT##_t unrolling_shoup_scale_neon(param##BIT##_t param, vector##BIT##_t v)
 {
     ulong size = v.size;
-    Vector res = init_vector(size);
+    vector##BIT##_t res = init_vector(size);
     ulong n = size - (size % 4);
     uint32x2_t vb = vdup_n_u32(param.b);
     uint32x2_t vp = vdup_n_u32(param.p);
@@ -110,10 +114,10 @@ static inline uint32x2_t _shoup_mullo_neon(uint32x2_t va, uint32x2_t vb, uint32x
     return vmin_u32(vc, vsub_u32(vc, vp));
 }
 
-Vector shoup_scale_mullo_neon(Parameters param, Vector v)
+vector##BIT##_t shoup_scale_mullo_neon(param##BIT##_t param, vector##BIT##_t v)
 {
     ulong size = v.size;
-    Vector res = init_vector(size);
+    vector##BIT##_t res = init_vector(size);
     ulong n = size - (size % 4);
     uint32x2_t vb = vdup_n_u32(param.b);
     uint32x2_t vp = vdup_n_u32(param.p);
@@ -145,10 +149,10 @@ static inline uint32x2_t _shoup_b1_neon(uint32x2_t va, uint32x2_t vb_precomp, ui
     return vmin_u32(vc, vsub_u32(vc, vp));
 }
 
-Vector shoup_b1_scale_neon(Parameters param, Vector v)
+vector##BIT##_t shoup_b1_scale_neon(param##BIT##_t param, vector##BIT##_t v)
 {
     ulong size = v.size;
-    Vector res = init_vector(size);
+    vector##BIT##_t res = init_vector(size);
     ulong n = size - (size % 4);
     uint32x2_t vp = vdup_n_u32(param.p);
     uint32x2_t vb_precomp = vdup_n_u32(param.b_precomp);
@@ -191,10 +195,10 @@ static inline __m256i _shoup_avx2(__m256i va, __m256i vb, __m256i vb_precomp, __
     return _mm256_min_epu32(vc, _mm256_sub_epi32(vc, vp));
 }
 
-Vector shoup_scale_avx2(Parameters param, Vector v)
+vector32_t shoup_scale_avx2_32(param32_t param, vector32_t v)
 {
     ulong size = v.size;
-    Vector res = init_vector(size);
+    vector32_t res = init_vector_32(size);
     __m256i vb = _mm256_set1_epi64x(param.b);
     __m256i vb_precomp = _mm256_set1_epi64x(param.b_precomp);
     __m256i vp = _mm256_set1_epi64x(param.p);
@@ -222,14 +226,14 @@ Vector shoup_scale_avx2(Parameters param, Vector v)
         _mm256_storeu_si256((__m256i *)(res.elements + i), merge);
     }
     for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+        *(res.elements + i) = shoup_32(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
 
-Vector unrolling_shoup_scale_avx2(Parameters param, Vector v)
+vector32_t unrolling_shoup_scale_avx2_32(param32_t param, vector32_t v)
 {
     ulong size = v.size;
-    Vector res = init_vector(size);
+    vector32_t res = init_vector_32(size);
     __m256i vb = _mm256_set1_epi64x(param.b);
     __m256i vb_precomp = _mm256_set1_epi64x(param.b_precomp);
     __m256i vp = _mm256_set1_epi64x(param.p);
@@ -272,7 +276,7 @@ Vector unrolling_shoup_scale_avx2(Parameters param, Vector v)
         _mm256_storeu_si256((__m256i *)(res.elements + i + 24), merge_3);
     }
     for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+        *(res.elements + i) = shoup_32(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
 
@@ -297,10 +301,10 @@ static inline __m256i _shoup_mullo_avx2(__m256i va, __m256i vb, __m256i vb_preco
     return _mm256_min_epu32(vc, _mm256_sub_epi32(vc, vp));
 }
 
-Vector shoup_scale_mullo_avx2(Parameters param, Vector v)
+vector32_t shoup_scale_mullo_avx2_32(param32_t param, vector32_t v)
 {
     ulong size = v.size;
-    Vector res = init_vector(size);
+    vector32_t res = init_vector_32(size);
     __m256i vb = _mm256_set1_epi64x(param.b);
     __m256i vb_precomp = _mm256_set1_epi64x(param.b_precomp);
     __m256i vp = _mm256_set1_epi64x(param.p);
@@ -343,7 +347,7 @@ Vector shoup_scale_mullo_avx2(Parameters param, Vector v)
         _mm256_storeu_si256((__m256i *)(res.elements + i + 24), merge_3);
     }
     for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+        *(res.elements + i) = shoup_32(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
 
@@ -374,10 +378,10 @@ static inline __m256i _shoup_mullo_v2_avx2(__m256i va, __m256i vb, __m256i vb_pr
     return _mm256_min_epu32(vc, _mm256_sub_epi32(vc, vp));
 }
 
-Vector shoup_scale_mullo_v2_avx2(Parameters param, Vector v)
+vector32_t shoup_scale_mullo_v2_avx2_32(param32_t param, vector32_t v)
 {
     ulong size = v.size;
-    Vector res = init_vector(size);
+    vector32_t res = init_vector_32(size);
     __m256i vb = _mm256_set1_epi32(param.b);
     __m256i vb_precomp = _mm256_set1_epi32(param.b_precomp);
     __m256i vp = _mm256_set1_epi32(param.p);
@@ -390,7 +394,7 @@ Vector shoup_scale_mullo_v2_avx2(Parameters param, Vector v)
         _mm256_storeu_si256((__m256i *)(res.elements + i), vc);
     }
     for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+        *(res.elements + i) = shoup_32(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
 
@@ -415,10 +419,10 @@ static inline __m256i _shoup_b1_avx2(__m256i va, __m256i vb_precomp, __m256i vp)
     return _mm256_min_epu32(vc, _mm256_sub_epi32(vc, vp));
 }
 
-Vector shoup_b1_scale_avx2(Parameters param, Vector v)
+vector32_t shoup_b1_scale_avx2_32(param32_t param, vector32_t v)
 {
     ulong size = v.size;
-    Vector res = init_vector(size);
+    vector32_t res = init_vector_32(size);
     __m256i vb_precomp = _mm256_set1_epi64x(param.b_precomp);
     __m256i vp = _mm256_set1_epi64x(param.p);
     ulong i = 0;
@@ -460,7 +464,7 @@ Vector shoup_b1_scale_avx2(Parameters param, Vector v)
         _mm256_storeu_si256((__m256i *)(res.elements + i + 24), merge_3);
     }
     for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+        *(res.elements + i) = shoup_32(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
 #endif
@@ -476,10 +480,10 @@ static inline __m512i _shoup_avx512(__m512i va, __m512i vb, __m512i vb_precomp, 
     return _mm512_min_epu32(vc, _mm512_sub_epi32(vc, vp));
 }
 
-Vector shoup_scale_avx512(Parameters param, Vector v)
+vector32_t shoup_scale_avx512_32(param32_t param, vector32_t v)
 {
     ulong size = v.size;
-    Vector res = init_vector(size);
+    vector32_t res = init_vector_32(size);
     __m512i vb = _mm512_set1_epi64(param.b);
     __m512i vb_precomp = _mm512_set1_epi64(param.b_precomp);
     __m512i vp = _mm512_set1_epi64(param.p);
@@ -501,14 +505,14 @@ Vector shoup_scale_avx512(Parameters param, Vector v)
         _mm512_storeu_si512((__m512 *)(res.elements + i), merge);
     }
     for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+        *(res.elements + i) = shoup_32(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
 
-Vector unrolling_shoup_scale_avx512(Parameters param, Vector v)
+vector32_t unrolling_shoup_scale_avx512_32(param32_t param, vector32_t v)
 {
     ulong size = v.size;
-    Vector res = init_vector(size);
+    vector32_t res = init_vector_32(size);
     __m512i vb = _mm512_set1_epi64(param.b);
     __m512i vb_precomp = _mm512_set1_epi64(param.b_precomp);
     __m512i vp = _mm512_set1_epi64(param.p);
@@ -551,7 +555,7 @@ Vector unrolling_shoup_scale_avx512(Parameters param, Vector v)
         _mm512_storeu_si512((__m512 *)(res.elements + i + 48), merge_3);
     }
     for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+        *(res.elements + i) = shoup_32(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
 
@@ -565,10 +569,10 @@ static inline __m512i _shoup_mullo_avx512(__m512i va, __m512i vb, __m512i vb_pre
     return _mm512_min_epu32(vc, _mm512_sub_epi32(vc, vp));
 }
 
-Vector shoup_scale_mullo_avx512(Parameters param, Vector v)
+vector32_t shoup_scale_mullo_avx512_32(param32_t param, vector32_t v)
 {
     ulong size = v.size;
-    Vector res = init_vector(size);
+    vector32_t res = init_vector_32(size);
     __m512i vb = _mm512_set1_epi64(param.b);
     __m512i vb_precomp = _mm512_set1_epi64(param.b_precomp);
     __m512i vp = _mm512_set1_epi64(param.p);
@@ -611,7 +615,7 @@ Vector shoup_scale_mullo_avx512(Parameters param, Vector v)
         _mm512_storeu_si512((__m512 *)(res.elements + i + 48), merge_3);
     }
     for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+        *(res.elements + i) = shoup_32(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
 
@@ -643,10 +647,10 @@ static inline __m512i _shoup_mullo_v2_avx512(__m512i va, __m512i vb, __m512i vb_
     return _mm512_min_epu32(vc, _mm512_sub_epi32(vc, vp));
 }
 
-Vector shoup_scale_mullo_v2_avx512(Parameters param, Vector v)
+vector32_t shoup_scale_mullo_v2_avx512_32(param32_t param, vector32_t v)
 {
     ulong size = v.size;
-    Vector res = init_vector(size);
+    vector32_t res = init_vector_32(size);
     __m512i vb = _mm512_set1_epi32(param.b);
     __m512i vb_precomp = _mm512_set1_epi32(param.b_precomp);
     __m512i vp = _mm512_set1_epi32(param.p);
@@ -659,14 +663,14 @@ Vector shoup_scale_mullo_v2_avx512(Parameters param, Vector v)
         _mm512_storeu_si512((__m512i *)(res.elements + i), vc);
     }
     for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+        *(res.elements + i) = shoup_32(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
 
-Vector shoup_b1_scale_avx512(Parameters param, Vector v)
+vector32_t shoup_b1_scale_avx512_32(param32_t param, vector32_t v)
 {
     ulong size = v.size;
-    Vector res = init_vector(size);
+    vector32_t res = init_vector_32(size);
     __m512i vb_precomp = _mm512_set1_epi64(param.b_precomp);
     __m512i vp = _mm512_set1_epi64(param.p);
     ulong i = 0;
@@ -708,7 +712,7 @@ Vector shoup_b1_scale_avx512(Parameters param, Vector v)
         _mm512_storeu_si512((__m512 *)(res.elements + i + 48), merge_3);
     }
     for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+        *(res.elements + i) = shoup_32(*(v.elements + i), param.b, param.b_precomp, param.p);
     return res;
 }
 #endif

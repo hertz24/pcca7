@@ -35,7 +35,7 @@ void prof_repeat(double *min, double *max, profile_target_t target, void *arg);
      *                                                          \
      * @return The time taken by the algorithm in microseconds  \
      */                                                         \
-    double time_algorithm##BIT(vector##BIT##_t (*algorithm)(param##BIT##_t, vector##BIT##_t), param##BIT##_t param, vector##BIT##_t v);
+    double time_algorithm_##BIT(vector##BIT##_t (*algorithm)(param##BIT##_t, vector##BIT##_t), param##BIT##_t param, vector##BIT##_t v);
 
 DECLARE_UTILS(16)
 DECLARE_UTILS(32)

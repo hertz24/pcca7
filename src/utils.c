@@ -23,29 +23,29 @@ void prof_repeat(double *min, double *max, profile_target_t target, void *arg)
 }
 #endif
 
-#define DEFINE_UTILS(BIT)                                                                                                              \
-    static void test_algorithm(void *arg, ulong count)                                                                                 \
-    {                                                                                                                                  \
-        void **data = (void **)arg;                                                                                                    \
-        vector##BIT##_t (*algorithm)(param##BIT##_t, vector##BIT##_t) = *data;                                                         \
-        param##BIT##_t param = *((param##BIT##_t *)*(data + 1));                                                                       \
-        vector##BIT##_t v = *((vector##BIT##_t *)*(data + 2));                                                                         \
-        for (ulong i = 0; i < count; i++)                                                                                              \
-        {                                                                                                                              \
-            prof_start();                                                                                                              \
-            /*                                                                                                                         \
-             * NOTE: the free doesn't affect the measurement of time.                                                                  \
-             */                                                                                                                        \
-            free_vector##BIT(algorithm(param, v));                                                                                     \
-            prof_stop();                                                                                                               \
-        }                                                                                                                              \
-    }                                                                                                                                  \
-                                                                                                                                       \
-    double time_algorithm##BIT(vector##BIT##_t (*algorithm)(param##BIT##_t, vector##BIT##_t), param##BIT##_t param, vector##BIT##_t v) \
-    {                                                                                                                                  \
-        double min, max;                                                                                                               \
-        prof_repeat(&min, &max, test_algorithm, (void *[]){algorithm, &param, &v});                                                    \
-        return min;                                                                                                                    \
+#define DEFINE_UTILS(BIT)                                                                                                               \
+    static void test_algorithm_##BIT(void *arg, ulong count)                                                                            \
+    {                                                                                                                                   \
+        void **data = (void **)arg;                                                                                                     \
+        vector##BIT##_t (*algorithm)(param##BIT##_t, vector##BIT##_t) = *data;                                                          \
+        param##BIT##_t param = *((param##BIT##_t *)*(data + 1));                                                                        \
+        vector##BIT##_t v = *((vector##BIT##_t *)*(data + 2));                                                                          \
+        for (ulong i = 0; i < count; i++)                                                                                               \
+        {                                                                                                                               \
+            prof_start();                                                                                                               \
+            /*                                                                                                                          \
+             * NOTE: the free doesn't affect the measurement of time.                                                                   \
+             */                                                                                                                         \
+            free_vector_##BIT(algorithm(param, v));                                                                                     \
+            prof_stop();                                                                                                                \
+        }                                                                                                                               \
+    }                                                                                                                                   \
+                                                                                                                                        \
+    double time_algorithm_##BIT(vector##BIT##_t (*algorithm)(param##BIT##_t, vector##BIT##_t), param##BIT##_t param, vector##BIT##_t v) \
+    {                                                                                                                                   \
+        double min, max;                                                                                                                \
+        prof_repeat(&min, &max, test_algorithm_##BIT, (void *[]){algorithm, &param, &v});                                               \
+        return min;                                                                                                                     \
     }
 
 DEFINE_UTILS(16)

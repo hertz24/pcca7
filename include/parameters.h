@@ -71,7 +71,7 @@ ulong max_prime_bits(ulong bits);
      *                                                                                                                                     \
      * @return The parameters                                                                                                              \
      */                                                                                                                                    \
-    static inline param##BIT##_t init_parameters##BIT(uint##BIT##_t b, uint##BIT##_t p)                                                    \
+    static inline param##BIT##_t init_parameters_##BIT(uint##BIT##_t b, uint##BIT##_t p)                                                   \
     {                                                                                                                                      \
         return (param##BIT##_t){b, (CAST)(BIT) / p, p};                                                                                    \
     }                                                                                                                                      \
@@ -84,7 +84,7 @@ ulong max_prime_bits(ulong bits);
      *                                                                                                                                     \
      * @return The parameters                                                                                                              \
      */                                                                                                                                    \
-    uint##BIT##_t rand_parameters##BIT(ulong b_bits, ulong p_bits);                                                                        \
+    param##BIT##_t rand_parameters_##BIT(ulong b_bits, ulong p_bits);                                                                      \
                                                                                                                                            \
     /**                                                                                                                                    \
      * @brief Prints the data of the parameters.                                                                                           \
@@ -92,7 +92,7 @@ ulong max_prime_bits(ulong bits);
      * @param out The output                                                                                                               \
      * @param param The parameters to print                                                                                                \
      */                                                                                                                                    \
-    void print_param##BIT(FILE *out, param##BIT##_t param);
+    void print_param_##BIT(FILE *out, param##BIT##_t param);
 
 DECLARE_PARAM(16, uint32_t)
 DECLARE_PARAM(32, uint64_t)

@@ -42,7 +42,17 @@ typedef struct
     unsigned char flags; /**< Bitmask indicating which options were provided */
     int scale;           /**< Scaling factor for the number of points in graphs */
     ulong points;        /**< Number of measurement points */
+    int bits;
 } Options;
+
+typedef struct
+{
+    union
+    {
+        param16_t param_16;
+        param32_t param_32;
+    };
+} Parameters;
 
 /**
  * @brief Initializes the struct of @p options
@@ -71,4 +81,8 @@ int set_options(int argc, char const *argv[], Options *options);
  *
  * @see error.h
  */
-int init_param(Options *options, Parameters *param);
+#define DECLARE_INIT_PARAM(BIT) \
+    int init_param_##BIT(Options *options, Parameters *param);
+
+DECLARE_INIT_PARAM(16)
+DECLARE_INIT_PARAM(32)

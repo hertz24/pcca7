@@ -35,94 +35,110 @@
  * @note @c _b1 versions are optimized for b = 1, which saves one operation.
  */
 /** @{ */
-__attribute__((optimize("no-tree-vectorize"))) static inline uint32_t shoup_ref(uint32_t a, uint32_t b, uint32_t b_precomp, uint32_t p)
-{
-    uint32_t q = ((uint64_t)a * b_precomp) >> 32;
-    uint32_t c = a * b - q * p;
-    if (c >= p)
-        c -= p;
-    return c;
-}
+#define DECLARE_SHOUP(BIT, CAST)                                                                                                                                           \
+    __attribute__((optimize("no-tree-vectorize"))) static inline uint##BIT##_t shoup_ref_##BIT(uint##BIT##_t a, uint##BIT##_t b, uint##BIT##_t b_precomp, uint##BIT##_t p) \
+    {                                                                                                                                                                      \
+        uint##BIT##_t q = ((CAST)a * b_precomp) >> BIT;                                                                                                                    \
+        uint##BIT##_t c = a * b - q * p;                                                                                                                                   \
+        if (c >= p)                                                                                                                                                        \
+            c -= p;                                                                                                                                                        \
+        return c;                                                                                                                                                          \
+    }                                                                                                                                                                      \
+                                                                                                                                                                           \
+    __attribute__((optimize("no-tree-vectorize"))) static inline uint##BIT##_t shoup_b1_ref_##BIT(uint##BIT##_t a, uint##BIT##_t b_precomp, uint##BIT##_t p)               \
+    {                                                                                                                                                                      \
+        uint##BIT##_t q = ((CAST)a * b_precomp) >> BIT;                                                                                                                    \
+        uint##BIT##_t c = a - q * p;                                                                                                                                       \
+        if (c >= p)                                                                                                                                                        \
+            c -= p;                                                                                                                                                        \
+        return c;                                                                                                                                                          \
+    }                                                                                                                                                                      \
+                                                                                                                                                                           \
+    static inline uint##BIT##_t shoup_##BIT(uint##BIT##_t a, uint##BIT##_t b, uint##BIT##_t b_precomp, uint##BIT##_t p)                                                    \
+    {                                                                                                                                                                      \
+        uint##BIT##_t q = ((CAST)a * b_precomp) >> BIT;                                                                                                                    \
+        uint##BIT##_t c = a * b - q * p;                                                                                                                                   \
+        if (c >= p)                                                                                                                                                        \
+            c -= p;                                                                                                                                                        \
+        return c;                                                                                                                                                          \
+    }                                                                                                                                                                      \
+                                                                                                                                                                           \
+    static inline uint##BIT##_t shoup_b1_##BIT(uint##BIT##_t a, uint##BIT##_t b_precomp, uint##BIT##_t p)                                                                  \
+    {                                                                                                                                                                      \
+        uint##BIT##_t q = ((CAST)a * b_precomp) >> BIT;                                                                                                                    \
+        uint##BIT##_t c = a - q * p;                                                                                                                                       \
+        if (c >= p)                                                                                                                                                        \
+            c -= p;                                                                                                                                                        \
+        return c;                                                                                                                                                          \
+    }                                                                                                                                                                      \
+    /** @} */                                                                                                                                                              \
+                                                                                                                                                                           \
+    /**                                                                                                                                                                    \
+     * @defgroup ShoupScale Vector scaling by Shoup's modular multiplication                                                                                               \
+     * @brief Functions to multiply each element of a vector by a scalar modulo p, using Shoup's algorithm.                                                                \
+     *                                                                                                                                                                     \
+     * There are several versions:                                                                                                                                         \
+     *  - @c shoup_scale_ref : reference non-vectorized implementation.                                                                                                    \
+     *  - @c shoup_scale_flint : implementation based on FLINT library.                                                                                                    \
+     *  - @c _neon , @c _avx2 , @c _avx512 : vectorized versions using appropriate SIMD instructions depending on the architecture.                                        \
+     *  - @c _mullo : versions that use the multiply low instruction.                                                                                                      \
+     *  - @c _b1_ : versions optimized for b = 1, saving one operation per element.                                                                                        \
+     *  - @c unrolling_ : versions using loop unrolling.                                                                                                                   \
+     *                                                                                                                                                                     \
+     * @note Vectorized versions are conditionally compiled based on the target architecture.                                                                              \
+     */                                                                                                                                                                    \
+    /** @{ */                                                                                                                                                              \
+    vector##BIT##_t shoup_scale_ref_##BIT(param##BIT##_t param, vector##BIT##_t v);                                                                                        \
+                                                                                                                                                                           \
+    vector##BIT##_t shoup_scale_flint_##BIT(param##BIT##_t param, vector##BIT##_t v);
 
-__attribute__((optimize("no-tree-vectorize"))) static inline uint32_t shoup_b1_ref(uint32_t a, uint32_t b_precomp, uint32_t p)
-{
-    uint32_t q = ((uint64_t)a * b_precomp) >> 32;
-    uint32_t c = a - q * p;
-    if (c >= p)
-        c -= p;
-    return c;
-}
-
-static inline uint32_t shoup(uint32_t a, uint32_t b, uint32_t b_precomp, uint32_t p)
-{
-    uint32_t q = ((uint64_t)a * b_precomp) >> 32;
-    uint32_t c = a * b - q * p;
-    if (c >= p)
-        c -= p;
-    return c;
-}
-
-static inline uint32_t shoup_b1(uint32_t a, uint32_t b_precomp, uint32_t p)
-{
-    uint32_t q = ((uint64_t)a * b_precomp) >> 32;
-    uint32_t c = a - q * p;
-    if (c >= p)
-        c -= p;
-    return c;
-}
-/** @} */
-
-/**
- * @defgroup ShoupScale Vector scaling by Shoup's modular multiplication
- * @brief Functions to multiply each element of a vector by a scalar modulo p, using Shoup's algorithm.
- *
- * There are several versions:
- *  - @c shoup_scale_ref : reference non-vectorized implementation.
- *  - @c shoup_scale_flint : implementation based on FLINT library.
- *  - @c _neon , @c _avx2 , @c _avx512 : vectorized versions using appropriate SIMD instructions depending on the architecture.
- *  - @c _mullo : versions that use the multiply low instruction.
- *  - @c _b1_ : versions optimized for b = 1, saving one operation per element.
- *  - @c unrolling_ : versions using loop unrolling.
- *
- * @note Vectorized versions are conditionally compiled based on the target architecture.
- */
-/** @{ */
-Vector shoup_scale_ref(Parameters param, Vector v);
-
-Vector shoup_scale_flint(Parameters param, Vector v);
+DECLARE_SHOUP(16, uint32_t)
+DECLARE_SHOUP(32, uint64_t)
 
 #if NEON
-Vector shoup_scale_neon(Parameters param, Vector v);
+#define DECLARE_NEON(BIT)                                                                      \
+    vector##BIT##_t shoup_scale_neon_##BIT(param##BIT##_t param, vector##BIT##_t v);           \
+                                                                                               \
+    vector##BIT##_t unrolling_shoup_scale_neon_##BIT(param##BIT##_t param, vector##BIT##_t v); \
+                                                                                               \
+    vector##BIT##_t shoup_scale_mullo_neon_##BIT(param##BIT##_t param, vector##BIT##_t v);     \
+                                                                                               \
+    vector##BIT##_t shoup_b1_scale_neon_##BIT(param##BIT##_t param, vector##BIT##_t v);
 
-Vector unrolling_shoup_scale_neon(Parameters param, Vector v);
-
-Vector shoup_scale_mullo_neon(Parameters param, Vector v);
-
-Vector shoup_b1_scale_neon(Parameters param, Vector v);
+DECLARE_NEON(16)
+DECLARE_NEON(32)
 #endif
 
 #if AVX2
-Vector shoup_scale_avx2(Parameters param, Vector v);
+#define DECLARE_AVX2(BIT)                                                                      \
+    vector##BIT##_t shoup_scale_avx2_##BIT(param##BIT##_t param, vector##BIT##_t v);           \
+                                                                                               \
+    vector##BIT##_t unrolling_shoup_scale_avx2_##BIT(param##BIT##_t param, vector##BIT##_t v); \
+                                                                                               \
+    vector##BIT##_t shoup_scale_mullo_avx2_##BIT(param##BIT##_t param, vector##BIT##_t v);     \
+                                                                                               \
+    vector##BIT##_t shoup_scale_mullo_v2_avx2_##BIT(param##BIT##_t param, vector##BIT##_t v);  \
+                                                                                               \
+    vector##BIT##_t shoup_b1_scale_avx2_##BIT(param##BIT##_t param, vector##BIT##_t v);
 
-Vector unrolling_shoup_scale_avx2(Parameters param, Vector v);
-
-Vector shoup_scale_mullo_avx2(Parameters param, Vector v);
-
-Vector shoup_scale_mullo_v2_avx2(Parameters param, Vector v);
-
-Vector shoup_b1_scale_avx2(Parameters param, Vector v);
+DECLARE_AVX2(16)
+DECLARE_AVX2(32)
 #endif
 
 #if AVX512
-Vector shoup_scale_avx512(Parameters param, Vector v);
+#define DECLARE_AVX512(BIT)                                                                      \
+    vector##BIT##_t shoup_scale_avx512_##BIT(param##BIT##_t param, vector##BIT##_t v);           \
+                                                                                                 \
+    vector##BIT##_t unrolling_shoup_scale_avx512_##BIT(param##BIT##_t param, vector##BIT##_t v); \
+                                                                                                 \
+    vector##BIT##_t shoup_scale_mullo_avx512_##BIT(param##BIT##_t param, vector##BIT##_t v);     \
+                                                                                                 \
+    vector##BIT##_t shoup_scale_mullo_v2_avx512_##BIT(param##BIT##_t param, vector##BIT##_t v);  \
+                                                                                                 \
+    vector##BIT##_t shoup_b1_scale_avx512_##BIT(param##BIT##_t param, vector##BIT##_t v);
 
-Vector unrolling_shoup_scale_avx512(Parameters param, Vector v);
-
-Vector shoup_scale_mullo_avx512(Parameters param, Vector v);
-
-Vector shoup_scale_mullo_v2_avx512(Parameters param, Vector v);
-
-Vector shoup_b1_scale_avx512(Parameters param, Vector v);
+DECLARE_AVX512(16)
+DECLARE_AVX512(32)
 #endif
 /** @} */
 

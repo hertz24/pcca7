@@ -57,7 +57,7 @@ extern const int NB_ALGO;
         vector##BIT##_t (*const address)(param##BIT##_t, vector##BIT##_t); \
     } algorithm##BIT##_t;                                                  \
                                                                            \
-    extern const algorithm##BIT##_t algorithms##BIT[];
+    extern const algorithm##BIT##_t algorithms_##BIT[];
 
 DECLARE_ALGO_REGISTRY(16)
 DECLARE_ALGO_REGISTRY(32)

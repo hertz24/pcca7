@@ -17,11 +17,11 @@
 #include "algo_registry.h"
 #include "utils.h"
 
-int init_data_tab(void);
-
-void free_data_tab(void);
-
 #define DECLARE_GRAPH(BIT)                                                  \
+    int init_data_tab_##BIT(void);                                          \
+                                                                            \
+    void free_data_tab_##BIT(void);                                         \
+                                                                            \
     /**                                                                     \
      * @brief Generates graphs for given algorithms using given parameters. \
      *                                                                      \
@@ -34,7 +34,7 @@ void free_data_tab(void);
      * @retval 0 on success                                                 \
      * @retval 1 on fail                                                    \
      */                                                                     \
-    int generate_graph##BIT(int scale, ulong nb_points, param##BIT##_t param, const AlgorithmID algorithm_ids[], int nb_algo);
+    int generate_graph_##BIT(int scale, ulong nb_points, param##BIT##_t param, const AlgorithmID algorithm_ids[], int nb_algo);
 
 DECLARE_GRAPH(16)
 DECLARE_GRAPH(32)

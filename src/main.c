@@ -7,7 +7,7 @@
 
 #include "../include/options.h"
 
-static int generate_graphs(Options options, Parameters param)
+static int generate_graphs(Options options, param32_t param)
 {
     ulong scale = options.scale;
     ulong points = options.points;
@@ -26,25 +26,25 @@ static int generate_graphs(Options options, Parameters param)
     };
 
     // Continues to generate graphs even if there is an error
-    int ret = generate_graph(scale, points, param, graph_1, TAB_SIZE(graph_1));
+    int ret = generate_graph_32(scale, points, param, graph_1, TAB_SIZE(graph_1));
 #if NEON
-    ret |= generate_graph(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_NEON, UNROLLING_SHOUP_SCALE_NEON}, 2);
-    ret |= generate_graph(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_NEON, SHOUP_SCALE_MULLO_NEON}, 2);
+    ret |= generate_graph_32(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_NEON, UNROLLING_SHOUP_SCALE_NEON}, 2);
+    ret |= generate_graph_32(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_NEON, SHOUP_SCALE_MULLO_NEON}, 2);
     if (options.b == 1)
-        ret |= generate_graph(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_NEON, SHOUP_B1_SCALE_NEON}, 2);
+        ret |= generate_graph_32(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_NEON, SHOUP_B1_SCALE_NEON}, 2);
 #elif AVX2
-    ret |= generate_graph(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_AVX2, UNROLLING_SHOUP_SCALE_AVX2}, 2);
-    ret |= generate_graph(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_AVX2, SHOUP_SCALE_MULLO_AVX2}, 2);
-    ret |= generate_graph(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_MULLO_AVX2, SHOUP_SCALE_MULLO_V2_AVX2}, 2);
+    ret |= generate_graph_32(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_AVX2, UNROLLING_SHOUP_SCALE_AVX2}, 2);
+    ret |= generate_graph_32(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_AVX2, SHOUP_SCALE_MULLO_AVX2}, 2);
+    ret |= generate_graph_32(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_MULLO_AVX2, SHOUP_SCALE_MULLO_V2_AVX2}, 2);
     if (options.b == 1)
-        ret |= generate_graph(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_AVX2, SHOUP_B1_SCALE_AVX2}, 2);
+        ret |= generate_graph_32(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_AVX2, SHOUP_B1_SCALE_AVX2}, 2);
 #endif
 #if AVX512
-    ret |= generate_graph(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_AVX512, UNROLLING_SHOUP_SCALE_AVX512}, 2);
-    ret |= generate_graph(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_AVX512, SHOUP_SCALE_MULLO_AVX512}, 2);
-    ret |= generate_graph(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_MULLO_AVX512, SHOUP_SCALE_MULLO_V2_AVX512}, 2);
+    ret |= generate_graph_32(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_AVX512, UNROLLING_SHOUP_SCALE_AVX512}, 2);
+    ret |= generate_graph_32(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_AVX512, SHOUP_SCALE_MULLO_AVX512}, 2);
+    ret |= generate_graph_32(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_MULLO_AVX512, SHOUP_SCALE_MULLO_V2_AVX512}, 2);
     if (options.b == 1)
-        ret |= generate_graph(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_AVX512, SHOUP_B1_SCALE_AVX512}, 2);
+        ret |= generate_graph_32(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_AVX512, SHOUP_B1_SCALE_AVX512}, 2);
 #endif
     return ret ? ERR_GEN_GRAPHS : 0;
 }
@@ -52,18 +52,18 @@ static int generate_graphs(Options options, Parameters param)
 int main(int argc, char const *argv[])
 {
     rand_init();
-    int ret = init_data_tab();
+    int ret = init_data_tab_32();
     if (ret)
         goto end;
-    Options options = {.flags = 0, .scale = 1, .points = 100};
+    Options options = {.flags = 0, .scale = 1, .points = 100, .bits = 32};
     Parameters param;
     if ((ret = set_options(argc, argv, &options)))
         goto end;
-    if ((ret = init_param(&options, &param)))
+    if ((ret = init_param_32(&options, &param)))
         goto end;
-    ret = generate_graphs(options, param);
+    ret = generate_graphs(options, param.param_32);
 end:
-    free_data_tab();
+    free_data_tab_32();
     rand_clear();
     if (ret)
         PRINT_ERROR(ret);

@@ -42,9 +42,9 @@ ulong max_prime_bits(ulong bits)
 }
 
 #define DEFINE_PARAM(BIT)                                                                                           \
-    param##BIT##_t rand_parameters##BIT(ulong b_bits, ulong p_bits)                                                 \
+    param##BIT##_t rand_parameters_##BIT(ulong b_bits, ulong p_bits)                                                \
     {                                                                                                               \
-        int max = BIT - 1;                                                                                          \
+        ulong max = BIT - 1;                                                                                        \
         if (p_bits >= 2 && p_bits <= max && b_bits <= max && p_bits < b_bits)                                       \
         {                                                                                                           \
             fprintf(stderr, "The number of bits of p must be greater than or equal to the number of bits of b.\n"); \
@@ -61,17 +61,17 @@ ulong max_prime_bits(ulong bits)
         if (p == 2 && b_bits == 2)                                                                                  \
         {                                                                                                           \
             printf("p = 2: the number of bits of b was changed by 1.\n");                                           \
-            return init_parameters##BIT(1, 2);                                                                      \
+            return init_parameters_##BIT(1, 2);                                                                     \
         }                                                                                                           \
         uint32_t b;                                                                                                 \
         do                                                                                                          \
         {                                                                                                           \
             b = n_randbits(state, b_bits);                                                                          \
         } while (p <= b);                                                                                           \
-        return init_parameters##BIT##(b, p);                                                                        \
+        return init_parameters_##BIT(b, p);                                                                         \
     }                                                                                                               \
                                                                                                                     \
-    void print_param##BIT(FILE *out, param##BIT##_t param)                                                          \
+    void print_param_##BIT(FILE *out, param##BIT##_t param)                                                         \
     {                                                                                                               \
         fprintf(out, "b = %u, b_precomp = %u, p = %u\n", param.b, param.b_precomp, param.p);                        \
     }

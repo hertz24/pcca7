@@ -34,8 +34,11 @@
 /** No prime p exists with the given number of bits such that p > b. */
 #define ERR_NO_PRIME_FOR_BITS 7
 
-/** Error while generating graphs */
+/** Error while generating graphs. */
 #define ERR_GEN_GRAPHS 8
+
+/** Error during bit input. */
+#define ERR_BITS 9
 
 /** @} */
 
