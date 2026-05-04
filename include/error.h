@@ -71,6 +71,9 @@
     case ERR_GEN_GRAPHS:                                                                                        \
         fprintf(stderr, "Error occurred while generating the graphs.\n");                                       \
         break;                                                                                                  \
+    case ERR_BITS:                                                                                              \
+        fprintf(stderr, "The bits option only takes 16 or 32 values.\n");                                       \
+        break;                                                                                                  \
     }
 
 #endif

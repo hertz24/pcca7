@@ -17,7 +17,7 @@
         vector##BIT##_t v = init_vector_##BIT(size);                                                                          \
         FLINT_TEST_INIT(state);                                                                                               \
         for (ulong i = 0; i < size; i++)                                                                                      \
-            *(v.elements + i) = n_randbits(state, n_randint(state, 33));                                                      \
+            *(v.elements + i) = n_randbits(state, n_randint(state, BIT + 1));                                                 \
         FLINT_TEST_CLEAR(state);                                                                                              \
         return v;                                                                                                             \
     }                                                                                                                         \

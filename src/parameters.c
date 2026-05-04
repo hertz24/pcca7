@@ -53,7 +53,7 @@ ulong max_prime_bits(ulong bits)
         if (p_bits < 2 || p_bits > max)                                                                             \
         {                                                                                                           \
             ulong lower = (b_bits < 2 || b_bits > max) ? 2 : b_bits;                                                \
-            p_bits = lower + n_randint(state, 32 - lower);                                                          \
+            p_bits = lower + n_randint(state, BIT - lower);                                                         \
         }                                                                                                           \
         if (b_bits > max)                                                                                           \
             b_bits = n_randint(state, p_bits + 1);                                                                  \
