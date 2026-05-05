@@ -16,18 +16,15 @@ void rand_clear(void)
 
 uint32_t rand_prime(ulong bits)
 {
-    if (bits < 2 || bits > 31)
-        bits = 2 + n_randint(state, 30);
+    if (bits < 2 || bits > 32)
+        return 0;
     return n_randprime(state, bits, 1);
 }
 
 uint32_t max_prime_bits(ulong bits)
 {
     if (bits < 2 || bits > 32)
-    {
-        fprintf(stderr, "The number of bits must be between 2 and 32.\n");
         return 0;
-    }
     uint32_t x = (1 << bits) - 1;
     while (FLINT_BIT_COUNT(x) == bits)
     {
@@ -43,24 +40,14 @@ uint32_t max_prime_bits(ulong bits)
 
 Parameters rand_parameters(ulong b_bits, ulong p_bits)
 {
-    if (p_bits >= 2 && p_bits <= 31 && b_bits <= 31 && p_bits < b_bits)
-    {
-        fprintf(stderr, "The number of bits of p must be greater than or equal to the number of bits of b.\n");
+    /*
+     * NOTE: the maximal number of bits used are 31.
+     */
+    if (b_bits > 32 || p_bits < 2 || p_bits > 32 || p_bits < b_bits)
         return (Parameters){0};
-    }
-    if (p_bits < 2 || p_bits > 31)
-    {
-        ulong lower = (b_bits < 2 || b_bits > 31) ? 2 : b_bits;
-        p_bits = lower + n_randint(state, 32 - lower);
-    }
-    if (b_bits > 31)
-        b_bits = n_randint(state, p_bits + 1);
+    if (b_bits == 2 && p_bits == 2)
+        return init_parameters(2, 3);
     uint32_t p = rand_prime(p_bits);
-    if (p == 2 && b_bits == 2)
-    {
-        printf("p = 2: the number of bits of b was changed by 1.\n");
-        return init_parameters(1, 2);
-    }
     uint32_t b;
     do
     {

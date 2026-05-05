@@ -8,11 +8,11 @@ int main(void)
         fprintf(stderr, "test_equality: the print statements in the functions under test are not silenced.\n");
     rand_init();
     for (int i = 0; i < NB_TESTS; i++)
-        for (ulong j = 0; j <= 32; j++)
-            for (ulong k = 0; k <= 32; k++)
+        for (ulong j = 0; j < 32; j++)
+            for (ulong k = 2; k < 32; k++)
             {
                 Parameters param = rand_parameters(j, k);
-                if (j > k && j <= 31 && k >= 2 && k <= 31)
+                if (k < j)
                     continue;
                 Vector rand_v = rand_vector(VECTOR_SIZE);
 

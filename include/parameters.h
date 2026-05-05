@@ -60,9 +60,10 @@ void rand_clear(void);
 /**
  * @brief Returns a random prime number.
  *
- * @param bits The number of bits of the prime number. If @p bits < 2 or @p bits > 31, then the number of bits of @c p is random in [2, 31].
+ * @param bits The number of bits of the prime number.
  *
- * @return The prime number
+ * @retval The prime number
+ * @retval 0 if @p bits is not in [2, 32]
  */
 uint32_t rand_prime(ulong bits);
 

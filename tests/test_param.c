@@ -12,7 +12,7 @@ int main(void)
             for (ulong k = 0; k <= 32; k++)
             {
                 Parameters param = rand_parameters(j, k);
-                if (j > k && j <= 31 && k >= 2 && k <= 31 && param.p != 0)
+                if ((j > 32 || k < 2 || k > 32 || k < j) && param.p != 0)
                 {
                     FAIL("test_param", &err);
                     fprintf(stderr, "param should be {0}.\n");

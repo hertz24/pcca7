@@ -17,6 +17,8 @@
 #include "algo_registry.h"
 #include "utils.h"
 
+#define MAX_NUMBER_PTS 10000
+
 int init_data_tab(void);
 
 void free_data_tab(void);

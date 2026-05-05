@@ -51,14 +51,14 @@ To execute the project, run
 
 These options are parsed by the `set_options` function and control the generation of the modulus `p` and the multiplier `b` used in the modular arithmetic benchmarks.
 
-| Flag      | Argument  | Description                                                         |
-| --------- | --------- | ------------------------------------------------------------------- |
-| `-p`      | `<prime>` | Sets the prime modulus `p` directly. Must be a prime number.        |
-| `-b`      | `<value>` | Sets the multiplier `b` directly. Must be less than `p`.            |
-| `-p_bits` | `<bits>`  | Generates a random prime modulus `p` with the given number of bits. |
-| `-b_bits` | `<bits>`  | Generates a random multiplier `b` with the given number of bits.    |
-| `-scale`  | `<int>`   | Scaling factor for the number of points in the generated graphs.    |
-| `-pts`    | `<int>`   | Number of measurement points.                                       |
+| Flag      | Argument  | Description                                                                                              |
+| --------- | --------- | -------------------------------------------------------------------------------------------------------- |
+| `-p`      | `<prime>` | Sets the prime modulus `p` directly. Must be a prime number.                                             |
+| `-b`      | `<value>` | Sets the multiplier `b` directly. Must be less than `p`.                                                 |
+| `-p_bits` | `<bits>`  | Generates a random prime modulus `p` with the given number of bits. This value must be between 2 and 31. |
+| `-b_bits` | `<bits>`  | Generates a random multiplier `b` with the given number of bits. This value must be between 0 and 31.    |
+| `-scale`  | `<int>`   | Scaling factor for the number of points in the generated graphs.                                         |
+| `-pts`    | `<int>`   | Number of measurement points.                                                                            |
 
 ### Parameter Generation Rules
 
@@ -68,9 +68,10 @@ These options are parsed by the `set_options` function and control the generatio
 - If `-b_bits` is given, `b` is generated with the specified number of bits with a random prime `p` (greater than `b`).
 - If no options are supplied, random parameters are used.
 - If an option is given several times, only the first one will be considered.
-- If `-x` and `-x_bits` with `x = a` or `x = b` are given, only the first one will be considered.
+- If `-x` and `-x_bits` with `x = a` or `x = b`, or `-scale` or `-pts` are given multiple times, only the first one will be considered.
 - If `-scale` is not given, the scale defaults to 1.
-- If `-pts` is not given, the number of points defaults to 100.
+- If `-pts` is not given, the number of points defaults to 100. The maximum number of points is 10,000.
+- Any negative number input results in an error.
 
 For example, running
 

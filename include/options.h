@@ -12,9 +12,11 @@
 #include "graph.h"
 
 #define OPT_P 1
-#define OPT_B 2
-#define OPT_P_BITS 4
-#define OPT_B_BITS 8
+#define OPT_B 1 << 2
+#define OPT_P_BITS 1 << 3
+#define OPT_B_BITS 1 << 4
+#define OPT_SCALE 1 << 5
+#define OPT_PTS 1 << 6
 
 /**
  * @struct Options

@@ -30,6 +30,8 @@ static int test_set_options(uint32_t p, uint32_t p_bits, uint32_t b, uint32_t b_
     uint32_to_str(p_bits, p_bits_str);
     uint32_to_str(b_bits, b_bits_str);
     int verify_prime = (n_is_prime(p)) ? 0 : ERR_PRIME;
+    int verify_p_bits = (p_bits >= 2 && p_bits <= 31) ? 0 : INVALID_P_BITS;
+    int verify_b_bits = (b_bits <= 31) ? 0 : INVALID_B_BITS;
     struct
     {
         int argc;
@@ -39,16 +41,15 @@ static int test_set_options(uint32_t p, uint32_t p_bits, uint32_t b, uint32_t b_
     } tests[] = {
         {1, {"./pcca7"}, 0, 0},
         {3, {"./pcca7", "-p", p_str}, OPT_P, verify_prime},
-        {3, {"./pcca7", "-p_bits", p_bits_str}, OPT_P_BITS, 0},
+        {3, {"./pcca7", "-p_bits", p_bits_str}, OPT_P_BITS, verify_p_bits},
         {3, {"./pcca7", "-b", b_str}, OPT_B, 0},
-        {3, {"./pcca7", "-b_bits", b_bits_str}, OPT_B_BITS, 0},
+        {3, {"./pcca7", "-b_bits", b_bits_str}, OPT_B_BITS, verify_b_bits},
         {5, {"./pcca7", "-p", p_str, "-b", b_str}, OPT_P | OPT_B, verify_prime},
-        {5, {"./pcca7", "-p_bits", p_bits_str, "-b", b_str}, OPT_P_BITS | OPT_B, 0},
-        {5, {"./pcca7", "-p", p_str, "-b_bits", b_bits_str}, OPT_P | OPT_B_BITS, verify_prime},
-        {5, {"./pcca7", "-p_bits", p_bits_str, "-b_bits", b_bits_str}, OPT_P_BITS | OPT_B_BITS, 0},
-        {7, {"./pcca7", "-p_bits", p_bits_str, "-p", p_str, "-b", b_str}, OPT_P_BITS | OPT_B, 0},
-        {7, {"./pcca7", "-p_bits", p_bits_str, "-not_exist", p_str, "-b", b_str}, OPT_P_BITS | OPT_B, ERR_UNRECOGNIZED},
-    };
+        {5, {"./pcca7", "-p_bits", p_bits_str, "-b", b_str}, OPT_P_BITS | OPT_B, verify_p_bits},
+        {5, {"./pcca7", "-p", p_str, "-b_bits", b_bits_str}, OPT_P | OPT_B_BITS, (verify_prime) ? verify_prime : verify_b_bits},
+        {5, {"./pcca7", "-p_bits", p_bits_str, "-b_bits", b_bits_str}, OPT_P_BITS | OPT_B_BITS, (verify_p_bits) ? verify_p_bits : verify_b_bits},
+        {7, {"./pcca7", "-p_bits", p_bits_str, "-p", p_str, "-b", b_str}, OPT_P_BITS | OPT_B, verify_p_bits},
+        {7, {"./pcca7", "-p_bits", p_bits_str, "-not_exist", p_str, "-b", b_str}, OPT_P_BITS | OPT_B, (verify_p_bits) ? verify_p_bits : ERR_UNRECOGNIZED}};
     for (size_t i = 0; i < TAB_SIZE(tests); i++)
         if (test_options(tests[i].argc, tests[i].argv, tests[i].expected_flags, tests[i].expected_ret, err))
             return 1;

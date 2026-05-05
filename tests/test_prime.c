@@ -7,21 +7,16 @@ int main(void)
     if (begin(&out, &err))
         fprintf(stderr, "test_prime: the print statements in the functions under test are not silenced.\n");
     rand_init();
-    uint32_t p;
     for (int i = 0; i < NB_TESTS; i++)
-        for (ulong j = 0; j <= 32; j++)
+        for (ulong j = 0; j <= 64; j++)
         {
-            if (!n_is_prime((p = rand_prime(j))))
+            uint32_t p = rand_prime(j);
+            if (((j < 2 || j > 32) && p != 0) || ((j >= 2 && j <= 32) && !n_is_prime(p)))
             {
                 FAIL("test_prime", &err);
+                if ((j < 2 || j > 32) || p != 0)
+                    fprintf(stderr, "%lu is not in [2, 32] and must return 0.\n", j);
                 fprintf(stderr, "%d isn't a prime number.\n", p);
-                ret = 1;
-                goto end;
-            }
-            if (p >= (1UL << 31))
-            {
-                FAIL("test_prime", &err);
-                fprintf(stderr, "%d is greater than or equal to 2^{31}.\n", p);
                 ret = 1;
                 goto end;
             }

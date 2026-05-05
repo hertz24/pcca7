@@ -8,12 +8,12 @@ int main(void)
         fprintf(stderr, "test_shoup: the print statements in the functions under test are not silenced.\n");
     rand_init();
     for (int i = 0; i < NB_TESTS; i++)
-        for (ulong j = 0; j <= 32; j++)
-            for (ulong k = 0; k <= 32; k++)
+        for (ulong j = 0; j < 32; j++)
+            for (ulong k = 2; k < 32; k++)
                 for (ulong l = 0; l <= 32; l++)
                 {
                     Parameters param = rand_parameters(j, k);
-                    if (j > k && j <= 31 && k >= 2 && k <= 31)
+                    if (k < j)
                         continue;
                     uint32_t a = n_randbits(state, l);
                     uint32_t ref = (uint64_t)a * param.b % param.p;
