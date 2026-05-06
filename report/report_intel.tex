@@ -1,0 +1,1028 @@
+\documentclass{article}
+\usepackage{graphicx,amsmath,parskip,cancel,listings,color,float,caption,titling}
+\usepackage[ruled, vlined, linesnumbered]{algorithm2e}
+\usepackage[table]{xcolor}
+\usepackage[margin=1.5in]{geometry}
+
+\captionsetup[table]{skip=10pt, justification=centering}
+\captionsetup[figure]{skip=10pt, justification=centering}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstset{
+    language=C,
+    stepnumber=1,
+    showspaces=false,
+    numbers = left,
+    frame = single,
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+}
+
+\title{32-bit Modular Arithmetic and SIMD vectorization}
+\author{Duc Vinh Nguyen, Henry Zheng}
+\date{March 2026}
+
+\begin{document}
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+
+    {\Huge\bfseries 32-bit Modular Arithmetic and SIMD Vectorization\par}
+    \vspace{1.5cm}
+
+    {\Large Duc Vinh Nguyen, Henry Zheng\par}
+    \vspace{1cm}
+
+    {\large March 2026\par}
+    \vspace{2cm}
+
+    \includegraphics[width=0.3\textwidth]{logo.jpg}
+
+    \vfill
+
+    \vspace{1cm}
+\end{titlepage}
+\newpage
+\tableofcontents
+\newpage
+
+
+
+\section{Introduction}
+This project explores and optimizes modular reductions modulo primes $p < 2^{32}$ using SIMD vectorization (AVX2, AVX-512, NEON) along with various techniques and algorithms.
+
+\textbf{Objective:} The aim of this study is to develop an optimized implementation of modular reduction for 32-bit primes, minimizing execution time through SIMD vectorization.
+
+
+
+\section{Fundamental Cost of Modular Reduction}
+The naive approach to computing $a \pmod{n}$ is to evaluate:
+\begin{equation}
+    a - \left\lfloor \frac{a}{n} \right\rfloor \cdot n
+\end{equation}
+
+However, on modern processor architectures (Intel, AMD,\dots), integer division has a significantly higher computational cost compared to basic arithmetic operations such as additions and multiplications.
+
+Since equation (1) requires an integer division, a multiplication and a subtraction operation, it is considered highly inefficient from both a software and hardware perspective.
+
+
+
+\section{Shoup's Modular Multiplication}
+Shoup's algorithm is based on precomputation to avoid costly operations.
+
+\begin{algorithm}[H]
+    \caption{Shoup's modular multiplication algorithm}
+
+    % Input and Output definitions
+    \SetKwInOut{Input}{Input}
+    \SetKwInOut{Output}{Output}
+
+    % The content
+    \Input{$A, B \in [0, p[$, we suppose that $p < \beta$/2 \\
+    \hspace{1.2cm} precompute $B' = \lfloor B\beta/p \rfloor$}
+    \Output{$R = AB \bmod p$}
+
+    \BlankLine
+
+    % Steps
+    $Q \leftarrow \lfloor AB'/\beta \rfloor$ \quad ;\\
+    $R \leftarrow (AB - Qp) \bmod \beta$ \quad ;
+
+    \If{$R \ge p$}{
+        $R \leftarrow R - p$\;
+    }
+\end{algorithm}
+
+
+\subsection{Input Constraint:}
+To ensure the correctness of the modular reduction and prevent register overflow during SIMD operations,
+the following conditions must be satisfied:
+\begin{itemize}
+    \item \textbf{Word Size ($\beta$):} Set to $2^{32}$ for 32-bit modular arithmetic
+    \item \textbf{Input 1 ($A$):} An integer defined over 32 bits
+    \item \textbf{Input 2 ($B$):} Integer within the range $[0, p[$
+    \item \textbf{Modulus ($p$):} A prime number defined over 31 bits ($p < 2^{31}$)
+\end{itemize}
+
+
+\subsection{Theorem}
+Let $p$ be a prime number such that $p < \beta/2$ where $\beta = 2^{32}$. Given an integer $A$ defined over 32 bits and
+$B \in [0, p)$, let $B'$ be the precomputed value $B' = \lfloor B\beta/p \rfloor$.
+If the estimated quotient is defined as $Q = \lfloor AB'/\beta \rfloor$, then the intermediate remainder $R = AB - Qp$ satisfies the following condition:
+$$0 \le AB - Qp < 2p$$
+
+
+\subsection{Input Hypothesis:}
+\textbf{Can $p$ be any integer over 32 bits ?} \\
+No, one particularly interesting case where Shoup's algorithm will fail is for $p \ge 2^{31}$.
+Since we know that:
+$$0 \le AB - Qp < 2p$$
+
+If $p \ge 2^{31}$, then $2p \ge 2^{32}$. Therefore, in some cases $AB - Qp$ may exceed $2^{32}$. This causes tremendous errors in the calculation because
+all bits beyond 32 bits are destroyed when we reduce modulo $\beta$
+
+\textbf{Does $p$ have to necessarily be a prime number ?} \\
+No, the algorithm mainly uses precomputations (Barrett Reduction), optimized for calculation of $a \mod n$ without constraints on $n$.
+But for the sake of this project, $n$ is a prime number ($p$).
+
+\textbf{Can $b$ be any integer over 32 bits ?} \\
+No, suppose $ b > p $, we can rewrite $b$ as:
+\[b = q'\cdot p + r'\]
+Thus the calculation for the precomputed value $B'$ is:
+\[B' = \left\lfloor\frac{(q' \cdot p + r')\cdot 2^{32}}{p}\right\rfloor\]
+\[B' = q' \cdot 2^{32} + \left\lfloor\frac{r'\cdot 2^{32}}{p}\right\rfloor\]
+With a focus on 32 bits in this project, $B'$ in the case of $b>p$ cannot be stored within 32 bits and will overflow.
+
+\textbf{Can $a$ be any integer over 32 bits ?} \\
+Yes, $a$ can be any integer defined over 32 bits.
+
+\newpage
+\subsection{Precomputational Logic (Barrett Reduction)}
+The precomputed value $B'$ is defined over 32 bits as:
+\[B'= \lfloor (B \cdot 2^{32}) / p \rfloor \]
+
+When computing the $A\cdot B\pmod{p}$ :
+\begin{equation*}
+    A \cdot B \pmod{p} = A \cdot B -  \left\lfloor \frac{A \cdot B}{p} \right\rfloor \cdot p
+\end{equation*}
+We can rewrite this:
+\begin{align*}
+    A \cdot B \pmod{p} & = A \cdot B -  \left\lfloor \frac{A \cdot \left\lfloor (\frac{B \cdot 2^{32}}{p}) \right\rfloor}{2^{32}} \right\rfloor \cdot p \\
+                       & \approx A \cdot B -  \left\lfloor \frac{A \cdot B'}{2^{32}} \right\rfloor \cdot p                                              \\
+\end{align*}
+
+
+\subsection{Fundamental Principle}
+Given $x$, the quotient of two 32-bit integers: \\
+The proof of this algorithm is based on the non-decimal value of ($\lfloor x \rfloor$):
+$$x - 1 < \lfloor x \rfloor \le x$$
+We can rewrite this as:
+$$0 \le x - \lfloor x \rfloor < 1$$
+
+
+\subsection{Demonstration:}
+The algorithm uses the precomputation $B' = \lfloor B\beta/p \rfloor$ such that:
+\[0 \le \frac{B\beta}{p} - \left\lfloor \frac{B\beta}{p} \right\rfloor < 1 \]
+\begin{equation}
+    0 \le \frac{B\beta}{p} - B' < 1
+\end{equation}
+
+Using the same logic, the algorithm estimates the quotient $Q = \lfloor AB'/\beta \rfloor$  such that:
+\[0 \le \frac{AB'}{\beta} - \left\lfloor\frac{AB'}{\beta}\right\rfloor < 1\]
+\begin{equation}
+    0 \le \frac{AB'}{\beta} - Q < 1
+\end{equation}
+
+We now prove that the remainder $R = (A \cdot B -Q \cdot p)$ lies within the interval $[0, 2p[$:
+
+We first multiply the equation (1) by $Ap/\beta$:
+\[0 \le \left( \frac{B\beta}{p} - B' \right) \cdot \frac{Ap}{\beta} < 1 \cdot \frac{Ap}{\beta}\]
+\begin{equation}
+    0 \le AB - \frac{AB'p}{\beta} < \frac{Ap}{\beta}
+\end{equation}
+
+Similarly, we multiply the equation (2) by $p$:
+\[0 \le \left( \frac{AB'}{\beta} - Q \right) \cdot p < 1 \cdot p\]
+\begin{equation}
+    0 \le \frac{AB'p}{\beta} - Qp < p
+\end{equation}
+
+By adding equations (3) and (4), we deduce:
+\[0 \le (AB - \cancel{\frac{AB'p}{\beta}}) + (\cancel{\frac{AB'p}{\beta}} - Qp) < \frac{Ap}{\beta} + p\]
+Simplifying this result, we are left with:
+\begin{align*}
+    0 \le AB - Qp & < p + \frac{Ap}{\beta}          \\
+    0 \le AB - Qp & < p \cdot (1 + \frac{A}{\beta})
+\end{align*}
+
+By definition, $A \in [0, p[$ and $p < \beta$, thus $A < \beta$. Therefore we can write:
+\begin{align*}
+    0 \le AB - Qp & < p \cdot (1 + \frac{A}{\beta}) < p\cdot (1 + \frac{\beta}{\beta}) \\
+    0 \le AB - Qp & < p \cdot (1 + 1)                                                  \\
+    0 \le AB - Qp & < 2p                                                               \\
+    0 \le R       & < 2p
+\end{align*}
+
+\textbf{Conclusion:}
+We have now proven that $R \in [0, 2p[$. The final if statement of the algorithm helps correct the remainder: if $R \ge p$, one more step $R\leftarrow R - p$ is needed; if not, $R$ is the correct result.
+
+
+\subsection{Advantages}
+Using the precomputed value $B'$ to approximately calculate $\left\lfloor \frac{A \cdot B}{p} \right\rfloor$ improves upon the naive method in two ways:
+\begin{enumerate}
+    \item \textbf{Storing the precomputed value:}
+          $B'$ is computed with one division and can be stored for use in other modular reductions, provided the same $B$ and the same $p$ are used.
+    \item \textbf{Efficient operations:}
+          Shoup's algorithm replaces slow division operations with fast multiplications and bit shifts. The expression $\frac{A \cdot B'}{2^{32}}$ requires only one multiplication operation and a right bit shift by 32 bits. On a CPU, both multiplication ($\approx$ 0.33 - 0.67 cycles per operations) and bit shift ($\approx$ 0.5 - 1 cycles per operations) are significantly more efficient than division ($\approx$ 6 cycles per operations). A division is approximately 4 - 8 times more costly than a multiplication and bit shift together.
+\end{enumerate}
+
+
+\subsection{SIMD vectorization Implementation}
+We decided to create three versions for implementing a high-performance Shoup algorithm: AVX2, AVX-512 and NEON.
+
+\subsubsection{AVX2}
+For the AVX2 version, we decided to use two main built-in AVX2 functions:
+\texttt{\_mm256\_mul\_epu32(...)} and \texttt{\_mm256\_mullo\_epi32(...)}. \\
+
+\textbf{Intel \texttt{\_mm256\_mul\_epu32(...)} version: (Listings 1)} \\
+This function treats the input as unsigned 32-bit integers. However, it only multiplies the even-indexed slots (0, 2, 4, 6) of the vector to make room for the full 64-bit results.
+
+This implementation uses purely \texttt{\_mm256\_mul\_epu32(...)} at all stages of calulations thus we must data shuffle the registers to their correct position. The following are the steps per loop:
+
+\begin{itemize}
+    \item Load 8 32 bit integers into the register
+    \item Split the loaded register into even-indexed slots (0, 2, 4, 6) and odd-indexed slots (1, 3, 5, 7) into 64 bit registers
+    \item Compute Shoup's Modular Reduction (\texttt{\_shoup\_avx2(...)}) over these registers
+    \item Recombine the even and odd indexed slots and store
+    \item Compute the leftover elements
+\end{itemize}
+
+\textbf{Intel \texttt{\_mm256\_mullo\_epi32(...)} version 1: (Listings 2)} \\
+This function treats the input as signed 32-bit integers. It multiplies all 8 pairs of numbers but only stores the bottom half of the result.
+
+This implementation uses \texttt{\_mm256\_mul\_epu32(...)} to compute the quotient:
+\[Q = \lfloor (A \cdot B') / 2^{32} \rfloor\]
+but \texttt{\_mm256\_mullo\_epi32()} to compute all other steps per loop. The following are the steps per loop:
+\begin{itemize}
+    \item Load 8 32 bit integers into the register
+    \item Split the loaded register into even-indexed slots (0, 2, 4, 6) and odd-indexed slots (1, 3, 5, 7) into 64 bit registers
+    \item Compute Shoup's Modular Reduction (\texttt{\_shoup\_mullo\_avx2(...)}) over these registers
+    \item Recombine the even and odd indexed slots and store
+    \item Compute the leftover elements
+\end{itemize}
+
+
+\textbf{Intel \texttt{\_mm256\_mullo\_epi32(...)} version 2: (Listings 3)} \\
+Derived from the previous version, this version aims to regroup the vector registers immediately after the
+multiplication step:
+\[Q = \lfloor (A \cdot B') / 2^{32} \rfloor\]
+By restoring the standard 8-lane 32-bit layout early, the function eliminates the need to perform parallel logic paths.
+This, in theory, should reduce the workload.
+
+In order to implement this version, we create an Auxiliary function \texttt{\_mulhi\_emul\_avx2(...)} which emulates a native 'multiply-high' instruction for unsigned 32-bit integers. It computes the full 64-bit products of two packed vectors, extracts the most significant 32 bits from each result, and repacks them into a single 256-bit destination register.
+
+The following are the steps per loop:
+\begin{itemize}
+    \item Load 8 32 bit integers into the register
+    \item Split the loaded register into even-indexed slots (0, 2, 4, 6) and odd-indexed slots (1, 3, 5, 7) into 64 bit registers to compute the quotient
+    \item Recombine the even and odd indexed slots
+    \item Continue with Shoup's Modular Reduction (\texttt{\_shoup\_mullo\_v2\_avx2(...)})
+    \item Compute the leftover elements
+\end{itemize}
+
+
+\subsection{Performance}
+The performance benchmarks were run on AMD and ARM architectures, by executing \texttt{./pcca7 -b\_bits 31 -pts 1000}.
+\subsubsection{Overall Hypothesis}
+With a rough preliminary analysis, using SIMD operations should provide us with a maximum acceleration of 8x-16x since the registers can hold and operate on 8 32 bit unsigned integers (for AVX2) and 16 32 bit unsigned integers (for AVX512) simultanously.
+
+One caveate that must be considered is that all implementation uses \texttt{\_mm256\_mul\_epu32(...)} to calculate the quotient defined as $Q = \lfloor A \cdot B'/\beta \rfloor$. This operation requires a data shuffle to correctly align the vectors into 64 bit lanes then recombining them at later stages. This reduces the acceleration factor of SIMD implementations at worst by half (4x-8x depending on AVX2 or AVX512)
+
+\subsubsection{Equipment details for AMD architecture}
+\begin{itemize}
+    \item Processor: AMD Ryzen™ 5 8600G (Zen 4)
+    \item Instruction Sets Supported: AVX, AVX2 and AVX-512
+    \item Compiler: GCC 13.3.0 with optimization flag \texttt{-O3}
+\end{itemize}
+
+\subsubsection{Equipment details for ARM architecture}
+\begin{itemize}
+    \item Processor: Apple M1
+    \item Instruction Sets Supported: NEON
+    \item Compiler: GCC 13.3.0 with optimization flag \texttt{-O3}
+\end{itemize}
+\textbf{Note:} The benchmarks were run in a virtual machine.
+
+
+\subsubsection{Choice of unrolling}
+One way to optimize for faster functions through vectorization is Loop Unrolling.
+This technique consists of expanding the body of a loop to process multiple iterations at once.
+
+The results below were obtained by measuring the execution time between a standard version and unrolled version of Listing 2: AVX2 Implementation of Shoup’s Modular Reduction
+
+\textbf{Hypothesis:} The unrolled version should perform better than the standard version
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{graphs/unrolling_standard.png}
+    \caption{Execution time comparison: Standard vs. Unrolled}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \rowcolors{2}{green!10}{white}
+    \begin{tabular}{|l|c|c|c|c|c|}
+        \hline
+        Size & Standard & Unrolled & Percentage difference \\ \hline
+        100  & 0.018    & 0.018    & $+0.00\%$             \\
+        200  & 0.036    & 0.036    & $+0.00\%$             \\
+        300  & 0.051    & 0.051    & $+0.00\%$             \\
+        400  & 0.063    & 0.062    & $-0.02\%$             \\
+        500  & 0.077    & 0.077    & $+0.00\%$             \\
+        600  & 0.089    & 0.089    & $+0.00\%$             \\
+        700  & 0.103    & 0.104    & $-0.01\%$             \\
+        800  & 0.116    & 0.114    & $-0.02\%$             \\
+        900  & 0.130    & 0.128    & $-0.02\%$             \\
+        1000 & 0.145    & 0.141    & $-0.03\%$             \\
+        \hline
+    \end{tabular}
+    \caption{Execution time of implementations with and without unrolling in microseconds}
+\end{table}
+
+\textbf{Observation: }On average, the Unrolled implementation is 0.01\% faster
+than the standard version.
+
+\textbf{Conclusion:} We expected to see a bigger performance gap favoring the unrolled version but from the results obtained, this doesn't seem to be the case. We can conclude that an unrolled version for our implementation of Shoup's Modular Multiplication is not favorable and just as fast as the standard version.
+
+
+\subsubsection{Choice between mullo\_epi32 and mul\_epu32}
+mullo\_epi32 and mul\_epu32 both produce at max 64-bit results, the key difference is the former operation only truncates the results and only stores the
+32 lower bits of the results whereas the latter stores the full 64-bit results.
+
+The results below were obtained by measuring the execution time between the two variations described in Section 3.8.1
+
+\textbf{Hypothesis:} The variant mullo\_epi32 should perform better than the variant mul\_epu32 as it uses fewer operations overall.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{graphs/mul_vs_mullo.png}
+    \caption{Execution time comparison: mullo\_epi32 vs. mul\_epu32}
+\end{figure}
+\begin{table}[H]
+    \centering
+    \rowcolors{2}{green!10}{white}
+    \begin{tabular}{|l|c|c|c|c|c|}
+        \hline
+        Size & mul\_epu32 & mullo\_epi32 & Percentage difference \\ \hline
+        100  & 0.018      & 0.038        & $+2.70\%$             \\
+        200  & 0.036      & 0.066        & $-4.35\%$             \\
+        300  & 0.051      & 0.090        & $-3.23\%$             \\
+        400  & 0.063      & 0.107        & $-5.31\%$             \\
+        500  & 0.077      & 0.131        & $-5.07\%$             \\
+        600  & 0.089       & 0.150        & $-7.98\%$             \\
+        700  & 0.103      & 0.173        & $-5.98\%$             \\
+        800  & 0.116      & 0.190        & $-7.32\%$             \\
+        900  & 0.130      & 0.213        & $-8.19\%$             \\
+        1000 & 0.145      & 0.232        & $-6.83\%$             \\
+        \hline
+    \end{tabular}
+    \caption{Execution time of mullo\_epi32 and mul\_epu32 implementation in milliseconds}
+\end{table}
+
+\textbf{Observation:} We can observe that at the smaller sizes (100), mullo\_epi32 is slower than the standard mul\_epu32
+implementation by around 2\%. But the efficiency gain starts to show once the vector size hits 200 and above.
+Across all the vector sizes, the average percentage gain is 5.15\%
+
+\textbf{Conclusion:} The mullo\_epi32 version is effectively faster than the mul\_epu32 version by about 5\%, this speedup is especially seen for bigger vectors sizes.
+The mullo\_epi32 version is the better implementation
+
+\subsubsection{Versions of mullo:}
+Both versions use mullo as the main multiplication operation, the key difference between these two versions is when the regrouping happens for the vector registers.
+
+The results below are obtained by measuring the execution time between two implementations using \texttt{\_mm256\_mullo\_epi32(...)} described in Section 3.8.1
+
+\textbf{Hypothesis:} The second version implementation should perform better, it carries out less redundant code by
+regrouping early the vector registers
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{graphs/graph5.png}
+    \caption{Execution time comparison between the two versions of multiply low}
+\end{figure}
+\begin{table}[H]
+    \centering
+    \rowcolors{2}{green!10}{white}
+    \begin{tabular}{|l|c|c|c|c|c|}
+        \hline
+        Size & Version 1 & Version 2 & Percentage difference \\ \hline
+        100  & 0.038     & 0.029     & $-23.68\%$            \\
+        200  & 0.066     & 0.045     & $-31.81\%$            \\
+        300  & 0.090     & 0.060     & $-33.33\%$            \\
+        400  & 0.107     & 0.068     & $-25.27\%$            \\
+        500  & 0.131     & 0.089     & $-18.34\%$            \\
+        600  & 0.150    & 0.096     & $-23.2\%$             \\
+        700  & 0.173     & 0.110     & $-24.13\%$            \\
+        800  & 0.190     & 0.126     & $-19.23\%$            \\
+        900  & 0.213     & 0.137     & $-22.15\%$            \\
+        1000 & 0.232     & 0.142     & $-26.42\%$            \\
+        \hline
+    \end{tabular}
+    \caption{Execution time of the two versions of multiply low implementation in milliseconds}
+\end{table}
+
+\textbf{Observations:}
+From the results, we can observe that version 2 is overall faster than version 1. On average, the percentage of accleration is 
+around 22.108\% giving us a factor of acceleration is $\approx$ 1.2x
+
+\textbf{Conclusion:}
+Version 2 is the better implementation of version 1 running around 20\% faster.
+\subsubsection{Overall Performance}
+It is worth noting that AVX2 uses 256-bit registers to process up to eight 32-bit integers, while AVX-512 uses 512-bit registers for up to sixteen. Furthermore, the AVX-512 version uses the same functions and operations as the AVX2 version.
+
+To measure the best performance output, we decided that the fastest implementation : mullo version 2 (rf. Listings 5 - 7) 
+
+The results below were obtained by measuring the execution time of different implementations of modular reduction:
+\begin{itemize}
+    \item \textbf{Naive scale:} The base operation (\%)
+    \item \textbf{Shoup scale (reference) :} Shoup's Modular Multiplication without optimization
+    \item \textbf{Shoup scale (FLINT) :} FLINT's modular reduction implementation
+    \item \textbf{Shoup scale (AVX2) :} Shoup's Modular Multiplication with AVX2 optimization (mullo version 2)
+    \item \textbf{Shoup scale (AVX-512) :} Shoup's Modular Multiplication with AVX-512 optimization (mullo version 2)
+\end{itemize}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{graphs/Overall_Performance.jpeg}
+    \caption{Execution Time Comparison Between Different Implementation For Modular Reduction}
+\end{figure}
+\begin{table}[H]
+    \centering
+    \rowcolors{2}{green!10}{white}
+    \begin{tabular}{|c|c|c|c|c|c|}
+        \hline
+        Size & Naive & Shoup ref & FLINT & Shoup AVX2 & Shoup AVX-512 \\ \hline
+        100  & 0.186 & 0.137   & 0.096 & 0.029      & 0.020        \\
+        200  & 0.385 & 0.285   & 0.196 & 0.045      & 0.035        \\
+        300  & 0.593 & 0.418   & 0.287 & 0.060      & 0.045        \\
+        400  & 0.809 & 0.545   & 0.367 & 0.075      & 0.052        \\
+        500  & 0.989 & 0.679   & 0.455 & 0.090      & 0.064        \\
+        600  & 1.180 & 0.812   & 0.541 & 0.098      & 0.074        \\
+        700  & 1.391 & 0.944   & 0.647 & 0.116      & 0.087        \\
+        800  & 1.577 & 1.071   & 0.736 & 0.126      & 0.098        \\
+        900  & 1.790 & 1.210   & 0.798 & 0.137      & 0.101        \\
+        1000 & 1.972 & 1.340   & 0.891 & 0.142      & 0.110       \\
+        \hline
+    \end{tabular}
+    \caption{Execution time for different implementations in relation to the size of the vector in milliseconds}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \rowcolors{2}{red!10}{white}
+    \begin{tabular}{|l|c|c|c|c|c|}
+        \hline
+        Algorithm     & Average \% & Factor of acceleration       \\ \hline
+        FLINT         & 100\%      &  1x   \\
+        Shoup (AVX2)    & 18.3\%     &  5.5x   \\
+        Shoup (AVX-512) & 13.6\%     &  7.4x   \\
+        \hline
+    \end{tabular}
+    \caption{Average Performance Summary of FLINT in relation to Shoup AVX2 and Shoup AVX512 Implementations in Percentages}
+
+\end{table}
+
+\textbf{Observation:}
+From the results retrieved, we want to primarily study the facctor of acceleration of Shoup's Modular Multiplication using AVX2 and AVX512 compared to FLINT's implementation. Shoup (AVX2) is roughly 5.5x times faster than FLINT and Shoup (AVX512) is 7.4x faster.
+
+\textbf{Conclusion:}
+Our Shoup's Modular Multiplication with AVX2 and AVX-512 optimization adapted to 32 bits is 5-7 times faster than FLINT. These results are expected from our Overall Hypothesis.
+
+\subsubsection{NEON's Performance}
+Unlike AVX2 and AVX-512 which use opaque data type, that means we can't directly access to the vectors contained without specifical functions, NEON uses explicit vector types: the name of NEON's types defined the type, the number of bits and the number of elements.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{graphs/arm1.png}
+    \caption{Execution time comparison between the two versions of multiply low}
+\end{figure}
+
+\section{Overall Conclusion:}
+For AVX architectures, we have researched and implemented many versions of Shoup's Modular Reduction. The best performance by far is the implementation \textit{Intel \texttt{\_mm256\_mullo\_epi32(...)} version 2:} with acceleration of a factor of 5.5x for AVX2 and a factor of 7.4x for AVX512.
+
+\section{Other Improvements:}
+
+
+\newpage
+\section{SIMD implementations}
+\label{app:code}
+
+
+\subsection{AVX2}
+\begin{lstlisting}[caption = Auxiliary function of Shoup's modular reduction]
+static inline __m256i _shoup_avx2(__m256i va,
+                                  __m256i vb,
+                                  __m256i vb_precomp,
+                                  __m256i vp)
+{
+    // vq = [ (a_0 * b_precomp_0 = q_0q_1), (a_2 * b_precomp_2 = q_2q_3),
+    // (a_4 * b_precomp_4 = q_4q_5), (a_6 * b_precomp_6 = q_6q_7) ]
+    __m256i vq = _mm256_mul_epu32(va, vb_precomp);
+
+    // vq = [ (0, q_0), (0, q_2), (0, q_4), (0, q_6) ]
+    vq = _mm256_srli_epi64(vq, 32);
+
+    // vab = [ (a_0 * b_0 = ab_0ab_1), (a_2 * b_2 = ab_2ab_3),
+    // (a_4 * b_4 = ab_4ab_5), (a_6 * b_6 = ab_6ab_7) ]
+    __m256i vab = _mm256_mul_epu32(va, vb);
+
+    // vqp = [ (q_0 * p_0 = qp_0qp_1), (q_2 * p_2 = qp_2qp_3),
+    // (q_4 * p_4 = qp_4qp_5), (q_6 * p_6 = qp_6qp_7) ]
+    __m256i vqp = _mm256_mul_epu32(vq, vp);
+
+    // vc = [ (ab_0 - qp_0 = c_0c_1), (ab_2 - qp_2 = c_2c_3),
+    // (ab_4 - qp_4 = c_4c_5), (ab_6 - qp_6 = c_6c_7) ]
+    __m256i vc = _mm256_sub_epi64(vab, vqp);
+
+    // if (c >= p) c -= p
+    return _mm256_min_epu32(vc, _mm256_sub_epi32(vc, vp));
+}
+
+Vector shoup_scale_avx2(Parameters param, Vector v)
+{
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    __m256i vb = _mm256_set1_epi64x(param.b);
+    __m256i vb_precomp = _mm256_set1_epi64x(param.b_precomp);
+    __m256i vp = _mm256_set1_epi64x(param.p);
+    ulong i = 0;
+    for (; i + 7 < size; i += 8)
+    {
+        // Load [ a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7 ]
+        //    = [ (a_1, a_0), (a_3, a_2), (a_5, a_4), (a_7, a_6) ]
+        // but only even index will be directly handled
+        __m256i even_va = _mm256_loadu_si256(
+            (__m256i const *)(v.elements + i)
+        );
+
+        // Need to move odd index to even index to be handled:
+        // [ (0, a_1), (0, a_3), (0, a_5), (0, a_7) ]
+        __m256i odd_va = _mm256_srli_epi64(even_va, 32);
+
+        // Process Even Lanes
+        __m256i even_vc = _shoup_avx2(even_va, vb, vb_precomp, vp);
+
+        // Process Odd Lanes:
+        __m256i odd_vc = _shoup_avx2(odd_va, vb, vb_precomp, vp);
+
+        // Shift odd by 32 bits to the left results back and merge:
+        // [ (c_1, 0), (c_3, 0), (c_5, 0), (c_7, 0) ]
+        __m256i odd_shifted = _mm256_slli_epi64(odd_vc, 32);
+
+        // Merge even and odd: [ c_0, c_1, c_2, c_3, c_4, c_5, c_6, c_7 ]
+        __m256i merge = _mm256_or_si256(even_vc, odd_shifted);
+
+        _mm256_storeu_si256((__m256i *)(res.elements + i), merge);
+    }
+    for (; i < size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i),
+                                    param.b,
+                                    param.b_precomp,
+                                    param.p);
+    return res;
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption = Auxiliary Function of Shoup's Modular Reduction]
+static inline __m256i _shoup_mullo_avx2(__m256i va,
+                                  __m256i vb,
+                                  __m256i vb_precomp,
+                                  __m256i vp)
+{
+    // vq = [ (a_0 * b_precomp_0 = q_0q_1), (a_2 * b_precomp_2 = q_2q_3),
+    // (a_4 * b_precomp_4 = q_4q_5), (a_6 * b_precomp_6 = q_6q_7) ]
+    __m256i vq = _mm256_mul_epu32(va, vb_precomp);
+
+    // vq = [ (0, q_0), (0, q_2), (0, q_4), (0, q_6) ]
+    vq = _mm256_srli_epi64(vq, 32);
+
+    // vab = [ (a_0 * b_0 = ab_0ab_1), (a_2 * b_2 = ab_2ab_3),
+    // (a_4 * b_4 = ab_4ab_5), (a_6 * b_6 = ab_6ab_7) ]
+    __m256i vab = _mm256_mullo_epi32(va, vb);
+
+    // vqp = [ (q_0 * p_0 = qp_0qp_1), (q_2 * p_2 = qp_2qp_3),
+    // (q_4 * p_4 = qp_4qp_5), (q_6 * p_6 = qp_6qp_7) ]
+    __m256i vqp = _mm256_mullo_epi32(vq, vp);
+
+    // vc = [ (ab_0 - qp_0 = c_0c_1), (ab_2 - qp_2 = c_2c_3),
+    // (ab_4 - qp_4 = c_4c_5), (ab_6 - qp_6 = c_6c_7) ]
+    __m256i vc = _mm256_sub_epi64(vab, vqp);
+
+    // if (c >= p) c -= p
+    return _mm256_min_epu32(vc, _mm256_sub_epi32(vc, vp));
+}
+
+Vector shoup_scale_avx2(Parameters param, Vector v)
+{
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    __m256i vb = _mm256_set1_epi64x(param.b);
+    __m256i vb_precomp = _mm256_set1_epi64x(param.b_precomp);
+    __m256i vp = _mm256_set1_epi64x(param.p);
+    ulong i = 0;
+    for (; i + 31 < size; i += 32)
+    {
+        __m256i even_va_0 = _mm256_loadu_si256(
+            (__m256i const *)(v.elements + i));
+
+
+        __m256i odd_va_0 = _mm256_srli_epi64(even_va_0, 32);
+
+        __m256i even_vc_0 = _shoup_mullo_avx2(even_va_0, vb, vb_precomp, vp);
+
+        __m256i odd_vc_0 = _shoup_mullo_avx2(odd_va_0, vb, vb_precomp, vp);
+
+        __m256i odd_shifted_0 = _mm256_slli_epi64(odd_vc_0, 32);
+
+        __m256i merge_0 = _mm256_or_si256(even_vc_0, odd_shifted_0);
+
+        _mm256_storeu_si256((__m256i *)(res.elements + i), merge_0);
+    }
+    for (; i < size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i),
+                                    param.b,
+                                    param.b_precomp,
+                                    param.p);
+    return res;
+}
+\end{lstlisting}
+
+\begin{lstlisting} [caption = Auxiliary Function \texttt{\_mulhi\_emul\_avx2(...)}]
+static inline m256i _mulhi_emul_avx2(m256i va, m256i vb)
+{
+    // res_even = [ (a_0 * b_0), (a_2 * b_2), (a_4 * b_4), (a_6 * b_6) ]
+    m256i res_even = _mm256_mul_epu32(va, vb);
+
+    // res_odd = [ (a_1 * b_0), (a_3 * b_2), (a_5 * b_4), (a_7 * b_6) ]
+    m256i res_odd = _mm256_mul_epu32(_mm256_srli_epi64(va, 32), vb);
+
+    // hi_even = [ (0, hi(a_0 * b_0)), (0, hi(a_2 * b_2)), (0, hi(a_4 * b_4)),
+    // (0, hi(a_6*b_6)) ]
+    m256i hi_even = _mm256_srli_epi64(res_even, 32);
+
+    // Removes the least significant bits: hi_odd = [ (hi(a_1 * b_0), 0),
+    // (hi(a_3 * b_2), 0), (hi(a_5 * b_4), 0), (hi(a_7 * b_6), 0) ]
+    __m256i hi_odd = _mm256_and_si256(res_odd, _mm256_set1_epi64x(
+        0xFFFFFFFF00000000ULL));
+
+    // [ (hi(a_1 * b_0), hi(a_0 * b_0)), (hi(a_3 * b_2), hi(a_2 * b_2)),
+    // (hi(a_5 * b_4), hi(a_4 * b_4)), (hi(a_7 * b_6), hi(a_6 * b_6)) ]
+    return _mm256_or_si256(hi_even, hi_odd);
+}
+
+static inline m256i _shoup_mullo_v2_avx2(m256i va,
+                                           m256i vb,
+                                           m256i vb_precomp,
+                                           m256i vp)
+{
+    m256i vq = _mulhi_emul_avx2(va, vb_precomp);
+    m256i vab = _mm256_mullo_epi32(va, vb);
+    m256i vqp = _mm256_mullo_epi32(vq, vp);
+    __m256i vc = _mm256_sub_epi32(vab, vqp);
+    return _mm256_min_epu32(vc, _mm256_sub_epi32(vc, vp));
+}
+
+Vector shoup_scale_mullo_v2_avx2(Parameters param, Vector v)
+{
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    m256i vb = _mm256_set1_epi32(param.b);
+    m256i vb_precomp = _mm256_set1_epi32(param.b_precomp);
+    m256i vp = _mm256_set1_epi32(param.p);
+    ulong i = 0;
+    for (; i + 7 < size; i += 8)
+    {
+        m256i va = _mm256_loadu_si256((m256i const *)(v.elements + i));
+
+        m256i vc = _shoup_mullo_v2_avx2(va, vb, vb_precomp, vp);
+
+        _mm256_storeu_si256((__m256i *)(res.elements + i), vc);
+    }
+    for (; i < size; i++)
+        (res.elements + i) = shoup((v.elements + i),
+                                    param.b,
+                                    param.b_precomp,
+                                    param.p);
+    return res;
+}
+\end{lstlisting}
+
+\subsection{AVX-512}
+\begin{lstlisting}[caption = Auxiliary function of Shoup's modular reduction]
+static inline __m512i _shoup_avx512(__m512i va,
+                                    __m512i vb,
+                                    __m512i vb_precomp,
+                                    __m512i vp)
+{
+    __m512i vq = _mm512_mul_epu32(va, vb_precomp);
+    vq = _mm512_srli_epi64(vq, 32);
+    __m512i vab = _mm512_mul_epu32(va, vb);
+    __m512i vqp = _mm512_mul_epu32(vq, vp);
+    __m512i vc = _mm512_sub_epi64(vab, vqp);
+    return _mm512_min_epu32(vc, _mm512_sub_epi32(vc, vp));
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption = Implementation of Shoup's modular reduction]
+Vector shoup_scale_avx512(Parameters param, Vector v)
+{
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    __m512i vb = _mm512_set1_epi64(param.b);
+    __m512i vb_precomp = _mm512_set1_epi64(param.b_precomp);
+    __m512i vp = _mm512_set1_epi64(param.p);
+    ulong i = 0;
+    for (; i + 15 < size; i += 16)
+    {
+        __m512i even_va = _mm512_loadu_si512(
+            (__m512i const *)(v.elements + i));
+
+        __m512i odd_va = _mm512_srli_epi64(even_va, 32);
+
+        __m512i even_vc = _shoup_avx512(even_va, vb, vb_precomp, vp);
+
+        __m512i odd_vc = _shoup_avx512(odd_va, vb, vb_precomp, vp);
+
+        __m512i odd_shifted = _mm512_slli_epi64(odd_vc, 32);
+
+        __m512i merge = _mm512_or_si512(even_vc, odd_shifted);
+
+        _mm512_storeu_si512((__m512 *)(res.elements + i), merge);
+    }
+    for (; i < size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i),
+                                    param.b,
+                                    param.b_precomp,
+                                    param.p);
+    return res;
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption = Implementation of unrolling Shoup's modular reduction]
+Vector unrolling_shoup_scale_avx512(Parameters param, Vector v)
+{
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    __m512i vb = _mm512_set1_epi64(param.b);
+    __m512i vb_precomp = _mm512_set1_epi64(param.b_precomp);
+    __m512i vp = _mm512_set1_epi64(param.p);
+    ulong i = 0;
+    for (; i + 63 < size; i += 64)
+    {
+        __m512i even_va_0 = _mm512_loadu_si512((__m512i const *)(v.elements + i));
+        __m512i even_va_1 = _mm512_loadu_si512((__m512i const *)(v.elements + i + 16));
+        __m512i even_va_2 = _mm512_loadu_si512((__m512i const *)(v.elements + i + 32));
+        __m512i even_va_3 = _mm512_loadu_si512((__m512i const *)(v.elements + i + 48));
+
+        __m512i odd_va_0 = _mm512_srli_epi64(even_va_0, 32);
+        __m512i odd_va_1 = _mm512_srli_epi64(even_va_1, 32);
+        __m512i odd_va_2 = _mm512_srli_epi64(even_va_2, 32);
+        __m512i odd_va_3 = _mm512_srli_epi64(even_va_3, 32);
+
+        __m512i even_vc_0 = _shoup_avx512(even_va_0, vb, vb_precomp, vp);
+        __m512i even_vc_1 = _shoup_avx512(even_va_1, vb, vb_precomp, vp);
+        __m512i even_vc_2 = _shoup_avx512(even_va_2, vb, vb_precomp, vp);
+        __m512i even_vc_3 = _shoup_avx512(even_va_3, vb, vb_precomp, vp);
+
+        __m512i odd_vc_0 = _shoup_avx512(odd_va_0, vb, vb_precomp, vp);
+        __m512i odd_vc_1 = _shoup_avx512(odd_va_1, vb, vb_precomp, vp);
+        __m512i odd_vc_2 = _shoup_avx512(odd_va_2, vb, vb_precomp, vp);
+        __m512i odd_vc_3 = _shoup_avx512(odd_va_3, vb, vb_precomp, vp);
+
+        __m512i odd_shifted_0 = _mm512_slli_epi64(odd_vc_0, 32);
+        __m512i odd_shifted_1 = _mm512_slli_epi64(odd_vc_1, 32);
+        __m512i odd_shifted_2 = _mm512_slli_epi64(odd_vc_2, 32);
+        __m512i odd_shifted_3 = _mm512_slli_epi64(odd_vc_3, 32);
+
+        __m512i merge_0 = _mm512_or_si512(even_vc_0, odd_shifted_0);
+        __m512i merge_1 = _mm512_or_si512(even_vc_1, odd_shifted_1);
+        __m512i merge_2 = _mm512_or_si512(even_vc_2, odd_shifted_2);
+        __m512i merge_3 = _mm512_or_si512(even_vc_3, odd_shifted_3);
+
+        _mm512_storeu_si512((__m512 *)(res.elements + i), merge_0);
+        _mm512_storeu_si512((__m512 *)(res.elements + i + 16), merge_1);
+        _mm512_storeu_si512((__m512 *)(res.elements + i + 32), merge_2);
+        _mm512_storeu_si512((__m512 *)(res.elements + i + 48), merge_3);
+    }
+    for (; i < size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i),
+                                    param.b,
+                                    param.b_precomp,
+                                    param.p);
+    return res;
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption = Auxiliary function of Shoup’s modular reduction (version with multiply-low)]
+static inline __m512i _shoup_mullo_avx512(__m512i va,
+                                          __m512i vb,
+                                          __m512i vb_precomp,
+                                          __m512i vp)
+{
+    __m512i vq = _mm512_mul_epu32(va, vb_precomp);
+    vq = _mm512_srli_epi64(vq, 32);
+    __m512i vab = _mm512_mullo_epi32(va, vb);
+    __m512i vqp = _mm512_mullo_epi32(vq, vp);
+    __m512i vc = _mm512_sub_epi32(vab, vqp);
+    return _mm512_min_epu32(vc, _mm512_sub_epi32(vc, vp));
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption = Implementation of Shoup’s modular reduction (version with multiply-low)]
+Vector shoup_scale_mullo_avx512(Parameters param, Vector v)
+{
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    __m512i vb = _mm512_set1_epi64(param.b);
+    __m512i vb_precomp = _mm512_set1_epi64(param.b_precomp);
+    __m512i vp = _mm512_set1_epi64(param.p);
+    ulong i = 0;
+    for (; i + 63 < size; i += 64)
+    {
+        __m512i even_va_0 = _mm512_loadu_si512(
+            (__m512i const *)(v.elements + i));
+        __m512i even_va_1 = _mm512_loadu_si512(
+            (__m512i const *)(v.elements + i + 16));
+        __m512i even_va_2 = _mm512_loadu_si512(
+            (__m512i const *)(v.elements + i + 32));
+        __m512i even_va_3 = _mm512_loadu_si512(
+            (__m512i const *)(v.elements + i + 48));
+
+        __m512i odd_va_0 = _mm512_srli_epi64(even_va_0, 32);
+        __m512i odd_va_1 = _mm512_srli_epi64(even_va_1, 32);
+        __m512i odd_va_2 = _mm512_srli_epi64(even_va_2, 32);
+        __m512i odd_va_3 = _mm512_srli_epi64(even_va_3, 32);
+
+        __m512i even_vc_0 = _shoup_mullo_avx512(even_va_0,
+                                                vb,
+                                                vb_precomp,
+                                                vp);
+        __m512i even_vc_1 = _shoup_mullo_avx512(even_va_1,
+                                                vb,
+                                                vb_precomp,
+                                                vp);
+        __m512i even_vc_2 = _shoup_mullo_avx512(even_va_2,
+                                                vb,
+                                                vb_precomp,
+                                                vp);
+        __m512i even_vc_3 = _shoup_mullo_avx512(even_va_3,
+                                                vb,
+                                                vb_precomp,
+                                                vp);
+
+        __m512i odd_vc_0 = _shoup_mullo_avx512(odd_va_0, vb, vb_precomp, vp);
+        __m512i odd_vc_1 = _shoup_mullo_avx512(odd_va_1, vb, vb_precomp, vp);
+        __m512i odd_vc_2 = _shoup_mullo_avx512(odd_va_2, vb, vb_precomp, vp);
+        __m512i odd_vc_3 = _shoup_mullo_avx512(odd_va_3, vb, vb_precomp, vp);
+
+        __m512i odd_shifted_0 = _mm512_slli_epi64(odd_vc_0, 32);
+        __m512i odd_shifted_1 = _mm512_slli_epi64(odd_vc_1, 32);
+        __m512i odd_shifted_2 = _mm512_slli_epi64(odd_vc_2, 32);
+        __m512i odd_shifted_3 = _mm512_slli_epi64(odd_vc_3, 32);
+
+        __m512i merge_0 = _mm512_or_si512(even_vc_0, odd_shifted_0);
+        __m512i merge_1 = _mm512_or_si512(even_vc_1, odd_shifted_1);
+        __m512i merge_2 = _mm512_or_si512(even_vc_2, odd_shifted_2);
+        __m512i merge_3 = _mm512_or_si512(even_vc_3, odd_shifted_3);
+
+        _mm512_storeu_si512((__m512 *)(res.elements + i), merge_0);
+        _mm512_storeu_si512((__m512 *)(res.elements + i + 16), merge_1);
+        _mm512_storeu_si512((__m512 *)(res.elements + i + 32), merge_2);
+        _mm512_storeu_si512((__m512 *)(res.elements + i + 48), merge_3);
+    }
+    for (; i < size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i),
+                                    param.b,
+                                    param.b_precomp,
+                                    param.p);
+    return res;
+} 
+\end{lstlisting}
+
+\begin{lstlisting}[caption = Auxiliary function \texttt{\_mulhi\_emul\_avx512(...)}]
+static inline __m512i _mulhi_emul_avx512(__m512i va, __m512i vb)
+{
+    __m512i res_even = _mm512_mul_epu32(va, vb);
+    __m512i res_odd = _mm512_mul_epu32(_mm512_srli_epi64(va, 32), vb);
+    __m512i hi_even = _mm512_srli_epi64(res_even, 32);
+    __m512i hi_odd = _mm512_and_si512(res_odd,
+                                      _mm512_set1_epi64(
+                                        0xFFFFFFFF00000000ULL));
+    return _mm512_or_si512(hi_even, hi_odd);
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption = Auxiliary function of Shoup’s modular reduction (version 2 of multiply-low)]
+static inline __m512i _shoup_mullo_v2_avx512(__m512i va,
+                                             __m512i vb,
+                                             __m512i vb_precomp,
+                                             __m512i vp)
+{
+    __m512i vq = _mulhi_emul_avx512(va, vb_precomp);
+    __m512i vab = _mm512_mullo_epi32(va, vb);
+    __m512i vqp = _mm512_mullo_epi32(vq, vp);
+    __m512i vc = _mm512_sub_epi32(vab, vqp);
+    return _mm512_min_epu32(vc, _mm512_sub_epi32(vc, vp));
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption = Implementation of Shoup’s modular reduction (version 2 of multiply-low)]
+Vector shoup_scale_mullo_v2_avx512(Parameters param, Vector v)
+{
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    __m512i vb = _mm512_set1_epi32(param.b);
+    __m512i vb_precomp = _mm512_set1_epi32(param.b_precomp);
+    __m512i vp = _mm512_set1_epi32(param.p);
+    ulong i = 0;
+    for (; i + 15 < size; i += 16)
+    {
+        __m512i va = _mm512_loadu_si512((__m512i const *)(v.elements + i));
+
+        __m512i vc = _shoup_mullo_v2_avx512(va, vb, vb_precomp, vp);
+        _mm512_storeu_si512((__m512i *)(res.elements + i), vc);
+    }
+    for (; i < size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i),
+                                    param.b,
+                                    param.b_precomp,
+                                    param.p);
+    return res;
+}
+\end{lstlisting}
+
+
+\newpage
+\subsection{NEON}
+\begin{lstlisting} [caption = Auxiliary function of Shoup’s modular reduction]
+static inline uint32x2_t _shoup_neon(uint32x2_t va,
+                                     uint32x2_t vb,
+                                     uint32x2_t vb_precomp,
+                                     uint32x2_t vp)
+{
+    // vab_precomp = [ a_0 * b_precomp_0 = ab_precomp_0,
+    // a_1 * b_precomp_1 = ab_precomp_1 ]
+    uint64x2_t vab_precomp = vmull_u32(va, vb_precomp);
+
+    // vq = [ q_0, q_1 ]
+    uint32x2_t vq = vshrn_n_u64(vab_precomp, 32);
+
+    // vab = [ a_0 * b_0 = ab_0, a_1 * b_1 = ab_1 ]
+    uint64x2_t vab = vmull_u32(va, vb);
+
+    // vqp = [ q_0 * p_0 = qp_0, q_1 * p_1 = qp_1 ]
+    uint64x2_t vqp = vmull_u32(vq, vp);
+
+    // vc = [ ab_0 - qp_0 = c_0, ab_1 - qp_1 = c_1 ]
+    uint32x2_t vc = vmovn_u64(vsubq_u64(vab, vqp));
+
+    // if (c >= p) c -= p
+    return vmin_u32(vc, vsub_u32(vc, vp));
+}
+\end{lstlisting}
+\begin{lstlisting}[caption = NEON Implementation of Shoup’s Modular Reduction]
+Vector shoup_scale_neon(Parameters param, Vector v)
+{
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    ulong n = size - (size % 4);
+    uint32x2_t vb = vdup_n_u32(param.b);
+    uint32x2_t vp = vdup_n_u32(param.p);
+    uint32x2_t vb_precomp = vdup_n_u32(param.b_precomp);
+    ulong i = 0;
+    for (; i + 1 < n; i += 2)
+    {
+        // Load [ a_0, a_1 ]
+        uint32x2_t va = vld1_u32(v.elements + i);
+
+        // Stocks the value
+        vst1_u32(res.elements + i, _shoup_neon(va, vb, vb_precomp, vp));
+    }
+    for (; i < size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i),
+                                    param.b,
+                                    param.b_precomp,
+                                    param.p);
+    return res;
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption = Auxiliary Function of Shoup’s Modular Reduction (Version with multiply-low)]
+static inline uint32x2_t _shoup_mullo_neon(uint32x2_t va,
+                                           uint32x2_t vb,
+                                           uint32x2_t vb_precomp,
+                                           uint32x2_t vp)
+{
+    // vab_precomp = [ a_0 * b_precomp_0 = ab_precomp_0,
+    // a_1 * b_precomp_1 = ab_precomp_1 ]
+    uint64x2_t vab_precomp = vmull_u32(va, vb_precomp);
+
+    // vq = [ q_0, q_1 ]
+    uint32x2_t vq = vshrn_n_u64(vab_precomp, 32);
+
+    // vab = [ a_0 * b_0 mod 2^32 = ab_0, a_1 * b_1 mod 2^32 = ab_1 ]
+    uint32x2_t vab = vmul_u32(va, vb);
+
+    // vqp = [ q_0 * p_0 mod 2^32 = qp_0, q_1 * p_1 mod 2^32 = qp_1 ]
+    uint32x2_t vqp = vmul_u32(vq, vp);
+
+    // vc = [ ab_0 - qp_0 = c_0, ab_1 - qp_1 = c_1]
+    uint32x2_t vc = vsub_u32(vab, vqp);
+    return vmin_u32(vc, vsub_u32(vc, vp));
+}
+\end{lstlisting}
+\end{document}

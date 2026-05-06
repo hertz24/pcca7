@@ -382,12 +382,22 @@ Vector shoup_scale_mullo_v2_avx2(Parameters param, Vector v)
     __m256i vb_precomp = _mm256_set1_epi32(param.b_precomp);
     __m256i vp = _mm256_set1_epi32(param.p);
     ulong i = 0;
-    for (; i + 7 < size; i += 8)
+    for (; i + 31 < size; i += 32)
     {
-        __m256i va = _mm256_loadu_si256((__m256i const *)(v.elements + i));
+        __m256i va_0 = _mm256_loadu_si256((__m256i const *)(v.elements + i));
+        __m256i va_1 = _mm256_loadu_si256((__m256i const *)(v.elements + i + 8));
+        __m256i va_2 = _mm256_loadu_si256((__m256i const *)(v.elements + i + 16));
+        __m256i va_3 = _mm256_loadu_si256((__m256i const *)(v.elements + i + 24));
 
-        __m256i vc = _shoup_mullo_v2_avx2(va, vb, vb_precomp, vp);
-        _mm256_storeu_si256((__m256i *)(res.elements + i), vc);
+        __m256i vc_0 = _shoup_mullo_v2_avx2(va_0, vb, vb_precomp, vp);
+        __m256i vc_1 = _shoup_mullo_v2_avx2(va_1, vb, vb_precomp, vp);
+        __m256i vc_2 = _shoup_mullo_v2_avx2(va_2, vb, vb_precomp, vp);
+        __m256i vc_3 = _shoup_mullo_v2_avx2(va_3, vb, vb_precomp, vp);
+        
+        _mm256_storeu_si256((__m256i *)(res.elements + i), vc_0);
+        _mm256_storeu_si256((__m256i *)(res.elements + i + 8), vc_1);
+        _mm256_storeu_si256((__m256i *)(res.elements + i + 16), vc_2);
+        _mm256_storeu_si256((__m256i *)(res.elements + i + 24), vc_3);
     }
     for (; i < size; i++)
         *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
@@ -651,12 +661,22 @@ Vector shoup_scale_mullo_v2_avx512(Parameters param, Vector v)
     __m512i vb_precomp = _mm512_set1_epi32(param.b_precomp);
     __m512i vp = _mm512_set1_epi32(param.p);
     ulong i = 0;
-    for (; i + 15 < size; i += 16)
+    for (; i + 63 < size; i += 64)
     {
-        __m512i va = _mm512_loadu_si512((__m512i const *)(v.elements + i));
+        __m512i va_0 = _mm512_loadu_si512((__m512i const *)(v.elements + i));
+        __m512i va_1 = _mm512_loadu_si512((__m512i const *)(v.elements + i + 16));
+        __m512i va_2 = _mm512_loadu_si512((__m512i const *)(v.elements + i + 32));
+        __m512i va_3 = _mm512_loadu_si512((__m512i const *)(v.elements + i + 48));
 
-        __m512i vc = _shoup_mullo_v2_avx512(va, vb, vb_precomp, vp);
-        _mm512_storeu_si512((__m512i *)(res.elements + i), vc);
+        __m512i vc_0 = _shoup_mullo_v2_avx512(va_0, vb, vb_precomp, vp);
+        __m512i vc_1 = _shoup_mullo_v2_avx512(va_1, vb, vb_precomp, vp);
+        __m512i vc_2 = _shoup_mullo_v2_avx512(va_2, vb, vb_precomp, vp);
+        __m512i vc_3 = _shoup_mullo_v2_avx512(va_3, vb, vb_precomp, vp);
+
+        _mm512_storeu_si512((__m512i *)(res.elements + i), vc_0);
+        _mm512_storeu_si512((__m512i *)(res.elements + i + 16), vc_1);
+        _mm512_storeu_si512((__m512i *)(res.elements + i + 32), vc_2);
+        _mm512_storeu_si512((__m512i *)(res.elements + i + 48), vc_3);
     }
     for (; i < size; i++)
         *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
