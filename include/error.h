@@ -90,6 +90,9 @@
     case INVALID_B_BITS:                                                                                        \
         fprintf(stderr, "The number of bits given for b is invalid.\n");                                        \
         break;                                                                                                  \
+    case INVALID_NUMBER_PTS:                                                                                    \
+        fprintf(stderr, "The number of points given is invalid.\n");                                            \
+        break;                                                                                                  \
     }
 
 #endif

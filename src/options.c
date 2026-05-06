@@ -60,7 +60,7 @@ int set_options(int argc, char const *argv[], Options *options)
             if (!(options->flags & OPT_PTS))
             {
                 options->points = strtoul(argv[i + 1], NULL, 10);
-                if (options->points > MAX_NUMBER_PTS)
+                if (options->points > MAX_NUMBER_PTS || options->points == 0)
                     return INVALID_NUMBER_PTS;
                 options->flags |= OPT_PTS;
             }
