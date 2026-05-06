@@ -143,7 +143,7 @@ int init_param(Options *options, Parameters *param)
         do
         {
             p_bits = lower + n_randint(state, 32 - lower);
-        } while (p_bits <= b_bits);
+        } while (p_bits < b_bits);
         *param = rand_parameters(b_bits, p_bits);
         break;
     default:
