@@ -1,11 +1,20 @@
 \documentclass{article}
-\usepackage{graphicx,amsmath,parskip,cancel,listings,color,float,caption,titling}
+\usepackage{graphicx,amsmath,parskip,cancel,listings,float,caption,titling,booktabs}
 \usepackage[ruled, vlined, linesnumbered]{algorithm2e}
 \usepackage[table]{xcolor}
 \usepackage[margin=1.5in]{geometry}
 
 \captionsetup[table]{skip=10pt, justification=centering}
 \captionsetup[figure]{skip=10pt, justification=centering}
+
+\newcommand{\safeincludegraphics}[2][]{%
+    \IfFileExists{#2}{%
+        \includegraphics[#1]{#2}%
+    }{%
+        \fbox{\parbox{0.85\linewidth}{\centering Missing image: \texttt{\detokenize{#2}}}}%
+    }%
+}
+
 
 \definecolor{codegreen}{rgb}{0,0.6,0}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
@@ -16,8 +25,11 @@
     language=C,
     stepnumber=1,
     showspaces=false,
-    numbers = left,
-    frame = single,
+    showstringspaces=false,
+    breaklines=true,
+    breakatwhitespace=true,
+    numbers=left,
+    frame=single,
     backgroundcolor=\color{backcolour},
     commentstyle=\color{codegreen},
     keywordstyle=\color{magenta},
@@ -26,7 +38,7 @@
     basicstyle=\ttfamily\footnotesize,
 }
 
-\title{32-bit Modular Arithmetic and SIMD vectorization}
+\title{32-bit Modular Arithmetic and SIMD Vectorization}
 \author{Duc Vinh Nguyen, Henry Zheng}
 \date{March 2026}
 
@@ -44,7 +56,11 @@
     {\large March 2026\par}
     \vspace{2cm}
 
-    \includegraphics[width=0.3\textwidth]{logo.jpg}
+    \IfFileExists{logo.jpg}{%
+        \includegraphics[width=0.3\textwidth]{logo.jpg}%
+    }{%
+        \fbox{\parbox{0.3\textwidth}{\centering Logo image missing}}%
+    }
 
     \vfill
 
@@ -102,7 +118,7 @@ Shoup's algorithm is based on precomputation to avoid costly operations.
 \end{algorithm}
 
 
-\subsection{Input Constraint:}
+\subsection{Input Constraints}
 To ensure the correctness of the modular reduction and prevent register overflow during SIMD operations,
 the following conditions must be satisfied:
 \begin{itemize}
@@ -120,20 +136,20 @@ If the estimated quotient is defined as $Q = \lfloor AB'/\beta \rfloor$, then th
 $$0 \le AB - Qp < 2p$$
 
 
-\subsection{Input Hypothesis:}
-\textbf{Can $p$ be any integer over 32 bits ?} \\
+\subsection{Input Hypotheses}
+\textbf{Can $p$ be any integer over 32 bits?} \\
 No, one particularly interesting case where Shoup's algorithm will fail is for $p \ge 2^{31}$.
 Since we know that:
 $$0 \le AB - Qp < 2p$$
 
 If $p \ge 2^{31}$, then $2p \ge 2^{32}$. Therefore, in some cases $AB - Qp$ may exceed $2^{32}$. This causes tremendous errors in the calculation because
-all bits beyond 32 bits are destroyed when we reduce modulo $\beta$
+all bits beyond 32 bits are discarded when we reduce modulo $\beta$.
 
-\textbf{Does $p$ have to necessarily be a prime number ?} \\
+\textbf{Does $p$ necessarily have to be a prime number?} \\
 No, the algorithm mainly uses precomputations (Barrett Reduction), optimized for calculation of $a \mod n$ without constraints on $n$.
 But for the sake of this project, $n$ is a prime number ($p$).
 
-\textbf{Can $b$ be any integer over 32 bits ?} \\
+\textbf{Can $b$ be any integer over 32 bits?} \\
 No, suppose $ b > p $, we can rewrite $b$ as:
 \[b = q'\cdot p + r'\]
 Thus the calculation for the precomputed value $B'$ is:
@@ -141,15 +157,15 @@ Thus the calculation for the precomputed value $B'$ is:
 \[B' = q' \cdot 2^{32} + \left\lfloor\frac{r'\cdot 2^{32}}{p}\right\rfloor\]
 With a focus on 32 bits in this project, $B'$ in the case of $b>p$ cannot be stored within 32 bits and will overflow.
 
-\textbf{Can $a$ be any integer over 32 bits ?} \\
+\textbf{Can $a$ be any integer over 32 bits?} \\
 Yes, $a$ can be any integer defined over 32 bits.
 
 \newpage
-\subsection{Precomputational Logic (Barrett Reduction)}
+\subsection{Precomputation Logic (Barrett Reduction)}
 The precomputed value $B'$ is defined over 32 bits as:
 \[B'= \lfloor (B \cdot 2^{32}) / p \rfloor \]
 
-When computing the $A\cdot B\pmod{p}$ :
+When computing $A\cdot B\pmod{p}$:
 \begin{equation*}
     A \cdot B \pmod{p} = A \cdot B -  \left\lfloor \frac{A \cdot B}{p} \right\rfloor \cdot p
 \end{equation*}
@@ -168,7 +184,7 @@ We can rewrite this as:
 $$0 \le x - \lfloor x \rfloor < 1$$
 
 
-\subsection{Demonstration:}
+\subsection{Demonstration}
 The algorithm uses the precomputation $B' = \lfloor B\beta/p \rfloor$ such that:
 \[0 \le \frac{B\beta}{p} - \left\lfloor \frac{B\beta}{p} \right\rfloor < 1 \]
 \begin{equation}
@@ -221,26 +237,29 @@ Using the precomputed value $B'$ to approximately calculate $\left\lfloor \frac{
     \item \textbf{Storing the precomputed value:}
           $B'$ is computed with one division and can be stored for use in other modular reductions, provided the same $B$ and the same $p$ are used.
     \item \textbf{Efficient operations:}
-          Shoup's algorithm replaces slow division operations with fast multiplications and bit shifts. The expression $\frac{A \cdot B'}{2^{32}}$ requires only one multiplication operation and a right bit shift by 32 bits. On a CPU, both multiplication ($\approx$ 0.33 - 0.67 cycles per operations) and bit shift ($\approx$ 0.5 - 1 cycles per operations) are significantly more efficient than division ($\approx$ 6 cycles per operations). A division is approximately 4 - 8 times more costly than a multiplication and bit shift together.
+          Shoup's algorithm replaces slow division operations with fast multiplications and bit shifts. The expression $\frac{A \cdot B'}{2^{32}}$ requires only one multiplication operation and a right bit shift by 32 bits. On a CPU, both multiplication ($\approx$ 0.33--0.67 cycles per operation) and bit shift ($\approx$ 0.5--1 cycles per operation) are significantly more efficient than division ($\approx$ 6 cycles per operation). A division is approximately 4--8 times more costly than a multiplication and bit shift together.
 \end{enumerate}
 
 
-\subsection{SIMD vectorization Implementation}
+\subsection{SIMD Vectorization Implementation}
 We decided to create three versions for implementing a high-performance Shoup algorithm: AVX2, AVX-512 and NEON.
 
 \subsubsection{AVX2}
 For the AVX2 version, we decided to use two main built-in AVX2 functions:
-\texttt{\_mm256\_mul\_epu32(...)} and \texttt{\_mm256\_mullo\_epi32(...)}. \\
+\begin{itemize}
+    \item \texttt{\_mm256\_mul\_epu32(...)}
+    \item \texttt{\_mm256\_mullo\_epi32(...)}
+\end{itemize}
 
 \textbf{Intel \texttt{\_mm256\_mul\_epu32(...)} version: (Listings 1)} \\
 This function treats the input as unsigned 32-bit integers. However, it only multiplies the even-indexed slots (0, 2, 4, 6) of the vector to make room for the full 64-bit results.
 
-This implementation uses purely \texttt{\_mm256\_mul\_epu32(...)} at all stages of calulations thus we must data shuffle the registers to their correct position. The following are the steps per loop:
+This implementation uses \texttt{\_mm256\_mul\_epu32(...)} at all stages of calculation, so we must shuffle the data registers into their correct positions. The following are the steps per loop:
 
 \begin{itemize}
-    \item Load 8 32 bit integers into the register
-    \item Split the loaded register into even-indexed slots (0, 2, 4, 6) and odd-indexed slots (1, 3, 5, 7) into 64 bit registers
-    \item Compute Shoup's Modular Reduction (\texttt{\_shoup\_avx2(...)}) over these registers
+    \item Load 8 32-bit integers into the register
+    \item Split the loaded register into even-indexed slots (0, 2, 4, 6) and odd-indexed slots (1, 3, 5, 7) into 64-bit registers
+    \item Compute Shoup's modular reduction (\texttt{\_shoup\_avx2(...)}) over these registers
     \item Recombine the even and odd indexed slots and store
     \item Compute the leftover elements
 \end{itemize}
@@ -252,9 +271,9 @@ This implementation uses \texttt{\_mm256\_mul\_epu32(...)} to compute the quotie
 \[Q = \lfloor (A \cdot B') / 2^{32} \rfloor\]
 but \texttt{\_mm256\_mullo\_epi32()} to compute all other steps per loop. The following are the steps per loop:
 \begin{itemize}
-    \item Load 8 32 bit integers into the register
-    \item Split the loaded register into even-indexed slots (0, 2, 4, 6) and odd-indexed slots (1, 3, 5, 7) into 64 bit registers
-    \item Compute Shoup's Modular Reduction (\texttt{\_shoup\_mullo\_avx2(...)}) over these registers
+    \item Load 8 32-bit integers into the register
+    \item Split the loaded register into even-indexed slots (0, 2, 4, 6) and odd-indexed slots (1, 3, 5, 7) into 64-bit registers
+    \item Compute Shoup's modular reduction (\texttt{\_shoup\_mullo\_avx2(...)}) over these registers
     \item Recombine the even and odd indexed slots and store
     \item Compute the leftover elements
 \end{itemize}
@@ -267,14 +286,14 @@ multiplication step:
 By restoring the standard 8-lane 32-bit layout early, the function eliminates the need to perform parallel logic paths.
 This, in theory, should reduce the workload.
 
-In order to implement this version, we create an Auxiliary function \texttt{\_mulhi\_emul\_avx2(...)} which emulates a native 'multiply-high' instruction for unsigned 32-bit integers. It computes the full 64-bit products of two packed vectors, extracts the most significant 32 bits from each result, and repacks them into a single 256-bit destination register.
+In order to implement this version, we create an auxiliary function \texttt{\_mulhi\_emul\_avx2(...)} which emulates a native ``multiply-high'' instruction for unsigned 32-bit integers. It computes the full 64-bit products of two packed vectors, extracts the most significant 32 bits from each result, and repacks them into a single 256-bit destination register.
 
 The following are the steps per loop:
 \begin{itemize}
-    \item Load 8 32 bit integers into the register
-    \item Split the loaded register into even-indexed slots (0, 2, 4, 6) and odd-indexed slots (1, 3, 5, 7) into 64 bit registers to compute the quotient
+    \item Load 8 32-bit integers into the register
+    \item Split the loaded register into even-indexed slots (0, 2, 4, 6) and odd-indexed slots (1, 3, 5, 7) into 64-bit registers to compute the quotient
     \item Recombine the even and odd indexed slots
-    \item Continue with Shoup's Modular Reduction (\texttt{\_shoup\_mullo\_v2\_avx2(...)})
+    \item Continue with Shoup's modular reduction (\texttt{\_shoup\_mullo\_v2\_avx2(...)})
     \item Compute the leftover elements
 \end{itemize}
 
@@ -282,18 +301,18 @@ The following are the steps per loop:
 \subsection{Performance}
 The performance benchmarks were run on AMD and ARM architectures, by executing \texttt{./pcca7 -b\_bits 31 -pts 1000}.
 \subsubsection{Overall Hypothesis}
-With a rough preliminary analysis, using SIMD operations should provide us with a maximum acceleration of 8x-16x since the registers can hold and operate on 8 32 bit unsigned integers (for AVX2) and 16 32 bit unsigned integers (for AVX512) simultanously.
+With a rough preliminary analysis, using SIMD operations should provide us with a maximum acceleration of 8x--16x since the registers can hold and operate on 8 32-bit unsigned integers (for AVX2) and 16 32-bit unsigned integers (for AVX-512) simultaneously.
 
-One caveate that must be considered is that all implementation uses \texttt{\_mm256\_mul\_epu32(...)} to calculate the quotient defined as $Q = \lfloor A \cdot B'/\beta \rfloor$. This operation requires a data shuffle to correctly align the vectors into 64 bit lanes then recombining them at later stages. This reduces the acceleration factor of SIMD implementations at worst by half (4x-8x depending on AVX2 or AVX512)
+One caveat that must be considered is that all implementations use \texttt{\_mm256\_mul\_epu32(...)} to calculate the quotient defined as $Q = \lfloor A \cdot B'/\beta \rfloor$. This operation requires a data shuffle to correctly align the vectors into 64-bit lanes and then recombine them at later stages. This reduces the acceleration factor of SIMD implementations, at worst, by half (4x--8x depending on AVX2 or AVX-512).
 
-\subsubsection{Equipment details for AMD architecture}
+\subsubsection{Equipment Details for AMD Architecture}
 \begin{itemize}
     \item Processor: AMD Ryzen™ 5 8600G (Zen 4)
     \item Instruction Sets Supported: AVX, AVX2 and AVX-512
     \item Compiler: GCC 13.3.0 with optimization flag \texttt{-O3} and -march=native
 \end{itemize}
 
-\subsubsection{Equipment details for ARM architecture}
+\subsubsection{Equipment Details for ARM Architecture}
 \begin{itemize}
     \item Processor: Apple M1
     \item Instruction Sets Supported: NEON
@@ -302,24 +321,24 @@ One caveate that must be considered is that all implementation uses \texttt{\_mm
 \textbf{Note:} The benchmarks were run in a virtual machine.
 
 
-\subsubsection{Choice of unrolling}
-One way to optimize for faster functions through vectorization is Loop Unrolling.
+\subsubsection{Choice of Unrolling}
+One way to optimize for faster functions through vectorization is loop unrolling.
 This technique consists of expanding the body of a loop to process multiple iterations at once.
 
-The results below were obtained by measuring the execution time between a standard version and unrolled version of Listing 2
+The results below were obtained by measuring the execution time between a standard version and an unrolled version of Listing 2.
 
-\textbf{Hypothesis:} The unrolled version should perform better than the standard version 
+\textbf{Hypothesis:} The unrolled version should perform better than the standard version.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1\linewidth]{graphs/unrolling_standard.png}
+    \safeincludegraphics[width=1\linewidth]{graphs/unrolling_standard.png}
     \caption{Execution time comparison: Standard vs. Unrolled}
 \end{figure}
 
 \begin{table}[H]
     \centering
     \rowcolors{2}{green!10}{white}
-    \begin{tabular}{|l|c|c|c|c|c|}
+    \begin{tabular}{|l|c|c|c|}
         \hline
         Size & Standard & Unrolled & Percentage difference \\ \hline
         100  & 0.034   &  0.037    & $+8.82\%$             \\
@@ -337,22 +356,21 @@ The results below were obtained by measuring the execution time between a standa
     \caption{Execution time of implementations with and without unrolling in microseconds}
 \end{table}
 
-\textbf{Observation: }On average, the Unrolled implementation is approximately 5\% faster
+\textbf{Observation:} On average, the unrolled implementation is approximately 5\% faster
 than the standard version.
 
-\textbf{Conclusion:} The results obtained align with our preliminary assumption that applying unrolling to the loops will increase performance. Though the speed up is only around 5\% (x1.05 speedup factor),  we can still conclude that unrolling is favorable for our implementation of Shoup’s Modular Multiplication
+\textbf{Conclusion:} The results obtained align with our preliminary assumption that applying unrolling to the loops will increase performance. Although the speedup is only around 5\% (x1.05 speedup factor), we can still conclude that unrolling is favorable for our implementation of Shoup's modular multiplication
 
 
-\subsubsection{Choice between mullo\_epi32 and mul\_epu32}
-mullo\_epi32 and mul\_epu32 both produce at max 64-bit results, the key difference is the former operation only truncates the results and only stores the
-32 lower bits of the results whereas the latter stores the full 64-bit results.
+\subsubsection{Choice Between \texttt{mullo\_epi32} and \texttt{mul\_epu32}}
+\texttt{mullo\_epi32} and \texttt{mul\_epu32} both produce at most 64-bit results. The key difference is that the former truncates the result and stores only the lower 32 bits, whereas the latter stores the full 64-bit result.
 
-The results below were obtained by measuring the execution time between the 3 variations with unrolling described in Section 3.8.1
+The results below were obtained by measuring the execution time between the three variations with unrolling described in Section 3.8.1.
 
-\textbf{Hypothesis:} The 2 variants mullo\_epi32 should perform better than the variant mul\_epu32 as it uses fewer operations overall. The mullo\_epi32 (v2) variant (Listing 3) should perform better than the mullo\_epi32 (v1) variant (Listing 2)
+\textbf{Hypothesis:} The two \texttt{mullo\_epi32} variants should perform better than the \texttt{mul\_epu32} variant because they use fewer operations overall. The \texttt{mullo\_epi32} (v2) variant (Listing 3) should perform better than the \texttt{mullo\_epi32} (v1) variant (Listing 2).
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1\linewidth]{graphs/all_versions.png}
+    \safeincludegraphics[width=1\linewidth]{graphs/all_versions.png}
     \caption{Execution time comparison: mullo\_epi32 vs. mul\_epu32}
 \end{figure}
 \begin{table}[H]
@@ -376,31 +394,31 @@ The results below were obtained by measuring the execution time between the 3 va
     \caption{Execution time of all implementations and the speedup in comparison to mul\_epu32 in microseconds}
 \end{table}
 
-\textbf{Observation:} From the graph, we can take away that for small vector sizes (under 500), the performance difference between mullo\_epi32 (v1) and mul\_epu32 is negligeable. But the efficiency gain starts to show once the vector size hits 500 and above.
+\textbf{Observation:} From the graph, we can see that for small vector sizes (under 500), the performance difference between \texttt{mullo\_epi32} (v1) and \texttt{mul\_epu32} is negligible. However, the efficiency gain starts to appear once the vector size reaches 500 and above.
 
-As for mullo\_epi32 (v2), it outperforms both precedent variants in all sizes.
+As for \texttt{mullo\_epi32} (v2), it outperforms both previous variants for all sizes.
 
-On average, mullo\_epi32 (v1) is 2.22\% slower than mul\_epu32 whereas mullo\_epi32 (v2) is 24.85\% faster than mul\_epu32
+On average, \texttt{mullo\_epi32} (v1) is 2.22\% slower than \texttt{mul\_epu32}, whereas \texttt{mullo\_epi32} (v2) is 24.85\% faster than \texttt{mul\_epu32}.
 
-\textbf{Conclusion:} The results measured contradicts our hypothesis that both mullo\_epi32 variants are faster than mul\_epu32. Although mullo\_epi32 (v1) is a worse implementation of Shoup's Modular Multiplication, we can still conclude that mullo\_epi32 (v2) is the better implementation among the variants with a performance gain of approcimately 25\% (x1.25 speedup factor)
+\textbf{Conclusion:} The measured results contradict our hypothesis that both \texttt{mullo\_epi32} variants are faster than \texttt{mul\_epu32}. Although \texttt{mullo\_epi32} (v1) is a worse implementation of Shoup's modular multiplication, we can still conclude that \texttt{mullo\_epi32} (v2) is the best implementation among the variants, with a performance gain of approximately 25\% (x1.25 speedup factor).
 
 \subsubsection{Overall Performance}
 It is worth noting that AVX2 uses 256-bit registers to process up to eight 32-bit integers, while AVX-512 uses 512-bit registers for up to sixteen. Furthermore, the AVX-512 version uses the same functions and operations as the AVX2 version.
 
-To measure the best performance output, we decided that the fastest implementation : mullo\_epi32 version 2 (rf. Listings 3) with unrolling
+To measure the best performance output, we decided that the fastest implementation : mullo\_epi32 version 2 (see Listing 3) with unrolling
 
 The results below were obtained by measuring the execution time of different implementations of modular reduction:
 \begin{itemize}
     \item \textbf{Naive scale:} The base operation (\%)
-    \item \textbf{Shoup scale (reference) :} Shoup's Modular Multiplication without optimization
+    \item \textbf{Shoup scale (reference) :} Shoup's modular multiplication without optimization
     \item \textbf{Shoup scale (FLINT) :} FLINT's modular reduction implementation
-    \item \textbf{Shoup scale (AVX2) :} Shoup's Modular Multiplication with AVX2 optimization (mullo version 2 with unrolling)
-    \item \textbf{Shoup scale (AVX-512) :} Shoup's Modular Multiplication with AVX-512 optimization (mullo version 2 with unrolling)
+    \item \textbf{Shoup scale (AVX2) :} Shoup's modular multiplication with AVX2 optimization (mullo version 2 with unrolling)
+    \item \textbf{Shoup scale (AVX-512) :} Shoup's modular multiplication with AVX-512 optimization (mullo version 2 with unrolling)
 \end{itemize}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1\linewidth]{graphs/Overall_Performance.png}
-    \caption{Execution Time Comparison Between Different Implementation For Modular Reduction}
+    \safeincludegraphics[width=1\linewidth]{graphs/Overall_Performance.png}
+    \caption{Execution time comparison between different implementations of modular reduction}
 \end{figure}
 \begin{table}[H]
     \centering
@@ -426,7 +444,7 @@ The results below were obtained by measuring the execution time of different imp
 \begin{table}[H]
     \centering
     \rowcolors{2}{red!10}{white}
-    \begin{tabular}{|l|c|c|c|c|c|}
+    \begin{tabular}{|l|c|c|}
         \hline
         Algorithm       & Average \% & Factor of acceleration       \\ \hline
         FLINT           & 100.00\%      &  1x   \\
@@ -434,34 +452,30 @@ The results below were obtained by measuring the execution time of different imp
         Shoup (AVX-512) & 14.35\%     &  7.0x   \\
         \hline
     \end{tabular}
-    \caption{Average Performance Summary of FLINT in relation to Shoup AVX2 and Shoup AVX512 Implementations in Percentages}
+    \caption{Average performance summary of FLINT in relation to Shoup AVX2 and Shoup AVX-512 implementations}
 
 \end{table}
 
 \textbf{Observation:}
-From the results retrieved, we want to primarily study the speedup factor of our Shoup's Modular Multiplication using AVX2 and AVX512 compared to FLINT's implementation. Shoup (AVX2) is roughly 5.9x times faster than FLINT and Shoup (AVX512) is 7.0x faster.
+From the results retrieved, we want to primarily study the speedup factor of our Shoup's modular multiplication using AVX2 and AVX-512 compared to FLINT's implementation. Shoup (AVX2) is roughly 5.9x faster than FLINT and Shoup (AVX-512) is 7.0x faster.
 
 \textbf{Conclusion:}
-Our Shoup's Modular Multiplication with AVX2 and AVX-512 optimization adapted to 32 bits is 5-7 times faster than FLINT. These results are expected from our 3.9.1.Overall Hypothesis.
+Our Shoup's modular multiplication with AVX2 and AVX-512 optimizations adapted to 32 bits is 5--7 times faster than FLINT. These results are consistent with our overall hypothesis.
 
 \subsubsection{NEON's Performance}
-Unlike AVX2 and AVX-512 which use opaque data type, that means we can't directly access to the vectors contained without specifical functions, NEON uses explicit vector types: the name of NEON's types defined the type, the number of bits and the number of elements.
+Unlike AVX2 and AVX-512, which use opaque data types, NEON uses explicit vector types: each NEON type name defines the data type, the number of bits, and the number of elements.
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1\linewidth]{graphs/arm1.png}
+    \safeincludegraphics[width=1\linewidth]{graphs/arm1.png}
     \caption{Execution time comparison between the two versions of multiply low}
 \end{figure}
 
-\section{Overall Conclusion:}
-For AVX architectures, we have researched and implemented many versions of Shoup's Modular Reduction. The best performance by far is the implementation \textbf{Intel \texttt{\_mm256\_mullo\_epi32(...)} version 2:} with acceleration of a factor of 5.9x for AVX2 and a factor of 7.0x for AVX512.
-
-[TODO NEON]
-\section{Other Improvements:}
-
-\section{References:}
+\section{Overall Conclusion}
+For AVX architectures, we researched and implemented several versions of Shoup's modular reduction. The best-performing version is \textbf{Intel \texttt{\_mm256\_mullo\_epi32(...)} version 2}, with an acceleration factor of 5.9x for AVX2 and 7.0x for AVX-512.
 
 \newpage
-\section{SIMD implementations}
+\appendix
+\section{SIMD Implementations}
 \label{app:code}
 
 
@@ -540,7 +554,7 @@ Vector shoup_scale_avx2(Parameters param, Vector v)
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption = Auxiliary Function of Shoup's Modular Reduction]
+\begin{lstlisting}[caption = Auxiliary function of Shoup's modular reduction]
 static inline __m256i _shoup_mullo_avx2(__m256i va,
                                   __m256i vb,
                                   __m256i vb_precomp,
@@ -604,7 +618,7 @@ Vector shoup_scale_avx2(Parameters param, Vector v)
 }
 \end{lstlisting}
 
-\begin{lstlisting} [caption = Auxiliary Function \texttt{\_mulhi\_emul\_avx2(...)}]
+\begin{lstlisting} [caption = Auxiliary function \texttt{\_mulhi\_emul\_avx2(...)}]
 static inline m256i _mulhi_emul_avx2(m256i va, m256i vb)
 {
     // res_even = [ (a_0 * b_0), (a_2 * b_2), (a_4 * b_4), (a_6 * b_6) ]
@@ -770,7 +784,7 @@ Vector unrolling_shoup_scale_avx512(Parameters param, Vector v)
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption = Auxiliary function of Shoup’s modular reduction (version with multiply-low)]
+\begin{lstlisting}[caption = Auxiliary function of Shoup's modular reduction (version with multiply-low)]
 static inline __m512i _shoup_mullo_avx512(__m512i va,
                                           __m512i vb,
                                           __m512i vb_precomp,
@@ -785,7 +799,7 @@ static inline __m512i _shoup_mullo_avx512(__m512i va,
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption = Implementation of Shoup’s modular reduction (version with multiply-low)]
+\begin{lstlisting}[caption = Implementation of Shoup's modular reduction (version with multiply-low)]
 Vector shoup_scale_mullo_avx512(Parameters param, Vector v)
 {
     ulong size = v.size;
@@ -869,7 +883,7 @@ static inline __m512i _mulhi_emul_avx512(__m512i va, __m512i vb)
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption = Auxiliary function of Shoup’s modular reduction (version 2 of multiply-low)]
+\begin{lstlisting}[caption = Auxiliary function of Shoup's modular reduction (version 2 of multiply-low)]
 static inline __m512i _shoup_mullo_v2_avx512(__m512i va,
                                              __m512i vb,
                                              __m512i vb_precomp,
@@ -883,7 +897,7 @@ static inline __m512i _shoup_mullo_v2_avx512(__m512i va,
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption = Implementation of Shoup’s modular reduction (version 2 of multiply-low)]
+\begin{lstlisting}[caption = Implementation of Shoup's modular reduction (version 2 of multiply-low)]
 Vector shoup_scale_mullo_v2_avx512(Parameters param, Vector v)
 {
     ulong size = v.size;
@@ -911,7 +925,7 @@ Vector shoup_scale_mullo_v2_avx512(Parameters param, Vector v)
 
 \newpage
 \subsection{NEON}
-\begin{lstlisting} [caption = Auxiliary function of Shoup’s modular reduction]
+\begin{lstlisting} [caption = Auxiliary function of Shoup's modular reduction]
 static inline uint32x2_t _shoup_neon(uint32x2_t va,
                                      uint32x2_t vb,
                                      uint32x2_t vb_precomp,
@@ -937,7 +951,7 @@ static inline uint32x2_t _shoup_neon(uint32x2_t va,
     return vmin_u32(vc, vsub_u32(vc, vp));
 }
 \end{lstlisting}
-\begin{lstlisting}[caption = NEON Implementation of Shoup’s Modular Reduction]
+\begin{lstlisting}[caption = NEON Implementation of Shoup's modular reduction]
 Vector shoup_scale_neon(Parameters param, Vector v)
 {
     ulong size = v.size;
@@ -952,7 +966,7 @@ Vector shoup_scale_neon(Parameters param, Vector v)
         // Load [ a_0, a_1 ]
         uint32x2_t va = vld1_u32(v.elements + i);
 
-        // Stocks the value
+        // Store the value
         vst1_u32(res.elements + i, _shoup_neon(va, vb, vb_precomp, vp));
     }
     for (; i < size; i++)
@@ -964,7 +978,7 @@ Vector shoup_scale_neon(Parameters param, Vector v)
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption = Auxiliary Function of Shoup’s Modular Reduction (Version with multiply-low)]
+\begin{lstlisting}[caption = Auxiliary function of Shoup's modular reduction (Version with multiply-low)]
 static inline uint32x2_t _shoup_mullo_neon(uint32x2_t va,
                                            uint32x2_t vb,
                                            uint32x2_t vb_precomp,
