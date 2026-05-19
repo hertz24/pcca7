@@ -106,9 +106,9 @@ int generate_graph(int scale, ulong nb_points, Parameters param, const Algorithm
     }
 
     // Header
-    dprintf(fd, "set terminal pngcairo size 1200,800 enhanced font 'arial,10'\n"
+    dprintf(fd, "set terminal pngcairo size 1200,800 enhanced font 'arial,15'\n"
                 "set datafile separator ','\n"
-                "set key outside\n"
+                "set key top left\n"
                 "set title 'Execution time for b = %u and p = %u'\n"
                 "set output 'graphs/graph%d.png'\n"
                 "set xlabel 'Size of the vector'\n"
@@ -119,7 +119,7 @@ int generate_graph(int scale, ulong nb_points, Parameters param, const Algorithm
     for (int i = 0; i < nb_algo; i++)
     {
         // Header of the tested algorithms
-        dprintf(fd, "'-' title '%s' with points pt 7 ps 0.25 linecolor '%s'", algorithms[algorithm_ids[i]].name, colors[i]);
+        dprintf(fd, "'-' title '%s' with points pt 7 ps 0.5 linecolor '%s'", algorithms[algorithm_ids[i]].name, colors[i]);
         if (i < nb_algo - 1)
             dprintf(fd, ", ");
     }

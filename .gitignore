@@ -16,3 +16,5 @@ pcca7
 *.lof
 *.lot
 latex/*
+*.bbl
+*bib

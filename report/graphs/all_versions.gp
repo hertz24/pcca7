@@ -1,11 +1,11 @@
-set terminal pngcairo size 1200,800 enhanced font 'arial,10'
+set terminal pngcairo size 1200,800 enhanced font 'arial,15'
 set datafile separator ','
-set key outside
+set key top left
 set title 'Execution time for b = 1422166701 and p = 1451478673'
 set output 'graphs/graph3.png'
 set xlabel 'Size of the vector'
 set ylabel 'Time in microseconds'
-plot '-' title 'Shoup scale (AVX2)' with points pt 7 ps 0.25 linecolor 'red', '-' title 'Shoup scale with multiply low (AVX2)' with points pt 7 ps 0.25 linecolor 'dark-green', '-' title 'Shoup scale with multiply low version 2 (AVX2)' with points pt 7 ps 0.25 linecolor 'orange'
+plot '-' title 'Shoup scale (AVX2)' with points pt 7 ps 0.5 linecolor 'red', '-' title 'Shoup scale with multiply low (AVX2)' with points pt 7 ps 0.5 linecolor 'dark-green', '-' title 'Shoup scale with multiply low version 2 (AVX2)' with points pt 7 ps 0.5 linecolor 'orange'
 1,0.01106076336552588510
 2,0.01170425790570588445
 3,0.01257241752058549551
