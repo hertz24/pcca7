@@ -14,7 +14,7 @@
 
 /**
  * @enum AlgorithmID
- * @brief Each enum value corresponds to an algorithm: the value corresponds to the index of the algorithm in the @c algorithms array.
+ * @brief Each enum value corresponds to an algorithm: it corresponds exactly to the index of the algorithm in the @c algorithms array.
  */
 typedef enum
 {
@@ -47,7 +47,7 @@ typedef enum
 
 /**
  * @struct Algorithm
- * @brief Contains the name and the function of the algorithm.
+ * @brief Contains the name and the function address of the algorithm.
  */
 typedef struct
 {

@@ -1,6 +1,6 @@
 /**
  * @file error.h
- * @brief Macros for error handling in the main.
+ * @brief Macros for error handling in options.h.
  * @author Henry Zheng
  * @author Duc Vinh Nguyen
  */
@@ -11,7 +11,7 @@
 #include <stdio.h>
 
 /**
- * @defgroup ErrorCodes Error codes returned by functions
+ * @defgroup ErrorCodes Error codes returned by functions.
  * @brief Constants representing specific error conditions. Error 1 corresponds to an initialization issue with @c data_tab
  * @{
  */
@@ -19,7 +19,7 @@
 /** Invalid command-line arguments. */
 #define ERR_INPUT 2
 
-/** The provided p is not a prime number. */
+/** The given p is not a prime number. */
 #define ERR_PRIME 3
 
 /** Unrecognized option. */
@@ -31,20 +31,25 @@
 /** Number of bits of p must be greater than or equal to number of bits of b. */
 #define ERR_B_BITS_GE_P_BITS 6
 
-/** No prime p exists with the given number of bits such that p > b. */
+/** There is not a prime number p with the specified number of bits such that p > b. */
 #define ERR_NO_PRIME_FOR_BITS 7
 
-/** Error while generating graphs */
+/** Error while generating graphs. */
 #define ERR_GEN_GRAPHS 8
 
+/** Error if a negative numer is given. */
 #define ERR_NEGATIVE_NUMBER 9
 
+/** Error in some cases where there is not b such that b < p. */
 #define ERR_NO_B_FOR_P 10
 
+/** The number of bits given for p is invalid. */
 #define INVALID_P_BITS 11
 
+/** The number of bits given for b is invalid. */
 #define INVALID_B_BITS 12
 
+/** The number of points given is invalid. */
 #define INVALID_NUMBER_PTS 13
 
 /** @} */

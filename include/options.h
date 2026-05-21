@@ -11,12 +11,31 @@
 #include "error.h"
 #include "graph.h"
 
+/**
+ * @defgroup OptionsFlags Activations flags for each options.
+ * @brief Each option is associated with a flag that indicates whether the option is enabled.
+ * @{
+ */
+
+/** If option -p is enabled. */
 #define OPT_P 1
+
+/** If option -b is enabled. */
 #define OPT_B 1 << 2
+
+/** If option -p_bits is enabled. */
 #define OPT_P_BITS 1 << 3
+
+/** If option -b_bits is enabled. */
 #define OPT_B_BITS 1 << 4
+
+/** If option -scale is enabled. */
 #define OPT_SCALE 1 << 5
+
+/** If option -pts is enabled. */
 #define OPT_PTS 1 << 6
+
+/** @} */
 
 /**
  * @struct Options

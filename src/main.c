@@ -14,7 +14,7 @@ static int generate_graphs(Options options, Parameters param)
     AlgorithmID graph_1[] = {NAIVE_SCALE, SHOUP_SCALE_REF, SHOUP_SCALE_FLINT
 #if NEON
                              ,
-                             SHOUP_SCALE_NEON
+                             SHOUP_SCALE_MULLO_NEON
 #elif AVX2
                              ,
                              SHOUP_SCALE_MULLO_V2_AVX2
@@ -26,18 +26,18 @@ static int generate_graphs(Options options, Parameters param)
     };
 
     // Continues to generate graphs even if there is an error
-    // Overall Performance graph 
+    // Overall Performance graph
     int ret = generate_graph(scale, points, param, graph_1, TAB_SIZE(graph_1));
 #if NEON
     ret |= generate_graph(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_NEON, UNROLLING_SHOUP_SCALE_NEON}, 2);
-    ret |= generate_graph(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_NEON, SHOUP_SCALE_MULLO_NEON}, 2);
+    ret |= generate_graph(scale, points, param, (AlgorithmID[]){UNROLLING_SHOUP_SCALE_NEON, SHOUP_SCALE_MULLO_NEON}, 2);
     if (options.b == 1)
         ret |= generate_graph(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_NEON, SHOUP_B1_SCALE_NEON}, 2);
 #elif AVX2
     // Standard vs Unrolling graph AVX2
     ret |= generate_graph(scale, points, param, (AlgorithmID[]){SHOUP_SCALE_AVX2, UNROLLING_SHOUP_SCALE_AVX2}, 2);
 
-    // mul_epu32  vs mullo1 vs mullo 2 (with unrolling) graph AVX2 
+    // mul_epu32  vs mullo1 vs mullo 2 (with unrolling) graph AVX2
     ret |= generate_graph(scale, points, param, (AlgorithmID[]){UNROLLING_SHOUP_SCALE_AVX2, SHOUP_SCALE_MULLO_AVX2, SHOUP_SCALE_MULLO_V2_AVX2}, 3);
 
     // Option b == 1 AVX2
