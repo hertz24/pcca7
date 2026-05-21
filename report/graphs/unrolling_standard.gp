@@ -2,10 +2,10 @@ set terminal pngcairo size 1200,800 enhanced font 'arial,15'
 set datafile separator ','
 set key top left
 set title 'Execution time for b = 1422166701 and p = 1451478673'
-set output 'graphs/graph2.png'
+set output 'unrolling_standard.png'
 set xlabel 'Size of the vector'
 set ylabel 'Time in microseconds'
-plot '-' title 'Shoup scale (AVX2)' with points pt 7 ps 0.5 linecolor 'red', '-' title 'Unrolling Shoup scale (AVX2)' with points pt 7 ps 0.5 linecolor 'dark-green'
+plot '-' title 'Standard version (AVX2)' with points pt 7 ps 0.5 linecolor 'red', '-' title 'Unrolled version (AVX2)' with points pt 7 ps 0.5 linecolor 'dark-green'
 1,0.01103388729088343456
 2,0.01202726399726927742
 3,0.01284629621884181630
