@@ -601,12 +601,12 @@ However, despite these relevant speedups, the results should be interpreted with
 \section{Overall Conclusion}
 For AVX architectures, we researched and implemented several versions of Shoup's modular reduction that outperforms FLINT's implementation. \textbf{Variant 3: Intel \texttt{\_mm256\_mullo\_epi32(...)} version 2} is the best performing version, with an acceleration factor of 5.9x for AVX2 and 7.0x for AVX-512.
 
-For NEON architecture, \textbf{Variant 2: \texttt{\_shoup\_mullo\_neon }} is the best performing implmentation with an acceleration of 2.6x
+For NEON architecture, \textbf{Variant 2: \texttt{\_shoup\_mullo\_neon }} is the best performing implementation with an acceleration of 2.6x
 
-\pointlabel{Note} Results from NEON could be misleading as all of the results are of order $10^{-4}$ microsecondes meanwhil results from AVX are of order $10^{-1}$ microseconds. Suppose these results are corrects, the naive operation (\%) would be 1000 times faster than any implementation in AVX2 and AVX-512
+\pointlabel{Note} Results from NEON could be misleading as all of the results are of order $10^{-4}$ microsecondes meanwhile results from AVX are of order $10^{-1}$ microseconds. Suppose these results are corrects, the naive modulo operation (\%) would be 1000 times faster than any implementation in AVX2 and AVX-512
 
 \section{Improvements}
-\pointlabel{Testings on INTEL}: These results were obtained on AVX architecture built on AMD (Zen 4). Further test and analysis needs to be carried out on the AVX architecture build on Intel as well.
+\pointlabel{Testings on INTEL}: These results were obtained on AVX architecture built on AMD (Zen 4). Further test and analysis needs to be carried out on the AVX architecture build on Intel as well to improve the validity of the results.
 \pointlabel{Extensive testing on NEON}: The results obtained for NEON are inconsistance and does not reflect the theoretical analysis. More test should be carried out on different NEON machine architecture to ensure a better scope of speedup.
 \printbibliography
 
