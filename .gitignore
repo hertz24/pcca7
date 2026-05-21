@@ -17,3 +17,5 @@ pcca7
 *.lot
 latex/*
 *.bbl
+*.xml
+*.bcf
