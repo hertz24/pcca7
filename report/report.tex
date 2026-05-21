@@ -276,7 +276,7 @@ For the AVX version, we decided to use two main built-in AVX2 functions that can
 \end{itemize}
 
 
-\pointlabel{Variant 1: Intel \texttt{\_mm256\_mul\_epu32(...)} version: (Listings 1)}
+\pointlabel{Variant 1: Intel \texttt{\_mm256\_mul\_epu32(...)} (see Listing 1)}
 
 This implementation uses \texttt{\_mm256\_mul\_epu32(...)} at all stages of calculation, so we must shuffle the data registers into their correct positions. The following are the steps per loop:
 
@@ -288,7 +288,7 @@ This implementation uses \texttt{\_mm256\_mul\_epu32(...)} at all stages of calc
     \item Compute the leftover elements
 \end{itemize}
 
-\pointlabel{Variant 2: Intel \texttt{\_mm256\_mullo\_epi32(...)} version 1: (Listings 2)}
+\pointlabel{Variant 2: Intel \texttt{\_mm256\_mullo\_epi32(...)} (see Listing 2)}
 
 This implementation uses \texttt{\_mm256\_mul\_epu32(...)} to compute the quotient:
 \[Q = \lfloor (A \cdot B') / 2^{32} \rfloor\]
@@ -302,7 +302,7 @@ but \texttt{\_mm256\_mullo\_epi32()} to compute all other steps per loop. The fo
 \end{itemize}
 
 
-\pointlabel{Variant 3: Intel \texttt{\_mm256\_mullo\_epi32(...)} version 2: (Listings 3)} \\
+\pointlabel{Variant 3: Intel (see Listing 3)} \\
 Derived from the previous version, this version aims to regroup the vector registers immediately after the
 multiplication step:
 \[Q = \lfloor (A \cdot B') / 2^{32} \rfloor\]
@@ -319,8 +319,48 @@ The following are the steps per loop:
     \item Continue with Shoup's modular reduction (\texttt{\_shoup\_mullo\_v2\_avx2(...)})
     \item Compute the leftover elements
 \end{itemize}
+
+
 \subsubsection{NEON}
-\pointlabel{Variant NEON} TODO
+Unlike AVX2 and AVX-512, which use opaque data types, NEON uses explicit vector types: each NEON type name defines the data type, the number of bits, and the number of elements. For example, \texttt{uint32x2\_t} explicitly denotes a vector of two unsigned 32-bit integers while \texttt{\_\_m256i} can contain eight 32-bit integers or sixteen 16-bit integers.
+\newline
+For the NEON version, we decided to use two main built-in NEON functions:
+\begin{itemize}
+    \item \texttt{vmull\_u32(...)}: This function treats both inputs as unsigned 32‑bit integers. It multiplies each corresponding pair of elements and produces the full 64‑bit product. The result is stored in a vector with half as many elements but double the element width (e.g., two \texttt{uint32x2\_t} inputs give a \texttt{uint64x2\_t}).
+    \item \texttt{vmul\_u32(...)}: This function treats the inputs as unsigned 32‑bit integers. It multiplies corresponding elements and keeps only the lower 32 bits of each product, returning a vector of the same type and element count as the inputs.
+\end{itemize}
+\pointlabel{Variant 1: \texttt{vmull\_u32(...)} (see Listing 7)}
+
+This variant computes Shoup's modular reduction using \texttt{vmull\_u32} for every multiplication, keeping all intermediate products as 64‑bit values. This function can be compared with \texttt{\_mm256\_mul\_epu32(...)} of AVX2. The \texttt{vmull\_u32} intrinsic takes two \texttt{uint32x2\_t} operands and produces a \texttt{uint64x2\_t} result, so we naturally work with pairs of unsigned 32‑bit integers. Staying at this two‑element granularity avoids the costly packing and unpacking that would be needed to map four 64‑bit intermediate lanes back to a \texttt{uint32x4\_t} result. The loop body proceeds as follows:
+\begin{itemize}
+    \item Load two unsigned 32‑bit integers into a \texttt{uint32x2\_t} register
+    \item Call \texttt{\_shoup\_mullo\_neon} on that register.  The function:
+          \begin{itemize}
+              \item Obtains the quotient \(Q\) via \texttt{vmull\_u32} and a narrowing shift.
+              \item Multiplies \(A \cdot B\) and \(Q \cdot P\) using \texttt{vmul\_u32}, keeping only the lower 32 bits of each product.
+              \item Subtracts the 32‑bit values and applies the conditional subtraction with \texttt{vmin\_u32}
+          \end{itemize}
+    \item Store the resulting pair and advance the pointers by 2
+    \item Handle any remaining elements (fewer than 2) with scalar code
+\end{itemize}
+
+\pointlabel{Variant 1: \texttt{vmull\_u32(...)} (see Listing 8)}
+
+This variant uses \texttt{vmull\_u32} only for the quotient and \texttt{vmul\_u32} for all other multiplications, just as the AVX2 version uses \texttt{\_mm256\_mul\_epu32} for the quotient and \texttt{\_mm256\_mullo\_epi32} elsewhere. The loop body proceeds as follows:
+\begin{itemize}
+    \item Load two unsigned 32‑bit integers into a \texttt{uint32x2\_t} register.
+    \item Call \texttt{\_shoup\_mullo\_neon} on that register.  The function:
+          \begin{itemize}
+              \item Obtains the quotient \(Q\) via \texttt{vmull\_u32} and a narrowing
+                    shift.
+              \item Multiplies \(A \cdot B\) and \(Q \cdot P\) using \texttt{vmul\_u32},
+                    keeping only the lower 32 bits of each product.
+              \item Subtracts the 32‑bit values and applies the conditional subtraction
+                    with \texttt{vmin\_u32}.
+          \end{itemize}
+    \item Store the resulting pair and advance the pointers by 2.
+    \item Handle any remaining elements (fewer than 2) with scalar code.
+\end{itemize}
 \newpage
 
 
