@@ -64,33 +64,6 @@ Vector shoup_scale_neon(Parameters param, Vector v)
     return res;
 }
 
-Vector unrolling_shoup_scale_neon(Parameters param, Vector v)
-{
-    ulong size = v.size;
-    Vector res = init_vector(size);
-    ulong n = size - (size % 4);
-    uint32x2_t vb = vdup_n_u32(param.b);
-    uint32x2_t vp = vdup_n_u32(param.p);
-    uint32x2_t vb_precomp = vdup_n_u32(param.b_precomp);
-    ulong i = 0;
-    for (; i + 7 < n; i += 8)
-    {
-        uint32x2_t va_0 = vld1_u32(v.elements + i);
-        uint32x2_t va_1 = vld1_u32(v.elements + i + 2);
-        uint32x2_t va_2 = vld1_u32(v.elements + i + 4);
-        uint32x2_t va_3 = vld1_u32(v.elements + i + 6);
-
-        // Stocks the value
-        vst1_u32(res.elements + i, _shoup_neon(va_0, vb, vb_precomp, vp));
-        vst1_u32(res.elements + i + 2, _shoup_neon(va_1, vb, vb_precomp, vp));
-        vst1_u32(res.elements + i + 4, _shoup_neon(va_2, vb, vb_precomp, vp));
-        vst1_u32(res.elements + i + 6, _shoup_neon(va_3, vb, vb_precomp, vp));
-    }
-    for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
-    return res;
-}
-
 static inline uint32x2_t _shoup_mullo_neon(uint32x2_t va, uint32x2_t vb, uint32x2_t vb_precomp, uint32x2_t vp)
 {
     // vab_precomp = [ a_0 * b_precomp_0 = ab_precomp_0, a_1 * b_precomp_1 = ab_precomp_1 ]
@@ -130,6 +103,33 @@ Vector shoup_scale_mullo_neon(Parameters param, Vector v)
         vst1_u32(res.elements + i + 2, _shoup_mullo_neon(va_1, vb, vb_precomp, vp));
         vst1_u32(res.elements + i + 4, _shoup_mullo_neon(va_2, vb, vb_precomp, vp));
         vst1_u32(res.elements + i + 6, _shoup_mullo_neon(va_3, vb, vb_precomp, vp));
+    }
+    for (; i < size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+    return res;
+}
+
+Vector unrolling_shoup_scale_neon(Parameters param, Vector v)
+{
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    ulong n = size - (size % 4);
+    uint32x2_t vb = vdup_n_u32(param.b);
+    uint32x2_t vp = vdup_n_u32(param.p);
+    uint32x2_t vb_precomp = vdup_n_u32(param.b_precomp);
+    ulong i = 0;
+    for (; i + 7 < n; i += 8)
+    {
+        uint32x2_t va_0 = vld1_u32(v.elements + i);
+        uint32x2_t va_1 = vld1_u32(v.elements + i + 2);
+        uint32x2_t va_2 = vld1_u32(v.elements + i + 4);
+        uint32x2_t va_3 = vld1_u32(v.elements + i + 6);
+
+        // Stocks the value
+        vst1_u32(res.elements + i, _shoup_neon(va_0, vb, vb_precomp, vp));
+        vst1_u32(res.elements + i + 2, _shoup_neon(va_1, vb, vb_precomp, vp));
+        vst1_u32(res.elements + i + 4, _shoup_neon(va_2, vb, vb_precomp, vp));
+        vst1_u32(res.elements + i + 6, _shoup_neon(va_3, vb, vb_precomp, vp));
     }
     for (; i < size; i++)
         *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
@@ -220,56 +220,6 @@ Vector shoup_scale_avx2(Parameters param, Vector v)
         __m256i merge = _mm256_or_si256(even_vc, odd_shifted);
 
         _mm256_storeu_si256((__m256i *)(res.elements + i), merge);
-    }
-    for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
-    return res;
-}
-
-Vector unrolling_shoup_scale_avx2(Parameters param, Vector v)
-{
-    ulong size = v.size;
-    Vector res = init_vector(size);
-    __m256i vb = _mm256_set1_epi64x(param.b);
-    __m256i vb_precomp = _mm256_set1_epi64x(param.b_precomp);
-    __m256i vp = _mm256_set1_epi64x(param.p);
-    ulong i = 0;
-    for (; i + 31 < size; i += 32)
-    {
-        __m256i even_va_0 = _mm256_loadu_si256((__m256i const *)(v.elements + i));
-        __m256i even_va_1 = _mm256_loadu_si256((__m256i const *)(v.elements + i + 8));
-        __m256i even_va_2 = _mm256_loadu_si256((__m256i const *)(v.elements + i + 16));
-        __m256i even_va_3 = _mm256_loadu_si256((__m256i const *)(v.elements + i + 24));
-
-        __m256i odd_va_0 = _mm256_srli_epi64(even_va_0, 32);
-        __m256i odd_va_1 = _mm256_srli_epi64(even_va_1, 32);
-        __m256i odd_va_2 = _mm256_srli_epi64(even_va_2, 32);
-        __m256i odd_va_3 = _mm256_srli_epi64(even_va_3, 32);
-
-        __m256i even_vc_0 = _shoup_avx2(even_va_0, vb, vb_precomp, vp);
-        __m256i even_vc_1 = _shoup_avx2(even_va_1, vb, vb_precomp, vp);
-        __m256i even_vc_2 = _shoup_avx2(even_va_2, vb, vb_precomp, vp);
-        __m256i even_vc_3 = _shoup_avx2(even_va_3, vb, vb_precomp, vp);
-
-        __m256i odd_vc_0 = _shoup_avx2(odd_va_0, vb, vb_precomp, vp);
-        __m256i odd_vc_1 = _shoup_avx2(odd_va_1, vb, vb_precomp, vp);
-        __m256i odd_vc_2 = _shoup_avx2(odd_va_2, vb, vb_precomp, vp);
-        __m256i odd_vc_3 = _shoup_avx2(odd_va_3, vb, vb_precomp, vp);
-
-        __m256i odd_shifted_0 = _mm256_slli_epi64(odd_vc_0, 32);
-        __m256i odd_shifted_1 = _mm256_slli_epi64(odd_vc_1, 32);
-        __m256i odd_shifted_2 = _mm256_slli_epi64(odd_vc_2, 32);
-        __m256i odd_shifted_3 = _mm256_slli_epi64(odd_vc_3, 32);
-
-        __m256i merge_0 = _mm256_or_si256(even_vc_0, odd_shifted_0);
-        __m256i merge_1 = _mm256_or_si256(even_vc_1, odd_shifted_1);
-        __m256i merge_2 = _mm256_or_si256(even_vc_2, odd_shifted_2);
-        __m256i merge_3 = _mm256_or_si256(even_vc_3, odd_shifted_3);
-
-        _mm256_storeu_si256((__m256i *)(res.elements + i), merge_0);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 8), merge_1);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 16), merge_2);
-        _mm256_storeu_si256((__m256i *)(res.elements + i + 24), merge_3);
     }
     for (; i < size; i++)
         *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
@@ -404,6 +354,56 @@ Vector shoup_scale_mullo_v2_avx2(Parameters param, Vector v)
     return res;
 }
 
+Vector unrolling_shoup_scale_avx2(Parameters param, Vector v)
+{
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    __m256i vb = _mm256_set1_epi64x(param.b);
+    __m256i vb_precomp = _mm256_set1_epi64x(param.b_precomp);
+    __m256i vp = _mm256_set1_epi64x(param.p);
+    ulong i = 0;
+    for (; i + 31 < size; i += 32)
+    {
+        __m256i even_va_0 = _mm256_loadu_si256((__m256i const *)(v.elements + i));
+        __m256i even_va_1 = _mm256_loadu_si256((__m256i const *)(v.elements + i + 8));
+        __m256i even_va_2 = _mm256_loadu_si256((__m256i const *)(v.elements + i + 16));
+        __m256i even_va_3 = _mm256_loadu_si256((__m256i const *)(v.elements + i + 24));
+
+        __m256i odd_va_0 = _mm256_srli_epi64(even_va_0, 32);
+        __m256i odd_va_1 = _mm256_srli_epi64(even_va_1, 32);
+        __m256i odd_va_2 = _mm256_srli_epi64(even_va_2, 32);
+        __m256i odd_va_3 = _mm256_srli_epi64(even_va_3, 32);
+
+        __m256i even_vc_0 = _shoup_avx2(even_va_0, vb, vb_precomp, vp);
+        __m256i even_vc_1 = _shoup_avx2(even_va_1, vb, vb_precomp, vp);
+        __m256i even_vc_2 = _shoup_avx2(even_va_2, vb, vb_precomp, vp);
+        __m256i even_vc_3 = _shoup_avx2(even_va_3, vb, vb_precomp, vp);
+
+        __m256i odd_vc_0 = _shoup_avx2(odd_va_0, vb, vb_precomp, vp);
+        __m256i odd_vc_1 = _shoup_avx2(odd_va_1, vb, vb_precomp, vp);
+        __m256i odd_vc_2 = _shoup_avx2(odd_va_2, vb, vb_precomp, vp);
+        __m256i odd_vc_3 = _shoup_avx2(odd_va_3, vb, vb_precomp, vp);
+
+        __m256i odd_shifted_0 = _mm256_slli_epi64(odd_vc_0, 32);
+        __m256i odd_shifted_1 = _mm256_slli_epi64(odd_vc_1, 32);
+        __m256i odd_shifted_2 = _mm256_slli_epi64(odd_vc_2, 32);
+        __m256i odd_shifted_3 = _mm256_slli_epi64(odd_vc_3, 32);
+
+        __m256i merge_0 = _mm256_or_si256(even_vc_0, odd_shifted_0);
+        __m256i merge_1 = _mm256_or_si256(even_vc_1, odd_shifted_1);
+        __m256i merge_2 = _mm256_or_si256(even_vc_2, odd_shifted_2);
+        __m256i merge_3 = _mm256_or_si256(even_vc_3, odd_shifted_3);
+
+        _mm256_storeu_si256((__m256i *)(res.elements + i), merge_0);
+        _mm256_storeu_si256((__m256i *)(res.elements + i + 8), merge_1);
+        _mm256_storeu_si256((__m256i *)(res.elements + i + 16), merge_2);
+        _mm256_storeu_si256((__m256i *)(res.elements + i + 24), merge_3);
+    }
+    for (; i < size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+    return res;
+}
+
 static inline __m256i _shoup_b1_avx2(__m256i va, __m256i vb_precomp, __m256i vp)
 {
     // Clears the most significant bits
@@ -515,56 +515,6 @@ Vector shoup_scale_avx512(Parameters param, Vector v)
     return res;
 }
 
-Vector unrolling_shoup_scale_avx512(Parameters param, Vector v)
-{
-    ulong size = v.size;
-    Vector res = init_vector(size);
-    __m512i vb = _mm512_set1_epi64(param.b);
-    __m512i vb_precomp = _mm512_set1_epi64(param.b_precomp);
-    __m512i vp = _mm512_set1_epi64(param.p);
-    ulong i = 0;
-    for (; i + 63 < size; i += 64)
-    {
-        __m512i even_va_0 = _mm512_loadu_si512((__m512i const *)(v.elements + i));
-        __m512i even_va_1 = _mm512_loadu_si512((__m512i const *)(v.elements + i + 16));
-        __m512i even_va_2 = _mm512_loadu_si512((__m512i const *)(v.elements + i + 32));
-        __m512i even_va_3 = _mm512_loadu_si512((__m512i const *)(v.elements + i + 48));
-
-        __m512i odd_va_0 = _mm512_srli_epi64(even_va_0, 32);
-        __m512i odd_va_1 = _mm512_srli_epi64(even_va_1, 32);
-        __m512i odd_va_2 = _mm512_srli_epi64(even_va_2, 32);
-        __m512i odd_va_3 = _mm512_srli_epi64(even_va_3, 32);
-
-        __m512i even_vc_0 = _shoup_avx512(even_va_0, vb, vb_precomp, vp);
-        __m512i even_vc_1 = _shoup_avx512(even_va_1, vb, vb_precomp, vp);
-        __m512i even_vc_2 = _shoup_avx512(even_va_2, vb, vb_precomp, vp);
-        __m512i even_vc_3 = _shoup_avx512(even_va_3, vb, vb_precomp, vp);
-
-        __m512i odd_vc_0 = _shoup_avx512(odd_va_0, vb, vb_precomp, vp);
-        __m512i odd_vc_1 = _shoup_avx512(odd_va_1, vb, vb_precomp, vp);
-        __m512i odd_vc_2 = _shoup_avx512(odd_va_2, vb, vb_precomp, vp);
-        __m512i odd_vc_3 = _shoup_avx512(odd_va_3, vb, vb_precomp, vp);
-
-        __m512i odd_shifted_0 = _mm512_slli_epi64(odd_vc_0, 32);
-        __m512i odd_shifted_1 = _mm512_slli_epi64(odd_vc_1, 32);
-        __m512i odd_shifted_2 = _mm512_slli_epi64(odd_vc_2, 32);
-        __m512i odd_shifted_3 = _mm512_slli_epi64(odd_vc_3, 32);
-
-        __m512i merge_0 = _mm512_or_si512(even_vc_0, odd_shifted_0);
-        __m512i merge_1 = _mm512_or_si512(even_vc_1, odd_shifted_1);
-        __m512i merge_2 = _mm512_or_si512(even_vc_2, odd_shifted_2);
-        __m512i merge_3 = _mm512_or_si512(even_vc_3, odd_shifted_3);
-
-        _mm512_storeu_si512((__m512 *)(res.elements + i), merge_0);
-        _mm512_storeu_si512((__m512 *)(res.elements + i + 16), merge_1);
-        _mm512_storeu_si512((__m512 *)(res.elements + i + 32), merge_2);
-        _mm512_storeu_si512((__m512 *)(res.elements + i + 48), merge_3);
-    }
-    for (; i < size; i++)
-        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
-    return res;
-}
-
 static inline __m512i _shoup_mullo_avx512(__m512i va, __m512i vb, __m512i vb_precomp, __m512i vp)
 {
     __m512i vq = _mm512_mul_epu32(va, vb_precomp);
@@ -667,6 +617,56 @@ Vector shoup_scale_mullo_v2_avx512(Parameters param, Vector v)
         _mm512_storeu_si512((__m512i *)(res.elements + i + 16), vc_1);
         _mm512_storeu_si512((__m512i *)(res.elements + i + 32), vc_2);
         _mm512_storeu_si512((__m512i *)(res.elements + i + 48), vc_3);
+    }
+    for (; i < size; i++)
+        *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
+    return res;
+}
+
+Vector unrolling_shoup_scale_avx512(Parameters param, Vector v)
+{
+    ulong size = v.size;
+    Vector res = init_vector(size);
+    __m512i vb = _mm512_set1_epi64(param.b);
+    __m512i vb_precomp = _mm512_set1_epi64(param.b_precomp);
+    __m512i vp = _mm512_set1_epi64(param.p);
+    ulong i = 0;
+    for (; i + 63 < size; i += 64)
+    {
+        __m512i even_va_0 = _mm512_loadu_si512((__m512i const *)(v.elements + i));
+        __m512i even_va_1 = _mm512_loadu_si512((__m512i const *)(v.elements + i + 16));
+        __m512i even_va_2 = _mm512_loadu_si512((__m512i const *)(v.elements + i + 32));
+        __m512i even_va_3 = _mm512_loadu_si512((__m512i const *)(v.elements + i + 48));
+
+        __m512i odd_va_0 = _mm512_srli_epi64(even_va_0, 32);
+        __m512i odd_va_1 = _mm512_srli_epi64(even_va_1, 32);
+        __m512i odd_va_2 = _mm512_srli_epi64(even_va_2, 32);
+        __m512i odd_va_3 = _mm512_srli_epi64(even_va_3, 32);
+
+        __m512i even_vc_0 = _shoup_avx512(even_va_0, vb, vb_precomp, vp);
+        __m512i even_vc_1 = _shoup_avx512(even_va_1, vb, vb_precomp, vp);
+        __m512i even_vc_2 = _shoup_avx512(even_va_2, vb, vb_precomp, vp);
+        __m512i even_vc_3 = _shoup_avx512(even_va_3, vb, vb_precomp, vp);
+
+        __m512i odd_vc_0 = _shoup_avx512(odd_va_0, vb, vb_precomp, vp);
+        __m512i odd_vc_1 = _shoup_avx512(odd_va_1, vb, vb_precomp, vp);
+        __m512i odd_vc_2 = _shoup_avx512(odd_va_2, vb, vb_precomp, vp);
+        __m512i odd_vc_3 = _shoup_avx512(odd_va_3, vb, vb_precomp, vp);
+
+        __m512i odd_shifted_0 = _mm512_slli_epi64(odd_vc_0, 32);
+        __m512i odd_shifted_1 = _mm512_slli_epi64(odd_vc_1, 32);
+        __m512i odd_shifted_2 = _mm512_slli_epi64(odd_vc_2, 32);
+        __m512i odd_shifted_3 = _mm512_slli_epi64(odd_vc_3, 32);
+
+        __m512i merge_0 = _mm512_or_si512(even_vc_0, odd_shifted_0);
+        __m512i merge_1 = _mm512_or_si512(even_vc_1, odd_shifted_1);
+        __m512i merge_2 = _mm512_or_si512(even_vc_2, odd_shifted_2);
+        __m512i merge_3 = _mm512_or_si512(even_vc_3, odd_shifted_3);
+
+        _mm512_storeu_si512((__m512 *)(res.elements + i), merge_0);
+        _mm512_storeu_si512((__m512 *)(res.elements + i + 16), merge_1);
+        _mm512_storeu_si512((__m512 *)(res.elements + i + 32), merge_2);
+        _mm512_storeu_si512((__m512 *)(res.elements + i + 48), merge_3);
     }
     for (; i < size; i++)
         *(res.elements + i) = shoup(*(v.elements + i), param.b, param.b_precomp, param.p);
