@@ -72,18 +72,19 @@ uint32_t rand_prime(ulong bits);
  *
  * @param bits The number of bits of the prime number
  *
- * @retval The largest prime number with @p bits bits
- * @retval 0 if @p bits < 2 or @p bits > 32
+ * @retval The largest prime number
+ * @retval 0 if @p bits is not in [2, 31]
  */
 uint32_t max_prime_bits(ulong bits);
 
 /**
  * @brief Returns a random parameters.
  *
- * @param b_bits The number of bits of @c b. If @p b_bits > 31, then the number of bits of @c b is random in [0, 31].
- * @param p_bits The number of bits of @c p. If @p p_bits < 2 or @p p_bits > 31, then the number of bits of @c p is random in [2, 31].
+ * @param b_bits The number of bits of @c b
+ * @param p_bits The number of bits of @c p
  *
- * @return The parameters
+ * @retval The parameters
+ * @retval The parameters initialized to zero if @p b_bits > 31, @p p_bits is not in [2, 31] or @p p_bits < @p b_bits
  */
 Parameters rand_parameters(ulong b_bits, ulong p_bits);
 

@@ -40,10 +40,7 @@ uint32_t max_prime_bits(ulong bits)
 
 Parameters rand_parameters(ulong b_bits, ulong p_bits)
 {
-    /*
-     * NOTE: the maximal number of bits used are 31.
-     */
-    if (b_bits > 32 || p_bits < 2 || p_bits > 32 || p_bits < b_bits)
+    if (b_bits > 31 || p_bits < 2 || p_bits > 31 || p_bits < b_bits)
         return (Parameters){0};
     if (b_bits == 2 && p_bits == 2)
         return init_parameters(2, 3);

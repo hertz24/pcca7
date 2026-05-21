@@ -16,15 +16,15 @@
 
 /**
  * @defgroup Shoup Shoup's algorithm
- * @brief Shoup's modular multiplication implementation without costly division operations
+ * @brief Shoup's modular multiplication implementation without costly division operations.
  *
  * Shoup's algorithm efficiently computes a * b mod p using a precomputed value depending on the multiplier b and the prime modulus p.
  *
  * Principle:
- *  - Precompute b_precomp = (b * 2^32) / p using 32-bit modular arithmetic
- *  - Compute the estimated quotient q = (a * b_precomp) / 2^32
- *  - Compute the intermediate remainder c = a * b - q * p (no need modulus 2^32 since all variables are uint32_t)
- *  - If c >= p, subtract c by p
+ *  - Precompute b_precomp = (b * 2^32) / p using 32-bit modular arithmetic.
+ *  - Compute the estimated quotient q = (a * b_precomp) / 2^32.
+ *  - Compute the intermediate remainder c = a * b - q * p (no need modulus 2^32 since all variables are uint32_t).
+ *  - If c >= p, subtract c by p.
  *
  * The algorithms are supposed that p is a prime number such that p < 2^31 and b < p.
  *
@@ -94,9 +94,9 @@ Vector shoup_scale_flint(Parameters param, Vector v);
 #if NEON
 Vector shoup_scale_neon(Parameters param, Vector v);
 
-Vector unrolling_shoup_scale_neon(Parameters param, Vector v);
-
 Vector shoup_scale_mullo_neon(Parameters param, Vector v);
+
+Vector unrolling_shoup_scale_neon(Parameters param, Vector v);
 
 Vector shoup_b1_scale_neon(Parameters param, Vector v);
 #endif
@@ -104,11 +104,11 @@ Vector shoup_b1_scale_neon(Parameters param, Vector v);
 #if AVX2
 Vector shoup_scale_avx2(Parameters param, Vector v);
 
-Vector unrolling_shoup_scale_avx2(Parameters param, Vector v);
-
 Vector shoup_scale_mullo_avx2(Parameters param, Vector v);
 
 Vector shoup_scale_mullo_v2_avx2(Parameters param, Vector v);
+
+Vector unrolling_shoup_scale_avx2(Parameters param, Vector v);
 
 Vector shoup_b1_scale_avx2(Parameters param, Vector v);
 #endif
@@ -116,11 +116,11 @@ Vector shoup_b1_scale_avx2(Parameters param, Vector v);
 #if AVX512
 Vector shoup_scale_avx512(Parameters param, Vector v);
 
-Vector unrolling_shoup_scale_avx512(Parameters param, Vector v);
-
 Vector shoup_scale_mullo_avx512(Parameters param, Vector v);
 
 Vector shoup_scale_mullo_v2_avx512(Parameters param, Vector v);
+
+Vector unrolling_shoup_scale_avx512(Parameters param, Vector v);
 
 Vector shoup_b1_scale_avx512(Parameters param, Vector v);
 #endif

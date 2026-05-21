@@ -18,7 +18,10 @@ static void test_algorithm(void *arg, ulong count)
 }
 
 #if NEON
-void prof_repeat(double *min, double *max, profile_target_t target, void *arg)
+/*
+ * NOTE: This function corresponds to that of the library but is adapted for ARM architecture because it is very slow. It is less accurate than the basic function.
+ */
+static void prof_repeat_neon(double *min, double *max, profile_target_t target, void *arg)
 {
     const ulong FIXED_TRIALS = 300000;
     double min_time = DBL_MAX, max_time = DBL_MIN;
@@ -43,6 +46,10 @@ void prof_repeat(double *min, double *max, profile_target_t target, void *arg)
 double time_algorithm(Vector (*algorithm)(Parameters, Vector), Parameters param, Vector v)
 {
     double min, max;
+#if NEON
+    prof_repeat_neon(&min, &max, test_algorithm, (void *[]){algorithm, &param, &v});
+#else
     prof_repeat(&min, &max, test_algorithm, (void *[]){algorithm, &param, &v});
+#endif
     return min;
 }

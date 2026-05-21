@@ -1,4 +1,4 @@
-PROJECT_NAME           = "32-bit Modular Arithmetic and SIMD Vectorisation"
+PROJECT_NAME           = "32-bit Modular Arithmetic and SIMD Vectorization"
 
 INPUT                  = src/ include/
 
