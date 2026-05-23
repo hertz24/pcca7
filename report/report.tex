@@ -184,7 +184,7 @@ Yes, $a$ can be any integer defined over 32 bits.
 \newpage
 \subsection{Precomputation Logic (Barrett Reduction)}
 The precomputed value $B'$ is defined over 32 bits as:
-\[B'= \lfloor (B \cdot 2^{32}) / p \rfloor \]
+\[B'= \left\lfloor \frac{B \cdot 2^{32}}{p}  \right\rfloor \]
 
 When computing $A\cdot B\pmod{p}$:
 \begin{equation*}
@@ -205,7 +205,7 @@ We can rewrite this as:
 $$0 \le x - \lfloor x \rfloor < 1$$
 
 
-\subsection{Proof}
+\subsection{Proof of Theorem 3.2}
 The following proof can be found in "Faster arithmetic for number-theoretic transforms" page 3 \cite{DBLP:journals/corr/abs-1205-2926} \\
 
 The algorithm uses the precomputation $B' = \lfloor B\beta/p \rfloor$ such that:
@@ -260,7 +260,7 @@ Using the precomputed value $B'$ to approximately calculate $\left\lfloor \frac{
     \item \textbf{Storing the precomputed value:}
           $B'$ is computed with one division and can be stored for use in other modular reductions, provided the same $B$ and the same $p$ are used.
     \item \textbf{Efficient operations:}
-          Shoup's algorithm replaces slow division operations with fast multiplications and bit shifts. The expression $\frac{A \cdot B'}{2^{32}}$ requires only one multiplication operation and a right bit shift by 32 bits. On a CPU, both multiplication ($\approx$ 0.33--0.67 cycles per operation) and bit shift ($\approx$ 0.5--1 cycles per operation) are significantly more efficient than division ($\approx$ 6 cycles per operation) . A division is approximately 4--8 times more costly than a multiplication and bit shift together. \cite{uopsInfoTable}
+          Shoup's algorithm replaces slow division operations with fast multiplications and bit shifts. The expression $\frac{A \cdot B'}{2^{32}}$ requires only one multiplication operation and a right bit shift by 32 bits. On a modern commercialised CPU, both multiplication ($\approx$ 0.33--0.67 cycles per operation) and bit shift ($\approx$ 0.5--1 cycles per operation) are significantly more efficient than division ($\approx$ 6 cycles per operation) . A division is approximately 4--8 times more costly than a multiplication and bit shift together. \cite{uopsInfoTable}
 \end{enumerate}
 
 
@@ -270,13 +270,12 @@ We decided to create three versions for implementing a high-performance Shoup al
 \subsubsection{AVX2 and AVX-512}
 For the AVX version, we decided to use two main built-in AVX2 functions that can be found on Intel's Intrinsic Guide: \cite{intel_instrinsics}
 \begin{itemize}
-    \item \texttt{\_mm256\_mul\_epu32(...)} : This function treats the input as unsigned 32-bit integers. However, it only multiplies the
-          even-indexed slots (0, 2, 4, 6) of the vector to make room for the full 64-bit results.
-    \item \texttt{\_mm256\_mullo\_epi32(...)} : This function treats the input as signed 32-bit integers. It multiplies all 8 pairs of numbers but only stores the bottom half of the result.
+    \item \texttt{\_mm256\_mul\_epu32(...)} : This function treats the input as unsigned 32-bit integers. However, it only multiplies the even-indexed slots (0, 2, 4, 6) of the vector to make room for the full 64-bit results. (See Figure ~\ref{fig:figure_six})
+    \item \texttt{\_mm256\_mullo\_epi32(...)} : This function treats the input as signed 32-bit integers. It multiplies all 8 pairs of numbers but only stores the bottom half of the result. (See Figure 7)
 \end{itemize}
 
 
-\pointlabel{Variant 1: Intel \texttt{\_mm256\_mul\_epu32(...)} (see Listing 1)}
+\pointlabel{Variant 1: Intel \texttt{\_mm256\_mul\_epu32(...)} (see \autoref{list:variant1_avx2})}
 
 This implementation uses \texttt{\_mm256\_mul\_epu32(...)} at all stages of calculation, so we must shuffle the data registers into their correct positions. The following are the steps per loop:
 
@@ -288,7 +287,7 @@ This implementation uses \texttt{\_mm256\_mul\_epu32(...)} at all stages of calc
     \item Compute the leftover elements
 \end{itemize}
 
-\pointlabel{Variant 2: Intel \texttt{\_mm256\_mullo\_epi32(...)} (see Listing 2)}
+\pointlabel{Variant 2: Intel \texttt{\_mm256\_mullo\_epi32(...)} version 1 (see \autoref{list:variant2_avx2})}
 
 This implementation uses \texttt{\_mm256\_mul\_epu32(...)} to compute the quotient:
 \[Q = \lfloor (A \cdot B') / 2^{32} \rfloor\]
@@ -302,10 +301,10 @@ but \texttt{\_mm256\_mullo\_epi32()} to compute all other steps per loop. The fo
 \end{itemize}
 
 
-\pointlabel{Variant 3: Intel (see Listing 3)} \\
+\pointlabel{Variant 3: Intel\texttt{\_mm256\_mullo\_epi32(...)} version 2 (see \autoref{list:variant3_avx2})} \\
 Derived from the previous version, this version aims to regroup the vector registers immediately after the
 multiplication step:
-\[Q = \lfloor (A \cdot B') / 2^{32} \rfloor\]
+\[Q = \left\lfloor \frac{A \cdot B'}{2^{32}}   \right\rfloor\]
 By restoring the standard 8-lane 32-bit layout early, the function eliminates the need to perform parallel logic paths.
 This, in theory, should reduce the workload.
 
@@ -329,7 +328,7 @@ For the NEON version, we decided to use two main built-in NEON functions:
     \item \texttt{vmull\_u32(...)}: This function treats both inputs as unsigned 32‑bit integers. It multiplies each corresponding pair of elements and produces the full 64‑bit product. The result is stored in a vector with half as many elements but double the element width (e.g., two \texttt{uint32x2\_t} inputs give a \texttt{uint64x2\_t}).
     \item \texttt{vmul\_u32(...)}: This function treats the inputs as unsigned 32‑bit integers. It multiplies corresponding elements and keeps only the lower 32 bits of each product, returning a vector of the same type and element count as the inputs.
 \end{itemize}
-\pointlabel{Variant 1: \texttt{vmull\_u32(...)} (see Listing 7)}
+\pointlabel{Variant 1: \texttt{vmull\_u32(...)} (see \autoref{list:variant1_neon})}
 
 This variant computes Shoup's modular reduction using \texttt{vmull\_u32} for every multiplication, keeping all intermediate products as 64‑bit values. This function can be compared with \texttt{\_mm256\_mul\_epu32(...)} of AVX2. The \texttt{vmull\_u32} intrinsic takes two \texttt{uint32x2\_t} operands and produces a \texttt{uint64x2\_t} result, so we naturally work with pairs of unsigned 32‑bit integers. Staying at this two‑element granularity avoids the costly packing and unpacking that would be needed to map four 64‑bit intermediate lanes back to a \texttt{uint32x4\_t} result. The loop body proceeds as follows:
 \begin{itemize}
@@ -344,7 +343,7 @@ This variant computes Shoup's modular reduction using \texttt{vmull\_u32} for ev
     \item Handle any remaining elements (fewer than 2) with scalar code
 \end{itemize}
 
-\pointlabel{Variant 2: \texttt{vmull\_u32(...)} (see Listing 8)}
+\pointlabel{Variant 2: \texttt{vmull\_u32(...)} (see \autoref{list:variant2_neon})}
 
 This variant uses \texttt{vmull\_u32} only for the quotient and \texttt{vmul\_u32} for all other multiplications, just as the AVX2 version uses \texttt{\_mm256\_mul\_epu32} for the quotient and \texttt{\_mm256\_mullo\_epi32} elsewhere. The loop body proceeds as follows:
 \begin{itemize}
@@ -361,11 +360,13 @@ This variant uses \texttt{vmull\_u32} only for the quotient and \texttt{vmul\_u3
     \item Store the resulting pair and advance the pointers by 2.
     \item Handle any remaining elements (fewer than 2) with scalar code.
 \end{itemize}
-\newpage
 
 
 \section{Performance}
 The performance benchmarks were run on AMD and ARM architectures, by executing \texttt{./pcca7 -b\_bits 31 -pts 1000}.
+
+These results were obtained by measuring that time taken for computing modular multiplication between a scalar ($b$) and a vector ($a$) for a fixed prime number ($p$):
+\[[a_{1} \cdot b \mod p, a_{2} \cdot b \mod p, \cdots, a_{n} \cdot b \mod p ]\]
 
 All execution times were measured using \texttt{prof\_repeat()} from the FLINT library \cite{flint}
 
@@ -388,7 +389,7 @@ Just like our AVX implementation, all implementations in NEON require the use of
     \item Instruction Sets Supported: AVX, AVX2 and AVX-512
     \item Compiler: GCC 13.3.0 with optimization flag \texttt{-O3} and \texttt{-march=native}
 \end{itemize}
-\pointlabel{Note} AMD Zen 4 simulates AVX-512 using two registers of AVX2. This is not a real AVX-512
+\pointlabel{Note} AMD Zen 4 simulates AVX-512 using two registers of AVX2. This means that the AVX-512 is correctly implemented but its material implementation could be better ( This implementation is improved in Zen 5 AMD CPUs ). Thus, expectation of a factor of 2 speedup between AVX2 and AVX-512 is less realistic. The efficiency of AVX-512 should still be better than AVX2.
 
 \subsection{Equipment Details for ARM Architecture}
 \begin{itemize}
@@ -398,7 +399,7 @@ Just like our AVX implementation, all implementations in NEON require the use of
 \end{itemize}
 \pointlabel{Note}The benchmarks were run in a virtual machine.
 
-
+\newpage
 \subsection{AMD: Choice of Unrolling}
 One way to optimize for faster functions through vectorization is loop unrolling.
 This technique consists of expanding the body of a loop to process multiple iterations at once.
@@ -482,7 +483,6 @@ On average, Variant 2 is 2.22\% slower than Variant 1, whereas Variant 3 is 24.8
 
 Although Variant 2 is a worse implementation of Shoup's modular multiplication, we can still conclude that Variant 3 is the best implementation among the variants, with a performance gain of approximately 25\% (x1.25 speedup factor).
 
-\newpage
 \subsection{AMD: Overall Performance}
 It is worth noting that AVX2 uses 256-bit registers to process up to eight 32-bit integers, while AVX-512 uses 512-bit registers for up to sixteen. Furthermore, the AVX-512 version uses the same functions and operations as the AVX2 version.
 
@@ -541,7 +541,9 @@ The results below were obtained by measuring the execution time of different imp
 From the results retrieved, we want to primarily study the speedup factor of our Shoup's modular multiplication using AVX2 and AVX-512 compared to FLINT's implementation. Shoup (AVX2) is roughly 5.9x faster than FLINT and Shoup (AVX-512) is 7.0x faster.
 
 \pointlabel{Conclusion}
-Our Shoup's modular multiplication with AVX2 and AVX-512 optimizations adapted to 32 bits is 5--7 times faster than FLINT. These results are consistent with our overall hypothesis.
+Our Shoup's modular multiplication with AVX2 and AVX-512 optimizations adapted to 32 bits is 6-7 times faster than FLINT. These results are consistent with our overall hypothesis. It would be interesting to see the
+gain obtained on a CPU with a better AVX-512 implementation: we could expect a
+speedup factor around 12, that is, around twice faster than with AVX-2
 
 \subsection{NEON's Choice of Unrolling}
 
@@ -574,6 +576,8 @@ and an unrolled version of Variant 1 (NEON) (Listing 7).
     \end{tabular}
     \caption{Execution time of implementations with and without unrolling in microseconds (NEON)}
 \end{table}
+
+\pointlabel{Note} Results from NEON could be misleading as all of the results are of order $10^{-4}$ microseconds meanwhile results from AVX are of order $10^{-1}$ microseconds. Suppose these results are correct, the naive modulo operation (\%) would be 1000 times faster than any implementation in AVX2 and AVX-512
 
 \pointlabel{Observation}From the results table, loop unrolling offers little to no benefit for smaller vector sizes (under 400), with the exception of a minor anomaly at size 200. As the vector size increases beyond this point, we gradually observe a slight performance degradation for the unrolled version, which executes approximately 3\% to 6\% slower than the standard version with bigger vector sizes.
 \pointlabel{Conclusion} The results obtained contradict our preliminary assumption that applying unrolling to the loops would increase performance. Instead of a speedup, the unrolled implementation introduced a 1.03x to 1.06x slowdown factor for larger inputs. Consequently, we can conclude that loop unrolling is unfavorable for our specific implementation of Shoup’s Modular Multiplication on NEON.
@@ -633,7 +637,7 @@ The results below were obtained by measuring the execution time of different imp
 \pointlabel{Observation} From the results table, we firstly notice irregularities between the naive method and FLINT. The library FLINT on NEON is actually slower.
 
 Even so, both variants implemented with NEON are overall much faster than their FLINT counterpart with Variant 1 being 2.4x faster than FLINT's version and Variant 2 being 2.6 times faster.
-\pointlabel{Conclusion} The acceleration factors observed for both variants are consistent with the NEON theoretical hypothesis outlined in Section 4.2.
+\pointlabel{Conclusion} The acceleration factors observed for both variants are consistent with the NEON theoretical hypothesis outlined in Section 4.2. 
 
 However, despite these relevant speedups, the results should be interpreted with caution. There is a noticeable lack of consistency in execution time when comparing FLINT's optimized implementation against the naive modulo (\%) operation.
 
@@ -642,12 +646,15 @@ For AVX architectures, we researched and implemented several versions of Shoup's
 
 For NEON architecture, \textbf{Variant 2: \texttt{\_shoup\_mullo\_neon }} is the best performing implementation with an acceleration of 2.6x
 
-\pointlabel{Note} Results from NEON could be misleading as all of the results are of order $10^{-4}$ microseconds meanwhile results from AVX are of order $10^{-1}$ microseconds. Suppose these results are correct, the naive modulo operation (\%) would be 1000 times faster than any implementation in AVX2 and AVX-512
 
 \section{Improvements}
 \pointlabel{Testings on INTEL}: These results were obtained on AVX architecture built on AMD (Zen 4). Further tests and analyses need to be carried out on the AVX architecture built on Intel as well to improve the validity of the results.
-\pointlabel{Extensive testing on NEON}: The results obtained for NEON are inconsistent and do not reflect the theoretical analysis. More test should be carried out on different NEON machine architecture to ensure a better scope of speedup.
+\pointlabel{Extensive testing on NEON} The results obtained for NEON are inconsistent and do not reflect the theoretical analysis. More test should be carried out on different NEON machine architecture to ensure a better scope of speedup.
+
+\pointlabel{Unit of time for NEON} There might be a problem with the unit of measurement for NEON since we had to implement our own \texttt{prof\_repeat(...)} function. Modern operating systems usually measure in millisecondes instead of microsecondes. If this is the case, our results would be more relevant and coherent with the results obtained on an AVX architecture.
+
 \printbibliography
+
 
 \newpage
 \appendix
@@ -656,7 +663,7 @@ For NEON architecture, \textbf{Variant 2: \texttt{\_shoup\_mullo\_neon }} is the
 
 
 \subsection{AVX2}
-\begin{lstlisting}[caption = Variant 1 (AVX2)]
+\begin{lstlisting}[caption = Variant 1 (AVX2), label = {list:variant1_avx2}]
 static inline __m256i _shoup_avx2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
 {
     // vq = [ (a_0 * b_precomp_0 = q_0q_1), (a_2 * b_precomp_2 = q_2q_3), (a_4 * b_precomp_4 = q_4q_5), (a_6 * b_precomp_6 = q_6q_7) ]
@@ -714,7 +721,7 @@ Vector shoup_scale_avx2(Parameters param, Vector v)
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption = Variant 2 (AVX2)]
+\begin{lstlisting}[caption = Variant 2 (AVX2), label = {list:variant2_avx2}]
 static inline __m256i _shoup_mullo_avx2(__m256i va, __m256i vb, __m256i vb_precomp, __m256i vp)
 {
     // vq = [ (a_0 * b_precomp_0 = q_0q_1), (a_2 * b_precomp_2 = q_2q_3), (a_4 * b_precomp_4 = q_4q_5), (a_6 * b_precomp_6 = q_6q_7) ]
@@ -787,7 +794,7 @@ Vector shoup_scale_mullo_avx2(Parameters param, Vector v)
 }
 \end{lstlisting}
 
-\begin{lstlisting} [caption = Variant 3 (AVX2)]
+\begin{lstlisting} [caption = Variant 3 (AVX2), label = {list:variant3_avx2}]
 static inline __m256i _mulhi_emul_avx2(__m256i va, __m256i vb)
 {
     // res_even = [ (a_0 * b_0), (a_2 * b_2), (a_4 * b_4), (a_6 * b_6) ]
@@ -1003,7 +1010,7 @@ Vector shoup_scale_mullo_v2_avx512(Parameters param, Vector v)
 
 \newpage
 \subsection{NEON}
-\begin{lstlisting} [caption = Variant 1 (NEON)]
+\begin{lstlisting} [caption = Variant 1 (NEON), label = {list:variant1_neon}]
 static inline uint32x2_t _shoup_neon(uint32x2_t va, uint32x2_t vb, uint32x2_t vb_precomp, uint32x2_t vp)
 {
     // vab_precomp = [ a_0 * b_precomp_0 = ab_precomp_0, a_1 * b_precomp_1 = ab_precomp_1 ]
@@ -1047,7 +1054,8 @@ Vector shoup_scale_neon(Parameters param, Vector v)
     return res;
 }
 \end{lstlisting}
-\begin{lstlisting}[caption = Variant 2 (NEON)]
+
+\begin{lstlisting}[caption = Variant 2 (NEON), label = {list:variant2_neon}]
 static inline uint32x2_t _shoup_mullo_neon(uint32x2_t va, uint32x2_t vb, uint32x2_t vb_precomp, uint32x2_t vp)
 {
     // vab_precomp = [ a_0 * b_precomp_0 = ab_precomp_0, a_1 * b_precomp_1 = ab_precomp_1 ]
@@ -1093,4 +1101,20 @@ Vector shoup_scale_mullo_neon(Parameters param, Vector v)
     return res;
 }
 \end{lstlisting}
+
+\section{SIMD Instructions}
+\begin{figure}[H]
+    \centering
+    \safeincludegraphics[width=1\linewidth]{mul_epu32.png}
+    \caption{Diagram of \texttt{mul\_epu32} for AVX2 (Gemini)}
+    \label{fig:figure_six}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \safeincludegraphics[width=1\linewidth]{mullo_epi32.png}
+    \caption{Diagram of \texttt{mullo\_epi32} for AVX2 (Gemini)}
+    \label{fig:figure_seven}
+\end{figure}
+
 \end{document}
