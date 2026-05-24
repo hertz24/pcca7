@@ -114,7 +114,7 @@ Since equation (1) requires an integer division, a multiplication and a subtract
 
 
 \section{Shoup's Modular Multiplication}
-Shoup's algorithm is based on precomputation to avoid costly operations. His work was first appeared directly in the source code of NTL (Number Theory Library)\cite{shoupNTL}
+Shoup's algorithm is based on precomputation to avoid costly operations. His work first appeared directly in the source code of NTL (Number Theory Library)\cite{shoupNTL}
 
 \begin{algorithm}[H]
     \caption{Shoup's modular multiplication algorithm}
@@ -168,7 +168,7 @@ If $p \ge 2^{31}$, then $2p \ge 2^{32}$. Therefore, in some cases $AB - Qp$ may 
 all bits beyond 32 bits are discarded when we reduce modulo $\beta$.
 
 \textbf{Does $p$ necessarily have to be a prime number?} \\
-No, the algorithm mainly uses precomputations (Barrett Reduction), optimized for calculation of $a \mod n$ without constraints on $n$. But for the sake of this project, $n$ is a prime number, which we will denote by $p$. This choice is due to the fact that in cryptography, many algorithms rely on the structure of a prime finite field $\mathbb{F}_p$, where arithmetic modulo a prime ensures both invertibility for every non-zero element and a setting in which the discrete logarithm problem is believed to be computationally hard. For example, in the Diffie-Hellman key exchange, public parameters include a large prime $p$, and the security reliers on the difficulty of computing discrete logarithms modulo $p$.
+No, the algorithm mainly uses precomputations (Barrett Reduction), optimized for calculation of $a \mod n$ without constraints on $n$. But for the sake of this project, $n$ is a prime number, which we will denote by $p$. This choice is due to the fact that in cryptography, many algorithms rely on the structure of a prime finite field $\mathbb{F}_p$, where arithmetic modulo a prime ensures both invertibility for every non-zero element and a setting in which the discrete logarithm problem is believed to be computationally hard. For example, in the Diffie-Hellman key exchange, public parameters include a large prime $p$, and the security relies on the difficulty of computing discrete logarithms modulo $p$.
 
 \textbf{Can $b$ be any integer over 32 bits?} \\
 No, suppose $ b > p $, we can rewrite $b$ as:
@@ -365,7 +365,7 @@ This variant uses \texttt{vmull\_u32} only for the quotient and \texttt{vmul\_u3
 \section{Performance}
 The performance benchmarks were run on AMD and ARM architectures, by executing \texttt{./pcca7 -b\_bits 31 -pts 1000}.
 
-These results were obtained by measuring that time taken for computing modular multiplication between a scalar ($b$) and a vector ($a$) for a fixed prime number ($p$):
+These results were obtained by measuring the time taken for computing modular multiplication between a scalar ($b$) and a vector ($a$) for a fixed prime number ($p$):
 \[[a_{1} \cdot b \mod p, a_{2} \cdot b \mod p, \cdots, a_{n} \cdot b \mod p ]\]
 
 All execution times were measured using \texttt{prof\_repeat()} from the FLINT library \cite{flint}
@@ -379,9 +379,9 @@ With a rough preliminary analysis, using SIMD operations should provide us with 
 One caveat that must be considered is that all implementations use \texttt{\_mm256\_mul\_epu32(...)} to calculate the quotient defined as $Q = \lfloor A \cdot B'/\beta \rfloor$. This operation requires a data shuffle to correctly align the vectors into 64-bit lanes and then recombine them at later stages. This reduces the acceleration factor of SIMD implementations, at worst, by half (4x--8x depending on AVX2 or AVX-512).
 
 \subsection{NEON Overall Hypothesis}
-NEON uses 128-bit wide registers, This means a single vector can hold up to four 32-bit unsigned integers simultaneously. In consequence, using SIMD operation, with rough preliminary analysis shoud provide us with a maximum acceleration of 4x.
+NEON uses 128-bit wide registers. This means a single vector can hold up to four 32-bit unsigned integers simultaneously. In consequence, using SIMD operation, with rough preliminary analysis should provide us with a maximum acceleration of 4x.
 
-Just like our AVX implementation, all implementations in NEON require the use of \texttt{vmul\_u32}(...) ( \texttt{\_mm256\_mul\_epu32(...)} equivalence in NEON). Thus by the same reasoning, this cuts the acceleration factor of the SIMD implementation by at worst by half (2x).
+Just like our AVX implementation, all implementations in NEON require the use of \texttt{vmul\_u32}(...) ( \texttt{\_mm256\_mul\_epu32(...)} equivalence in NEON). Thus by the same reasoning, this cuts the acceleration factor of the SIMD implementation by at worst half (2x).
 
 \subsection{Equipment Details for AMD Architecture}
 \begin{itemize}
@@ -436,7 +436,7 @@ The results below were obtained by measuring the execution time between a standa
 \end{table}
 
 \pointlabel{Observation}
-From the graph and the results table, unrolling have little to no benefit for smaller vector sizes of ( under 400 ). For computing bigger vector sizes, we gradually observe a slight performance increase for the Unrolled version aproximately 6-8\%
+From the graph and the results table, unrolling have little to no benefit for smaller vector sizes of ( under 400 ). For computing bigger vector sizes, we gradually observe a slight performance increase for the Unrolled version approximately 6-8\%
 
 \pointlabel{Conclusion}The results obtained align with our preliminary assumption that applying unrolling to the loops will increase performance. Although the speedup is only around 5\% (x1.05 speedup factor), we can still conclude that unrolling is favorable for our implementation of Shoup's modular multiplication
 
@@ -479,7 +479,7 @@ As for Variant 3, it outperforms both previous variants for all sizes.
 
 On average, Variant 2 is 2.22\% slower than Variant 1, whereas Variant 3 is 24.85\% faster than Variant 1.
 
-\pointlabel{Conclusion}The measured results contradict our hypothesis that both \texttt{mullo\_epi32} variants are faster than \texttt{mul\_epu32}. Even though Variant 2 should in theory outperform the Variant 2 because 8 integers are processed per iteration. In practice, Variant 2 performes worse because its SIMD operation cost is more cycles (1 cycle per operation \texttt{mullo\_epi32}) compared to Variant 1 (0.5 cycle per operation \texttt{mul\_epu32}) according to uops.info \cite{uopsInfoTable}
+\pointlabel{Conclusion}The measured results contradict our hypothesis that both \texttt{mullo\_epi32} variants are faster than \texttt{mul\_epu32}. Even though Variant 2 should in theory outperform the Variant 1 because 8 integers are processed per iteration. In practice, Variant 2 performs worse because its SIMD operation cost is more cycles (1 cycle per operation \texttt{mullo\_epi32}) compared to Variant 1 (0.5 cycle per operation \texttt{mul\_epu32}) according to uops.info \cite{uopsInfoTable}
 
 Although Variant 2 is a worse implementation of Shoup's modular multiplication, we can still conclude that Variant 3 is the best implementation among the variants, with a performance gain of approximately 25\% (x1.25 speedup factor).
 
@@ -538,12 +538,12 @@ The results below were obtained by measuring the execution time of different imp
 \end{table}
 
 \pointlabel{Observation}
-From the results retrieved, we want to primarily study the speedup factor of our Shoup's modular multiplication using AVX2 and AVX-512 compared to FLINT's implementation. Shoup (AVX2) is roughly 5.9x faster than FLINT and Shoup (AVX-512) is 7.0x faster.
+From the results retrieved, we want to primarily study the speedup factor of Shoup's modular multiplication using AVX2 and AVX-512 compared to FLINT's implementation. Shoup (AVX2) is roughly 5.9x faster than FLINT and Shoup (AVX-512) is 7.0x faster.
 
 \pointlabel{Conclusion}
-Our Shoup's modular multiplication with AVX2 and AVX-512 optimizations adapted to 32 bits is 6-7 times faster than FLINT. These results are consistent with our overall hypothesis. It would be interesting to see the
+Shoup's modular multiplication with AVX2 and AVX-512 optimizations adapted to 32 bits is 6-7 times faster than FLINT. These results are consistent with our overall hypothesis. It would be interesting to see the
 gain obtained on a CPU with a better AVX-512 implementation: we could expect a
-speedup factor around 12, that is, around twice faster than with AVX-2
+speedup factor around 12, that is, around twice as fast than with AVX2.
 
 \subsection{NEON's Choice of Unrolling}
 
@@ -577,7 +577,7 @@ and an unrolled version of Variant 1 (NEON) (Listing 7).
     \caption{Execution time of implementations with and without unrolling in microseconds (NEON)}
 \end{table}
 
-\pointlabel{Note} Results from NEON could be misleading as all of the results are of order $10^{-4}$ microseconds meanwhile results from AVX are of order $10^{-1}$ microseconds. Suppose these results are correct, the naive modulo operation (\%) would be 1000 times faster than any implementation in AVX2 and AVX-512
+\pointlabel{Note} Results from NEON could be misleading as all of the results are of order $10^{-4}$ microseconds meanwhile results from AVX are of order $10^{-1}$ microseconds. If these results are correct, the naive modulo operation (\%) would be 1000 times faster than any implementation in AVX2 and AVX-512
 
 \pointlabel{Observation}From the results table, loop unrolling offers little to no benefit for smaller vector sizes (under 400), with the exception of a minor anomaly at size 200. As the vector size increases beyond this point, we gradually observe a slight performance degradation for the unrolled version, which executes approximately 3\% to 6\% slower than the standard version with bigger vector sizes.
 \pointlabel{Conclusion} The results obtained contradict our preliminary assumption that applying unrolling to the loops would increase performance. Instead of a speedup, the unrolled implementation introduced a 1.03x to 1.06x slowdown factor for larger inputs. Consequently, we can conclude that loop unrolling is unfavorable for our specific implementation of Shoup’s Modular Multiplication on NEON.
@@ -636,22 +636,22 @@ The results below were obtained by measuring the execution time of different imp
 
 \pointlabel{Observation} From the results table, we firstly notice irregularities between the naive method and FLINT. The library FLINT on NEON is actually slower.
 
-Even so, both variants implemented with NEON are overall much faster than their FLINT counterpart with Variant 1 being 2.4x faster than FLINT's version and Variant 2 being 2.6 times faster.
-\pointlabel{Conclusion} The acceleration factors observed for both variants are consistent with the NEON theoretical hypothesis outlined in Section 4.2. 
+Even so, both variants implemented with NEON are overall much faster than their FLINT counterparts with Variant 1 being 2.4x faster than FLINT's version and Variant 2 being 2.6 times faster.
+\pointlabel{Conclusion} The acceleration factors observed for both variants are consistent with the NEON theoretical hypothesis outlined in Section 4.2.
 
 However, despite these relevant speedups, the results should be interpreted with caution. There is a noticeable lack of consistency in execution time when comparing FLINT's optimized implementation against the naive modulo (\%) operation.
 
 \section{Overall Conclusion}
-For AVX architectures, we researched and implemented several versions of Shoup's modular reduction that outperforms FLINT's implementation. \textbf{Variant 3: Intel \texttt{\_mm256\_mullo\_epi32(...)} version 2} is the best performing version, with an acceleration factor of 5.9x for AVX2 and 7.0x for AVX-512.
+For AVX architectures, we researched and implemented several versions of Shoup's modular reduction that outperform FLINT's implementation. \textbf{Variant 3: Intel \texttt{\_mm256\_mullo\_epi32(...)} version 2} is the best performing version, with an acceleration factor of 5.9x for AVX2 and 7.0x for AVX-512.
 
 For NEON architecture, \textbf{Variant 2: \texttt{\_shoup\_mullo\_neon }} is the best performing implementation with an acceleration of 2.6x
 
 
 \section{Improvements}
-\pointlabel{Testings on INTEL}: These results were obtained on AVX architecture built on AMD (Zen 4). Further tests and analyses need to be carried out on the AVX architecture built on Intel as well to improve the validity of the results.
-\pointlabel{Extensive testing on NEON} The results obtained for NEON are inconsistent and do not reflect the theoretical analysis. More test should be carried out on different NEON machine architecture to ensure a better scope of speedup.
+\pointlabel{Testing on INTEL}: These results were obtained on AVX architecture built on AMD (Zen 4). Further tests and analyses need to be carried out on the AVX architecture built on Intel as well to improve the validity of the results.
+\pointlabel{Extensive testing on NEON} The results obtained for NEON are inconsistent and do not reflect the theoretical analysis. More tests should be carried out on different NEON machine architecture to ensure a better scope of speedup.
 
-\pointlabel{Unit of time for NEON} There might be a problem with the unit of measurement for NEON since we had to implement our own \texttt{prof\_repeat(...)} function. Modern operating systems usually measure in millisecondes instead of microsecondes. If this is the case, our results would be more relevant and coherent with the results obtained on an AVX architecture.
+\pointlabel{Unit of time for NEON} There might be a problem with the unit of measurement for NEON since we had to implement our own \texttt{prof\_repeat(...)} function. Modern operating systems usually measure in milliseconds instead of microseconds. If this is the case, our results would be more relevant and coherent with the results obtained on an AVX architecture.
 
 \printbibliography
 
